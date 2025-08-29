@@ -1,0 +1,91 @@
+# -----------------------------
+# React Native (Frontend)
+# -----------------------------
+
+# Node modules
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# Build output
+android/app/build/
+ios/build/
+ios/Pods/
+*.xcuserdatad
+*.xcworkspace
+*.xcodeproj/*
+!*.xcodeproj/project.pbxproj
+!*.xcodeproj/xcshareddata/
+
+# Expo
+.expo/
+.expo-shared/
+
+# Metro bundler
+.metro-cache/
+*.packager
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Env files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# -----------------------------
+# .NET Backend
+# -----------------------------
+
+# Build results
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Rider / VS Code / VS
+.idea/
+.vscode/
+*.vs/
+.vsconfig
+
+# Package caches
+*.nupkg
+*.snupkg
+*.nuget
+packages/
+
+# Publish
+publish/
+out/
+
+# Env files
+appsettings.Development.json
+appsettings.*.json
+secrets.json
+
+# Other
+*.db
+*.sqlite
+*.mdf
+*.ldf
+
+# -----------------------------
+# General
+# -----------------------------
+*.bak
+*.swp
+*.tmp
+*.log
