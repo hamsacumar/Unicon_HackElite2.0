@@ -24,6 +24,7 @@ builder.Services.AddSwaggerGen();
 
 // Add services and interface
 builder.Services.AddScoped<ITestService, TestService>();
+builder.Services.AddScoped<MongoService>();
 
 // ✅ Add CORS policy
 builder.Services.AddCors(options =>
@@ -41,6 +42,9 @@ var app = builder.Build();
 
 app.UseSwagger();
 app.UseSwaggerUI();
+
+// Static files (images)
+app.UseStaticFiles(); 
 
 
 // ✅ Enable CORS before Authorization
