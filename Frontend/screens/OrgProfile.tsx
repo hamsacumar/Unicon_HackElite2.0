@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, Button } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
+import RoleBasedBottomNav from "../component/rolebasedNav";
 
 // Define your stack param list
 type RootStackParamList = {
@@ -22,6 +23,8 @@ const OrgProfile: React.FC = () => {
     <View style={styles.container}>
       <Text>This is the News Screen</Text>
       <Button title="Go Back" onPress={() => navigation.goBack()} />
+
+      <RoleBasedBottomNav navigation={navigation} />
     </View>
   );
 };
