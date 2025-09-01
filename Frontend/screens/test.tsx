@@ -11,6 +11,7 @@ type RootStackParamList = {
   Test: undefined;
   OrgProfile: undefined;
   OrgSettings: undefined;
+  StuProfile: undefined;
 };
 
 // Type for navigation prop
@@ -41,8 +42,8 @@ const Test: React.FC = () => {
   return (
     <View style={styles.container}>
       <Button
-        title="OrgProfile"
-        onPress={() => navigation.navigate("OrgProfile")}
+        title="OrgSettings"
+        onPress={() => navigation.navigate("OrgSettings")}
       />
       <Text style={styles.title}>Test Data</Text>
       <FlatList
