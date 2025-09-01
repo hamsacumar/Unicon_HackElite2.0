@@ -9,14 +9,13 @@ import { useNavigation } from "@react-navigation/native";
 type RootStackParamList = {
   Test: undefined;
   OrgProfile: undefined;
+  InputPage: undefined;
+  Chat: undefined;
   // Add other screens here if needed
 };
 
 // Type for navigation prop
-type TestNavigationProp = NativeStackNavigationProp<
-  RootStackParamList,
-  "Test"
->;
+type TestNavigationProp = NativeStackNavigationProp<RootStackParamList, "Test">;
 
 // Define the type for each data item
 interface TestDataItem {
@@ -52,6 +51,16 @@ const Test: React.FC = () => {
       <Button
         title="OrgProfile"
         onPress={() => navigation.navigate("OrgProfile")}
+      />
+      <Button
+        title="Input Page"
+        onPress={() => navigation.navigate("InputPage")}
+      />
+
+      <Button
+        title="Chat with John"
+        onPress={() =>
+          navigation.navigate("Chat")}
       />
     </View>
   );

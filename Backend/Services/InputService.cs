@@ -3,27 +3,35 @@ using Backend.Settings;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 using System.Collections.Generic;
-using System;
+using System.Threading.Tasks;
 
-namespace EventApi.Services
+namespace Backend.Services
 {
-    public class MongoService
+    public class InputService
     {
         private readonly IMongoCollection<EventModel> _events;
 
-        public MongoService(IOptions<MongoSettings> settings)
+        public InputService(IOptions<MongoDbSettings> settings, IMongoClient client)
         {
-            var client = new MongoClient(settings.Value.ConnectionString);
+            // Use injected client for better DI & testability
             var db = client.GetDatabase(settings.Value.DatabaseName);
-            _events = db.GetCollection<EventModel>(settings.Value.EventsCollectionName);
+            _events = db.GetCollection<EventModel>("events"); // or settings.Value.EventsCollectionName
         }
 
-        public List<EventModel> Get() => _events.Find(e => true).SortByDescending(e => e.CreatedAt).ToList();
+        // GET all events (async)
+        public async Task<List<EventModel>> GetAsync() =>
+            await _events.Find(e => true).SortByDescending(e => e.CreatedAt).ToListAsync();
 
-        public EventModel Create(EventModel ev)
+        // CREATE new event (async)
+        public async Task<EventModel> CreateAsync(EventModel ev)
         {
-            _events.InsertOne(ev);
+            await _events.InsertOneAsync(ev);
             return ev;
         }
+
+        // GET events by user
+    public async Task<List<EventModel>> GetByUserAsync(string userId) =>
+        await _events.Find(e => e.UserId == userId).SortByDescending(e => e.CreatedAt).ToListAsync();
+
     }
 }

@@ -1,14 +1,23 @@
-const BASE_URL = 'https://0.0.0.0:7009';
+const BASE_URL = 'http://192.168.218.134:5179';
+
+// Get token from localStorage (web) or AsyncStorage (React Native)
+function getToken() {
+    return localStorage.getItem("token"); // or await AsyncStorage.getItem("token") for React Native
+}
 
 export async function submitEvent(formData: FormData) {
-    const res = await fetch(`${BASE_URL}/api/events`, {
+    const token = getToken();
+    const res = await fetch(`${BASE_URL}/api/Events`, {
         method: 'POST',
         body: formData,
+        headers: {
+            Authorization: `Bearer ${token}` // now token is defined
+        }
     });
     return res.json();
 }
 
 export async function fetchEvents() {
-    const res = await fetch(`${BASE_URL}/api/events`);
+    const res = await fetch(`${BASE_URL}/api/Events`);
     return res.json();
 }

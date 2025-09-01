@@ -1,89 +1,85 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Backend.Models;
 using Backend.Services;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;
 using System.IO;
 using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.Security.Claims;
 
-namespace EventApi.Controllers
+namespace Backend.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize(Roles = "Organizer")] // Only Organization role can access
     public class EventsController : ControllerBase
     {
-        private readonly MongoService _mongo;
+        private readonly InputService _inputService;
         private readonly ILogger<EventsController> _logger;
         private readonly string _uploadFolder;
 
-        public EventsController(MongoService mongo, ILogger<EventsController> logger, IWebHostEnvironment env)
+        public EventsController(InputService inputService, ILogger<EventsController> logger, IWebHostEnvironment env)
         {
-            _mongo = mongo;
+            _inputService = inputService;
             _logger = logger;
+
             _uploadFolder = Path.Combine(env.WebRootPath ?? "wwwroot", "uploads");
-            if (!Directory.Exists(_uploadFolder)) Directory.CreateDirectory(_uploadFolder);
+            if (!Directory.Exists(_uploadFolder))
+                Directory.CreateDirectory(_uploadFolder);
         }
 
-        [HttpGet]
-        public IActionResult Get()
-        {
-            var list = _mongo.Get();
-            return Ok(list);
-        }
-
+        // POST: api/events
         [HttpPost]
         [RequestSizeLimit(50_000_000)]
-        public async Task<IActionResult> Create()
+        public async Task<ActionResult> Create([FromForm] EventModel ev, IFormFile? image)
         {
             try
             {
-                var form = await Request.ReadFormAsync();
 
-                var title = form["title"].ToString();
-                var description = form["description"].ToString();
-                var category = form["category"].ToString();
-                var startDateStr = form["startDate"].ToString();
-                var endDateStr = form["endDate"].ToString();
-
-                DateTime.TryParse(startDateStr, out var startDate);
-                DateTime.TryParse(endDateStr, out var endDate);
-
-                string imageUrl = null;
-                var file = form.Files.GetFile("image");
-
-                if (file != null && file.Length > 0)
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId))
+                    return Unauthorized(new { success = false, message = "User not authenticated" });
+                    ev.UserId = userId;
+                if (image != null && image.Length > 0)
                 {
-                    var ext = Path.GetExtension(file.FileName);
+                    var ext = Path.GetExtension(image.FileName);
                     var fileName = $"img_{Guid.NewGuid()}{ext}";
                     var savePath = Path.Combine(_uploadFolder, fileName);
 
                     using (var stream = new FileStream(savePath, FileMode.Create))
                     {
-                        await file.CopyToAsync(stream);
+                        await image.CopyToAsync(stream);
                     }
 
-                    // imageUrl relative to server host, e.g. /uploads/filename
-                    imageUrl = $"/uploads/{fileName}";
+                    ev.ImageUrl = $"/uploads/{fileName}";
                 }
 
-                var ev = new EventModel
-                {
-                    Title = title,
-                    Description = description,
-                    Category = category,
-                    StartDate = startDate,
-                    EndDate = endDate,
-                    ImageUrl = imageUrl
-                };
-
-                _mongo.Create(ev);
+                await _inputService.CreateAsync(ev);
 
                 return Ok(new { success = true, eventId = ev.Id });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Create event failed");
-                return BadRequest(new { success = false, message = ex.Message });
+                return StatusCode(500, new { success = false, message = ex.Message });
+            }
+        }
+
+        // GET: api/events
+        [HttpGet]
+        public async Task<ActionResult<List<EventModel>>> Get()
+        {
+            try
+            {
+                var events = await _inputService.GetAsync();
+                return Ok(events);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to get events");
+                return StatusCode(500, new { success = false, message = ex.Message });
             }
         }
     }
