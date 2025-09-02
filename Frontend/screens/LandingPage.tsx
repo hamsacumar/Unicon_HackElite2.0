@@ -13,11 +13,12 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../App";
 import BottomNav from "../component/bottomNav";
 import { EventItem, getEvents } from "../services/eventService";
-
+import Constants from "expo-constants";
 type LandingPageNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
   "LandingPage"
 >;
+const API_URL = Constants.expoConfig?.extra?.apiUrl?.replace("/api", "");
 
 export default function LandingPage() {
   const navigation = useNavigation<LandingPageNavigationProp>();
@@ -50,14 +51,21 @@ export default function LandingPage() {
                 }}
                 style={styles.avatar}
               />
-              <Text style={styles.username}>
-  {item.username}
-</Text>
+              <Text style={styles.username}>{item.username}</Text>
             </View>
 
             {/* Post image */}
             {item.imageUrl ? (
-              <Image source={{ uri: item.imageUrl }} style={styles.postImage} />
+              <Image
+              source={{
+                uri: item.imageUrl 
+                  ? item.imageUrl.startsWith('http') 
+                    ? item.imageUrl 
+                    : `${API_URL}${item.imageUrl.startsWith('/') ? '' : '/'}${item.imageUrl}`
+                  : 'https://via.placeholder.com/300x200' // fallback image
+              }}
+              style={styles.postImage}
+            />
             ) : (
               <View style={styles.noImage}>
                 <Text style={styles.noImageText}>No Image</Text>

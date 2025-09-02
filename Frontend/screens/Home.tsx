@@ -14,11 +14,13 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../App";
 import RoleBasedBottomNav from "../component/rolebasedNav";
 import { EventItem, getEvents } from "../services/eventService";
+import Constants from "expo-constants";
 
 type HomeNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
   "Home"
 >;
+const API_URL = Constants.expoConfig?.extra?.apiUrl?.replace("/api", "");
 
 export default function Home() {
   const navigation = useNavigation<HomeNavigationProp>();
@@ -57,13 +59,23 @@ export default function Home() {
             </View>
 
             {/* Post image */}
-            {item.imageUrl ? (
-              <Image source={{ uri: item.imageUrl }} style={styles.postImage} />
-            ) : (
-              <View style={styles.noImage}>
-                <Text style={styles.noImageText}>No Image</Text>
-              </View>
-            )}
+                       {item.imageUrl ? (
+                         <Image
+                         source={{
+                           uri: item.imageUrl 
+                             ? item.imageUrl.startsWith('http') 
+                               ? item.imageUrl 
+                               : `${API_URL}${item.imageUrl.startsWith('/') ? '' : '/'}${item.imageUrl}`
+                             : 'https://via.placeholder.com/300x200' // fallback image
+                         }}
+                         style={styles.postImage}
+                       />
+                       ) : (
+                         <View style={styles.noImage}>
+                           <Text style={styles.noImageText}>No Image</Text>
+                         </View>
+                       )}
+           
 
             {/* Post category and content */}
             <Text style={styles.category}>{item.category}</Text>
