@@ -8,11 +8,9 @@ import { useNavigation } from "@react-navigation/native";
 type RootStackParamList = {
   Test: undefined;
   OrgProfile: undefined;
-<<<<<<< HEAD
   LandingPage: undefined;
   Home: undefined;
   // Add other screens here if needed
-=======
   InputPage: undefined;
   InboxScreen: { currentUserId: string };
   Chat: {
@@ -21,10 +19,7 @@ type RootStackParamList = {
     currentUsername: string;
     otherUsername: string;
   };
->>>>>>> f099792fbc5e93c06e2b58bcef865ec9a71624b9
 };
-
-
 
 // Type for navigation prop
 type TestNavigationProp = NativeStackNavigationProp<RootStackParamList, "Test">;
@@ -60,7 +55,6 @@ const Test: React.FC = () => {
           </Text>
         )}
       />
-<<<<<<< HEAD
       <Button
         title="OrgProfile"
         onPress={() => navigation.navigate("OrgProfile")}
@@ -70,12 +64,7 @@ const Test: React.FC = () => {
         onPress={() => navigation.navigate("LandingPage")}
       />
 
-      <Button
-        title="Home"
-        onPress={() =>
-          navigation.navigate("Home")}
-=======
-    
+      <Button title="Home" onPress={() => navigation.navigate("Home")} />
       <Button
         title="Input Page"
         onPress={() => navigation.navigate("InputPage")}
@@ -97,10 +86,7 @@ const Test: React.FC = () => {
       {/* Navigate to InboxScreen with required params */}
       <Button
         title="InboxScreen"
-        onPress={() =>
-          navigation.navigate("InboxScreen", { currentUserId })
-        }
->>>>>>> f099792fbc5e93c06e2b58bcef865ec9a71624b9
+        onPress={() => navigation.navigate("InboxScreen", { currentUserId })}
       />
     </View>
   );
