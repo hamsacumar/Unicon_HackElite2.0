@@ -1,4 +1,4 @@
-const BASE_URL = 'http://192.168.218.134:5179';
+const BASE_URL = 'http://10.10.2.174:5179';
 
 // Get token from localStorage (web) or AsyncStorage (React Native)
 function getToken() {

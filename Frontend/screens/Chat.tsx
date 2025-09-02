@@ -1,74 +1,75 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, Button, FlatList, StyleSheet } from 'react-native';
-import ChatService from '../services/chat';
-import { getMessages } from '../services/ApiChat';
-import { Message } from '../types/chat';
+// ChatScreen.tsx
+import React, { useEffect, useState } from "react";
+import { View, TextInput, Button, FlatList, Text } from "react-native";
+import { sendMessage, getConversation } from "../services/api/api";
 
-
-interface Props {
-  route: {
-    params: {
-      userId: string;
-      username: string;
-      otherUserId: string;
-    };
-  };
+interface Message {
+  id: string;
+  senderId: string;
+  senderUsername: string;
+  receiverId: string;
+  text: string;
+  status: string;
 }
 
-const ChatScreen: React.FC<Props> = ({ route }) => {
-  const { userId, username, otherUserId } = route.params;
+ interface ChatScreenProps{
+  route:{
+  params: {
+    currentUserId: string;
+    otherUserId: string;
+    currentUsername: string;
+    otherUsername: string;
+  };
+};
+ 
+}
+
+  const ChatScreen: React.FC<ChatScreenProps> = ({ route}) => {
+  const { currentUserId, otherUserId, currentUsername, otherUsername } = route.params;
   const [messages, setMessages] = useState<Message[]>([]);
-  const [text, setText] = useState('');
+  const [text, setText] = useState("");
 
   useEffect(() => {
-    // Load old messages
-    getMessages(userId, otherUserId).then(setMessages);
-
-    // Listen for real-time messages
-    const receiveHandler = (msg: Message) => {
-      if ((msg.SenderId === otherUserId && msg.RecipientId === userId) ||
-          (msg.SenderId === userId && msg.RecipientId === otherUserId)) {
-        setMessages(prev => [...prev, msg]);
-      }
-    };
-
-    ChatService.onReceiveMessage(receiveHandler);
-
-    // Cleanup on unmount
-    return () => ChatService.offReceiveMessage( receiveHandler);
+    fetchMessages();
+    const interval = setInterval(fetchMessages, 3000); // Poll every 3s
+    return () => clearInterval(interval);
   }, []);
 
-  const sendMessage = () => {
-    ChatService.sendMessage(userId, username, otherUserId, text);
-    setText('');
+  const fetchMessages = async () => {
+    const res = await getConversation(currentUserId, otherUserId);
+    setMessages((res as { success: boolean; data: Message[] }).data);
+  };
+
+  const handleSend = async () => {
+    if (!text) return;
+    await sendMessage({
+      senderId: currentUserId,
+      senderUsername: currentUsername,
+      receiverId: otherUserId,
+      text,
+    });
+    setText("");
+    fetchMessages();
   };
 
   return (
-    <View style={{ flex: 1, padding: 16 }}>
+    <View style={{ flex: 1, padding: 10 }}>
       <FlatList
         data={messages}
-        keyExtractor={item => item.Id || Math.random().toString()}
+        keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <Text style={{
-            padding: 8,
-            marginVertical: 2,
-            borderRadius: 5,
-            backgroundColor: item.SenderId === userId ? '#DCF8C5' : '#FFF'
-          }}>
-            {item.SenderUsername}: {item.Text}
+          <Text style={{ textAlign: item.senderId === currentUserId ? "right" : "left" }}>
+            {item.senderUsername}: {item.text}
           </Text>
         )}
       />
-
-      <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 10 }}>
-        <TextInput
-          value={text}
-          onChangeText={setText}
-          placeholder="Type a message..."
-          style={{ flex: 1, borderWidth: 1, borderColor: '#ccc', padding: 8, borderRadius: 5 }}
-        />
-        <Button title="Send" onPress={sendMessage} />
-      </View>
+      <TextInput
+        value={text}
+        onChangeText={setText}
+        placeholder="Type message"
+        style={{ borderWidth: 1, padding: 5 }}
+      />
+      <Button title="Send" onPress={handleSend} />
     </View>
   );
 };

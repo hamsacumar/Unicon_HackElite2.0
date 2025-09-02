@@ -1,6 +1,6 @@
+// Models/Message.cs
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
-using System;
 
 namespace Backend.Models
 {
@@ -8,27 +8,27 @@ namespace Backend.Models
     {
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
-        public string? Id { get; set; }  // Nullable, let Mongo generate
-
-        [BsonElement("conversationId")]
-        public string ConversationId { get; set; } = null!;
+        public required string Id { get; set; }
 
         [BsonElement("senderId")]
-        public string SenderId { get; set; } = null!;
+        public required string  SenderId { get; set; }   // UserId of sender
 
         [BsonElement("senderUsername")]
-        public string SenderUsername { get; set; } = null!;
+        public required string SenderUsername { get; set; } // Username of sender
 
-        [BsonElement("recipientId")]
-        public string RecipientId { get; set; } = null!;
+        [BsonElement("receiverId")]
+        public required string ReceiverId { get; set; } // UserId of receiver
 
         [BsonElement("text")]
-        public string Text { get; set; } = null!;
+        public required string Text { get; set; }
+
+        [BsonElement("status")]
+        public string Status { get; set; } = "unseen"; // seen/unseen
 
         [BsonElement("timestamp")]
         public DateTime Timestamp { get; set; } = DateTime.UtcNow;
 
-        [BsonElement("status")]
-        public string Status { get; set; } = "sent";
+        [BsonElement("replyToId")]
+        public string? ReplyToId { get; set; } = null; 
     }
 }

@@ -12,7 +12,8 @@ import Test from "./screens/test";
 import OrgProfile from "./screens/OrgProfile";
 import OrgSettings from "./screens/OrgSettings";
 import InputPage from "./screens/input"; // ✅ import your InputPage
-import Chat from "./screens/Chat"; // Import Chat screen
+import Chat from "./screens/Chat";
+import InboxScreen from "./screens/InboxScreen";
 
 // Define your stack param list
 export type RootStackParamList = {
@@ -20,7 +21,13 @@ export type RootStackParamList = {
   OrgProfile: undefined;
   OrgSettings: undefined;
   InputPage: undefined;
-  Chat: undefined;
+  InboxScreen: { currentUserId: string };
+  Chat: {
+    currentUserId: string;
+    otherUserId: string;
+    currentUsername: string;
+    otherUsername: string;
+  };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -96,13 +103,17 @@ export default function App() {
           options={{ title: "Create Event" }}
         />
 
-        {/* Add Chat screen */}
-        {/* <Stack.Screen
+        <Stack.Screen
+          name="InboxScreen"
+          component={InboxScreen}
+          options={{ title: "Inbox" }}
+        />
+
+        <Stack.Screen
           name="Chat"
           component={Chat}
           options={{ title: "Chat" }}
-          > */}
-          {/* </Stack.Screen> */}
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );

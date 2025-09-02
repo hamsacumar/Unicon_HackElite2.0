@@ -1,48 +1,34 @@
-using Backend.Models;
-using Backend.Services;
-using Microsoft.AspNetCore.SignalR;
-using System.Threading.Tasks;
+// // Hubs/ChatHub.cs
+// using Microsoft.AspNetCore.SignalR;
+// using Backend.Models;
+// using Backend.Data;
+// using System.Threading.Tasks;
 
-namespace Backend.Hubs
-{
-    public class ChatHub : Hub
-    {
-        private readonly ChatMongoService _chatMongo;
+// namespace Backend.Hubs
+// {
+//     public class ChatHub : Hub
+//     {
+//         private readonly MongoDBService _db;
+//         public ChatHub(MongoDBService db) { _db = db; }
 
-        public ChatHub(ChatMongoService chatMongo)
-        {
-            _chatMongo = chatMongo;
-        }
+//         public async Task SendMessage(Message msg)
+//         {
+//             // Save message to DB
+//             await _db.Messages.InsertOneAsync(msg);
 
-        // Send message from sender to recipient
-        public async Task SendMessage(string senderId, string senderUsername, string recipientId, string text)
-        {
-            var msg = new Message
-            {
-                SenderId = senderId,
-                SenderUsername = senderUsername,
-                RecipientId = recipientId,
-                Text = text,
-                Status = "sent"
-            };
+//             // Send message to receiver if connected
+//             await Clients.User(msg.ReceiverId).SendAsync("ReceiveMessage", msg);
 
-            // Save message in DB
-            await _chatMongo.SaveMessage(msg);
+//             // Optionally, send back to sender for confirmation
+//             await Clients.Caller.SendAsync("MessageSent", msg);
+//         }
 
-            // Notify recipient
-            await Clients.User(recipientId).SendAsync("ReceiveMessage", msg);
-
-            // Notify sender that message is delivered
-            await Clients.User(senderId).SendAsync("MessageDelivered", msg.Id);
-        }
-
-        // Mark message as seen
-        public async Task MarkAsSeen(string messageId, string originalSenderId)
-        {
-            await _chatMongo.UpdateMessageStatus(messageId, "seen");
-
-            // Notify original sender
-            await Clients.User(originalSenderId).SendAsync("MessageSeen", messageId);
-        }
-    }
-}
+//         public override async Task OnConnectedAsync()
+//         {
+//             var userId = Context.GetHttpContext().Request.Query["userId"];
+//             if (!string.IsNullOrEmpty(userId))
+//                 await Groups.AddToGroupAsync(Context.ConnectionId, userId);
+//             await base.OnConnectedAsync();
+//         }
+//     }
+// }

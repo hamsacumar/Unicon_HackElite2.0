@@ -1,4 +1,3 @@
-// screens/Test.tsx
 import React, { useEffect, useState } from "react";
 import { View, Text, FlatList, StyleSheet, Button } from "react-native";
 import { getTestData } from "../services/api";
@@ -10,14 +9,17 @@ type RootStackParamList = {
   Test: undefined;
   OrgProfile: undefined;
   InputPage: undefined;
-  Chat: undefined;
-  // Add other screens here if needed
+  InboxScreen: { currentUserId: string };
+  Chat: {
+    currentUserId: string;
+    otherUserId: string;
+    currentUsername: string;
+    otherUsername: string;
+  };
 };
 
-// Type for navigation prop
 type TestNavigationProp = NativeStackNavigationProp<RootStackParamList, "Test">;
 
-// Define the type for each data item
 interface TestDataItem {
   id: string;
   value: string;
@@ -26,6 +28,7 @@ interface TestDataItem {
 const Test: React.FC = () => {
   const navigation = useNavigation<TestNavigationProp>();
   const [data, setData] = useState<TestDataItem[]>([]);
+  const currentUserId = "user1"; // example user id
 
   useEffect(() => {
     fetchTestData();
@@ -57,10 +60,25 @@ const Test: React.FC = () => {
         onPress={() => navigation.navigate("InputPage")}
       />
 
+      {/* Navigate to Chat with required params */}
       <Button
-        title="Chat with John"
+        title="Chat"
         onPress={() =>
-          navigation.navigate("Chat")}
+          navigation.navigate("Chat", {
+            currentUserId,
+            otherUserId: "user2",
+            currentUsername: "User1",
+            otherUsername: "User2",
+          })
+        }
+      />
+
+      {/* Navigate to InboxScreen with required params */}
+      <Button
+        title="InboxScreen"
+        onPress={() =>
+          navigation.navigate("InboxScreen", { currentUserId })
+        }
       />
     </View>
   );
