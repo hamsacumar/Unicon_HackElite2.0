@@ -9,8 +9,8 @@ import BottomNav from "../component/bottomNav";
 // Define your stack param list
 type RootStackParamList = {
   Test: undefined;
-  OrgProfile: undefined;
   OrgSettings: undefined;
+  ViewProfile: undefined;
 };
 
 // Type for navigation prop
@@ -41,8 +41,16 @@ const Test: React.FC = () => {
   return (
     <View style={styles.container}>
       <Button
-        title="OrgProfile"
-        onPress={() => navigation.navigate("OrgProfile")}
+        title="OrgSettings"
+        onPress={() => navigation.navigate("OrgSettings")}
+      />
+      <Button
+        title="ViewProfile"
+        onPress={() => navigation.navigate("ViewProfile")}
+      />
+      <Button
+        title="ViewProfile"
+        onPress={() => navigation.navigate("ViewProfile")}
       />
       <Text style={styles.title}>Test Data</Text>
       <FlatList
