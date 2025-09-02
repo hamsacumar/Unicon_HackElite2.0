@@ -1,33 +1,32 @@
 import React from "react";
 import { NavigationContainer } from "@react-navigation/native";
-import {
-  createNativeStackNavigator,
-  NativeStackNavigationProp,
-} from "@react-navigation/native-stack";
+import { createNativeStackNavigator, NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { createStackNavigator } from "@react-navigation/stack";
-import { TouchableOpacity } from "react-native";
+import { TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
 
+// Screens
 import Test from "./screens/test";
 import OrgSettings from "./screens/OrgSettings";
-import { AuthProvider, useAuth } from "./utils/AuthContext";
-
-// Updated imports for new auth screens
 import LoginScreen from "./screens/auth/LoginScreen";
 import SignupScreen from "./screens/auth/SignupScreen";
 import VerifyCodeScreen from "./screens/auth/VerifyCodeScreen";
 import ClassifyAccount from "./screens/auth/ClassifyAccountScreen";
 import ForgotPasswordScreen from "./screens/auth/ForgotPasswordScreen";
 import ResetPasswordScreen from "./screens/auth/ResetPasswordScreen";
-
 import Home from "./screens/Home";
+import InputPage from "./screens/input";
+import Chat from "./screens/Chat";
+import InboxScreen from "./screens/InboxScreen";
 import Profile from "./screens/Profile";
 import ViewProfile from "./screens/ViewProfile";
 import EditProfile from "./screens/EditProfile";
 import ProfileSetup from "./screens/ProfileSetup";
 
-// Define your stack param list
+// Context
+import { AuthProvider, useAuth } from "./utils/AuthContext";
+
 export type RootStackParamList = {
   Test: undefined;
   Profile: undefined;
@@ -39,6 +38,14 @@ export type RootStackParamList = {
   ForgotPassword: undefined;
   ResetPassword: undefined;
   Home: undefined;
+  InputPage: undefined;
+  InboxScreen: { currentUserId: string };
+  Chat: {
+    currentUserId: string;
+    otherUserId: string;
+    currentUsername: string;
+    otherUsername: string;
+  };
   ViewProfile: undefined;
   EditProfile: undefined;
   ProfileSetup: undefined;
@@ -47,94 +54,51 @@ export type RootStackParamList = {
 const NativeStack = createNativeStackNavigator<RootStackParamList>();
 const Stack = createStackNavigator<RootStackParamList>();
 
+// Auth Stack
 const AuthStack = () => {
-  const { token } = useAuth();
-
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {token ? (
-        <Stack.Screen name="Home" component={Home} />
-      ) : (
-        <>
-          <Stack.Screen name="Login" component={LoginScreen} />
-          <Stack.Screen name="Signup" component={SignupScreen} />
-          <Stack.Screen name="VerifyCode" component={VerifyCodeScreen} />
-          <Stack.Screen name="ClassifyAccount" component={ClassifyAccount} />
-          <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-          <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
-          <Stack.Screen name="ProfileSetup" component={ProfileSetup} />
-        </>
-      )}
+      <Stack.Screen name="Login" component={LoginScreen} />
+      <Stack.Screen name="Signup" component={SignupScreen} />
+      <Stack.Screen name="VerifyCode" component={VerifyCodeScreen} />
+      <Stack.Screen name="ClassifyAccount" component={ClassifyAccount} />
+      <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+      <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
+      <Stack.Screen name="ProfileSetup" component={ProfileSetup} />
     </Stack.Navigator>
   );
 };
 
-const MainStack = () => {
+// Main App Stack
+const AppStack = () => {
   return (
-    <NativeStack.Navigator
-      initialRouteName="Test"
+    <Stack.Navigator
       screenOptions={{
         headerStyle: { backgroundColor: "#FF5722" },
         headerTintColor: "#fff",
         headerTitleStyle: { fontWeight: "bold" },
       }}
     >
-      <NativeStack.Screen name="Test" component={Test} />
-      <NativeStack.Screen
+      <Stack.Screen 
+        name="Home" 
+        component={Home} 
+        options={({ navigation }) => ({
+          title: "Home",
+          headerRight: () => (
+            <View style={{ flexDirection: 'row', marginRight: 15 }}>
+              <TouchableOpacity onPress={() => navigation.navigate('InboxScreen', { currentUserId: 'current-user-id' })}>
+                <Ionicons name="mail" size={24} color="white" style={{ marginRight: 15 }} />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+                <Ionicons name="person" size={24} color="white" />
+              </TouchableOpacity>
+            </View>
+          ),
+        })}
+      />
+      <Stack.Screen
         name="Profile"
         component={Profile}
-        options={({
-          navigation,
-        }: {
-          navigation: NativeStackNavigationProp<
-            RootStackParamList,
-            "Profile"
-          >;
-        }) => ({
-          title: "Profile",
-          headerLeft: () => (
-            <TouchableOpacity
-              onPress={() => navigation.goBack()}
-              style={{ marginLeft: 15 }}
-            >
-              <Ionicons name="arrow-back" size={24} color="white" />
-            </TouchableOpacity>
-          ),
-          headerRight: () => (
-            <TouchableOpacity
-              onPress={() => navigation.navigate("OrgSettings")}
-              style={{ marginRight: 15 }}
-            >
-              <Ionicons name="menu" size={28} color="white" />
-            </TouchableOpacity>
-          ),
-        })}
-      />
-      <NativeStack.Screen
-        name="OrgSettings"
-        component={OrgSettings}
-        options={({
-          navigation,
-        }: {
-          navigation: NativeStackNavigationProp<
-            RootStackParamList,
-            "OrgSettings"
-          >;
-        }) => ({
-          title: "Settings and Activity",
-          headerLeft: () => (
-            <TouchableOpacity
-              onPress={() => navigation.goBack()}
-              style={{ marginLeft: 15 }}
-            >
-              <Ionicons name="arrow-back" size={24} color="white" />
-            </TouchableOpacity>
-          ),
-        })}
-      />
-      <Stack.Screen
-        name="ViewProfile"
-        component={ViewProfile}
         options={({ navigation }) => ({
           title: "Profile",
           headerLeft: () => (
@@ -144,11 +108,17 @@ const MainStack = () => {
           ),
         })}
       />
-      <Stack.Screen
-        name="EditProfile"
-        component={EditProfile}
+      <Stack.Screen name="Test" component={Test} />
+      <Stack.Screen name="InputPage" component={InputPage} options={{ title: "Create Event" }} />
+      <Stack.Screen name="InboxScreen" component={InboxScreen} options={{ title: "Inbox" }} />
+      <Stack.Screen name="Chat" component={Chat} options={{ title: "Chat" }} />
+      <Stack.Screen name="ViewProfile" component={ViewProfile} options={{ title: "Profile" }} />
+      <Stack.Screen name="EditProfile" component={EditProfile} options={{ title: "Edit Profile" }} />
+      <Stack.Screen 
+        name="OrgSettings" 
+        component={OrgSettings} 
         options={({ navigation }) => ({
-          title: "EditProfile",
+          title: "Settings",
           headerLeft: () => (
             <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginLeft: 15 }}>
               <Ionicons name="arrow-back" size={24} color="white" />
@@ -156,34 +126,29 @@ const MainStack = () => {
           ),
         })}
       />
-      <Stack.Screen
-        name="ProfileSetup"
-        component={ProfileSetup}
-        options={({ navigation }) => ({
-          title: "Setup Profile",
-          headerLeft: () => (
-            <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginLeft: 15 }}>
-              <Ionicons name="arrow-back" size={24} color="white" />
-            </TouchableOpacity>
-          ),
-        })}
-      />
-    </NativeStack.Navigator>
+    </Stack.Navigator>
   );
 };
 
+// Root Navigator
 const RootNavigator = () => {
   const { token } = useAuth();
-  return token ? <MainStack /> : <AuthStack />;
+  
+  return (
+    <NavigationContainer>
+      {token ? <AppStack /> : <AuthStack />}
+      <Toast />
+    </NavigationContainer>
+  );
 };
 
-export default function App() {
+// Main App Component
+const App = () => {
   return (
     <AuthProvider>
-      <NavigationContainer>
-        <RootNavigator />
-      </NavigationContainer>
-      <Toast />
+      <RootNavigator />
     </AuthProvider>
   );
-}
+};
+
+export default App;
