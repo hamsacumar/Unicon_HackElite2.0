@@ -6,7 +6,6 @@ import { createNativeStackNavigator, NativeStackNavigationProp } from "@react-na
 import { Ionicons } from "@expo/vector-icons";
 
 import Test from "./screens/test";
-import OrgProfile from "./screens/OrgProfile";
 import OrgSettings from "./screens/OrgSettings";
 import Profile from "./screens/Profile";
 import ViewProfile from "./screens/ViewProfile";
@@ -14,7 +13,7 @@ import EditProfile from "./screens/EditProfile"
 // Define your stack param list
 export type RootStackParamList = {
   Test: undefined;
-  OrgProfile: undefined;
+  Profile: undefined;
   OrgSettings: undefined;
   ViewProfile: undefined;
   EditProfile: undefined;
@@ -35,9 +34,9 @@ export default function App() {
       >
         <Stack.Screen name="Test" component={Test} />
         <Stack.Screen
-          name="OrgProfile"
-          component={OrgProfile}
-          options={({ navigation }: { navigation: NativeStackNavigationProp<RootStackParamList, "OrgProfile"> }) => ({
+          name="Profile"
+          component={Profile}
+          options={({ navigation }: { navigation: NativeStackNavigationProp<RootStackParamList, "Profile"> }) => ({
             title: "Profile",
             headerLeft: () => (
               <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginLeft: 15 }}>

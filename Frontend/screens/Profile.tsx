@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, View } from "react-native";
-import Org_BottomNav from "./org_bottomNav";
-import Stu_BottomNav from "./stu_bottomNav";
+import OrgProfile from "./OrgProfile";
+import StuProfile from "./StuProfile";
 import { getUserRole } from "../services/navService";
 
 interface Props {
@@ -32,23 +32,14 @@ const RoleBasedBottomNav: React.FC<Props> = ({ navigation }) => {
 
   if (role === "Organizer") {
     return (
-      <Org_BottomNav
-        onPressHome={() => console.log("home pressed")}
-        onPressFilter={() => console.log("Filter pressed")}
-        onPressAdd={() => console.log("input pressed")}
-        onPressNotification={() => console.log("Notification pressed")}
-        onPressProfile={() => navigation.navigate("Profile")}
+      <OrgProfile
       />
     );
   }
 
   if (role === "Student") {
     return (
-      <Stu_BottomNav
-        onPressHome={() => console.log("home pressed")}
-        onPressFilter={() => console.log("Filter pressed")}
-        onPressNotification={() => console.log("Notification pressed")}
-        onPressProfile={() => navigation.navigate("Profile")}
+      <StuProfile
       />
     );
   }

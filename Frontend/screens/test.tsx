@@ -48,10 +48,7 @@ const Test: React.FC = () => {
         title="ViewProfile"
         onPress={() => navigation.navigate("ViewProfile")}
       />
-      <Button
-        title="ViewProfile"
-        onPress={() => navigation.navigate("ViewProfile")}
-      />
+      
       <Text style={styles.title}>Test Data</Text>
       <FlatList
         data={data}
