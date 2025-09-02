@@ -18,7 +18,13 @@ type RootStackParamList = {
   };
 };
 
-type TestNavigationProp = NativeStackNavigationProp<RootStackParamList, "Test">;
+
+
+// Type for navigation prop
+type TestNavigationProp = NativeStackNavigationProp<
+  RootStackParamList,
+  "Test"
+>;
 
 interface TestDataItem {
   id: string;
@@ -51,10 +57,7 @@ const Test: React.FC = () => {
           </Text>
         )}
       />
-      <Button
-        title="OrgProfile"
-        onPress={() => navigation.navigate("OrgProfile")}
-      />
+    
       <Button
         title="Input Page"
         onPress={() => navigation.navigate("InputPage")}

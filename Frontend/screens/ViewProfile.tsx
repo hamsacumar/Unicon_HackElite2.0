@@ -17,17 +17,17 @@ import Ionicons from "react-native-vector-icons/Ionicons";
 
 // Define your stack param list
 type RootStackParamList = {
-  OrgProfile: undefined;
-  EditProfile: undefined;
+  ViewProfile: undefined;
+  // Add other screens here if needed
 };
 
 // Define the type for navigation prop
 type OrgProfileNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
-  'OrgProfile'
+  'ViewProfile'
 >;
 
-const OrgProfile: React.FC = () => {
+const ViewProfile: React.FC = () => {
   const navigation = useNavigation<OrgProfileNavigationProp>();
 
   const posts = [
@@ -92,14 +92,10 @@ const OrgProfile: React.FC = () => {
 
         <View style={styles.buttonContainer}>
           <TouchableOpacity style={styles.editButton}>
-            <Text 
-              style={styles.buttonText}  
-              onPress={() => navigation.navigate('EditProfile')}>
-                Edit profile
-            </Text>
+            <Text style={styles.buttonText}>Subscribe</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.shareButton}>
-            <Text style={styles.buttonText}>Share profile</Text>
+            <Text style={styles.buttonText}>Mail</Text>
           </TouchableOpacity>
         </View>
 
@@ -343,4 +339,6 @@ const styles = StyleSheet.create({
   },
 });
 
-export default OrgProfile;
+export default ViewProfile;
+
+
