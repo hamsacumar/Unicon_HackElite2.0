@@ -4,12 +4,13 @@ import { View, Text, FlatList, StyleSheet, Button } from "react-native";
 import { getTestData } from "../services/api";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useNavigation } from "@react-navigation/native";
+import BottomNav from "../component/bottomNav";
 
 // Define your stack param list
 type RootStackParamList = {
   Test: undefined;
-  OrgProfile: undefined;
-  // Add other screens here if needed
+  OrgSettings: undefined;
+  ViewProfile: undefined;
 };
 
 // Type for navigation prop
@@ -39,6 +40,15 @@ const Test: React.FC = () => {
 
   return (
     <View style={styles.container}>
+      <Button
+        title="OrgSettings"
+        onPress={() => navigation.navigate("OrgSettings")}
+      />
+      <Button
+        title="ViewProfile"
+        onPress={() => navigation.navigate("ViewProfile")}
+      />
+      
       <Text style={styles.title}>Test Data</Text>
       <FlatList
         data={data}
@@ -49,9 +59,7 @@ const Test: React.FC = () => {
           </Text>
         )}
       />
-      <Button
-        title="OrgProfile"
-        onPress={() => navigation.navigate("OrgProfile")}
+      <BottomNav
       />
     </View>
   );

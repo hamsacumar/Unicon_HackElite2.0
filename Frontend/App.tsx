@@ -10,7 +10,6 @@ import { Ionicons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
 
 import Test from "./screens/test";
-import OrgProfile from "./screens/OrgProfile";
 import OrgSettings from "./screens/OrgSettings";
 import { AuthProvider, useAuth } from "./utils/AuthContext"; // Import useAuth
 import Login from "./screens/Login";
@@ -20,11 +19,13 @@ import ClassifyAccount from "./screens/ClassifyAccount";
 import ForgotPassword from "./screens/ForgotPassword";
 import ResetPassword from "./screens/ResetPassword";
 import Home from "./screens/Home";
-
+import Profile from "./screens/Profile";
+import ViewProfile from "./screens/ViewProfile";
+import EditProfile from "./screens/EditProfile"
 // Define your stack param list
 export type RootStackParamList = {
   Test: undefined;
-  OrgProfile: undefined;
+  Profile: undefined;
   OrgSettings: undefined;
   Login: undefined;
   Signup: undefined;
@@ -33,6 +34,8 @@ export type RootStackParamList = {
   ForgotPassword: undefined;
   ResetPassword: undefined;
   Home: undefined;
+  ViewProfile: undefined;
+  EditProfile: undefined;
 };
 
 const NativeStack = createNativeStackNavigator<RootStackParamList>();
@@ -64,21 +67,21 @@ const MainStack = () => {
     <NativeStack.Navigator
       initialRouteName="Test"
       screenOptions={{
-        headerStyle: { backgroundColor: "#E64A0D" },
+        headerStyle: { backgroundColor: "#FF5722" },
         headerTintColor: "#fff",
         headerTitleStyle: { fontWeight: "bold" },
       }}
     >
       <NativeStack.Screen name="Test" component={Test} />
       <NativeStack.Screen
-        name="OrgProfile"
-        component={OrgProfile}
+        name="Profile"
+        component={Profile}
         options={({
           navigation,
         }: {
           navigation: NativeStackNavigationProp<
             RootStackParamList,
-            "OrgProfile"
+            "Profile"
           >;
         }) => ({
           title: "Profile",
@@ -122,6 +125,30 @@ const MainStack = () => {
           ),
         })}
       />
+        <Stack.Screen
+          name="ViewProfile"
+          component={ViewProfile}
+          options={({ navigation }: { navigation: NativeStackNavigationProp<RootStackParamList, "ViewProfile"> }) => ({
+            title: "Profile",
+            headerLeft: () => (
+              <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginLeft: 15 }}>
+                <Ionicons name="arrow-back" size={24} color="white" />
+              </TouchableOpacity>
+            ),
+          })}
+        />
+        <Stack.Screen
+          name="EditProfile"
+          component={EditProfile}
+          options={({ navigation }: { navigation: NativeStackNavigationProp<RootStackParamList, "EditProfile"> }) => ({
+            title: "EditProfile",
+            headerLeft: () => (
+              <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginLeft: 15 }}>
+                <Ionicons name="arrow-back" size={24} color="white" />
+              </TouchableOpacity>
+            ),
+          })}
+        />
     </NativeStack.Navigator>
   );
 };
