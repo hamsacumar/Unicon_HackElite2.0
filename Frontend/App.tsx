@@ -9,18 +9,20 @@ import {
 
 import { Ionicons } from "@expo/vector-icons";
 
+// Import screens
 import Test from "./screens/test";
 import OrgSettings from "./screens/OrgSettings";
-
 import Home from "./screens/Home";
 import LandingPage from "./screens/LandingPage";
-import InputPage from "./screens/input"; // ✅ import your InputPage
+import InputPage from "./screens/input"; // Input Page
 import Chat from "./screens/Chat";
 import InboxScreen from "./screens/InboxScreen";
 import Profile from "./screens/Profile";
 import ViewProfile from "./screens/ViewProfile";
 import EditProfile from "./screens/EditProfile";
-// Define your stack param list
+import OrgProfile from "./screens/OrgProfile";
+
+// Define type for stack navigator
 export type RootStackParamList = {
   Test: undefined;
   Profile: undefined;
@@ -37,6 +39,7 @@ export type RootStackParamList = {
   };
   ViewProfile: undefined;
   EditProfile: undefined;
+  OrgProfile: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -52,13 +55,16 @@ export default function App() {
           headerTitleStyle: { fontWeight: "bold" },
         }}
       >
+        {/* Home screen */}
         <Stack.Screen
           name="Home"
           component={Home}
           options={{
-            title: "EventTrix", // Title for header
+            title: "EventTrix",
           }}
         />
+
+        {/* Landing Page screen with back button */}
         <Stack.Screen
           name="LandingPage"
           component={LandingPage}
@@ -81,8 +87,34 @@ export default function App() {
             ),
           })}
         />
+        {/* OrgProfile screen with back button */}
+        <Stack.Screen
+          name="OrgProfile"
+          component={OrgProfile} // make sure to import OrgProfile at the top
+          options={({
+            navigation,
+          }: {
+            navigation: NativeStackNavigationProp<
+              RootStackParamList,
+              "OrgProfile"
+            >;
+          }) => ({
+            title: "Organization Profile", // header title
+            headerLeft: () => (
+              <TouchableOpacity
+                onPress={() => navigation.goBack()}
+                style={{ marginLeft: 15 }}
+              >
+                <Ionicons name="arrow-back" size={24} color="white" />
+              </TouchableOpacity>
+            ),
+          })}
+        />
 
+        {/* Test screen */}
         <Stack.Screen name="Test" component={Test} />
+
+        {/* Profile screen with back and menu buttons */}
         <Stack.Screen
           name="Profile"
           component={Profile}
@@ -113,6 +145,8 @@ export default function App() {
             ),
           })}
         />
+
+        {/* OrgSettings screen */}
         <Stack.Screen
           name="OrgSettings"
           component={OrgSettings}
@@ -135,24 +169,29 @@ export default function App() {
             ),
           })}
         />
-        {/* ✅ Add InputPage screen */}
+
+        {/* InputPage screen */}
         <Stack.Screen
           name="InputPage"
           component={InputPage}
           options={{ title: "Create Event" }}
         />
 
+        {/* InboxScreen screen */}
         <Stack.Screen
           name="InboxScreen"
           component={InboxScreen}
           options={{ title: "Inbox" }}
         />
 
+        {/* Chat screen */}
         <Stack.Screen
           name="Chat"
           component={Chat}
           options={{ title: "Chat" }}
         />
+
+        {/* ViewProfile screen */}
         <Stack.Screen
           name="ViewProfile"
           component={ViewProfile}
@@ -175,6 +214,8 @@ export default function App() {
             ),
           })}
         />
+
+        {/* EditProfile screen */}
         <Stack.Screen
           name="EditProfile"
           component={EditProfile}
@@ -186,7 +227,7 @@ export default function App() {
               "EditProfile"
             >;
           }) => ({
-            title: "EditProfile",
+            title: "Edit Profile",
             headerLeft: () => (
               <TouchableOpacity
                 onPress={() => navigation.goBack()}
