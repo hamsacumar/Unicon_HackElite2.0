@@ -9,19 +9,22 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 
 import Test from "./screens/test";
-import OrgProfile from "./screens/OrgProfile";
 import OrgSettings from "./screens/OrgSettings";
 
 import Home from "./screens/Home";
 import LandingPage from "./screens/LandingPage";
-
+import Profile from "./screens/Profile";
+import ViewProfile from "./screens/ViewProfile";
+import EditProfile from "./screens/EditProfile";
 // Define your stack param list
 export type RootStackParamList = {
   Test: undefined;
-  OrgProfile: undefined;
+  Profile: undefined;
   OrgSettings: undefined;
   Home: undefined;
   LandingPage: undefined;
+  ViewProfile: undefined;
+  EditProfile: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -32,7 +35,7 @@ export default function App() {
       <Stack.Navigator
         initialRouteName="Test"
         screenOptions={{
-          headerStyle: { backgroundColor: "#E64A0D" },
+          headerStyle: { backgroundColor: "#FF5722" },
           headerTintColor: "#fff",
           headerTitleStyle: { fontWeight: "bold" },
         }}
@@ -45,30 +48,38 @@ export default function App() {
           }}
         />
         <Stack.Screen
-  name="LandingPage"
-  component={LandingPage}
-  options={({ navigation }: { navigation: NativeStackNavigationProp<RootStackParamList, "LandingPage"> }) => ({
-    title: "EventTrix",
-    headerLeft: () => (
-      <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginLeft: 15 }}>
-        <Ionicons name="arrow-back" size={24} color="white" />
-      </TouchableOpacity>
-    ),
-  })}
-/>
-
-
-
-        <Stack.Screen name="Test" component={Test} />
-        <Stack.Screen
-          name="OrgProfile"
-          component={OrgProfile}
+          name="LandingPage"
+          component={LandingPage}
           options={({
             navigation,
           }: {
             navigation: NativeStackNavigationProp<
               RootStackParamList,
-              "OrgProfile"
+              "LandingPage"
+            >;
+          }) => ({
+            title: "EventTrix",
+            headerLeft: () => (
+              <TouchableOpacity
+                onPress={() => navigation.goBack()}
+                style={{ marginLeft: 15 }}
+              >
+                <Ionicons name="arrow-back" size={24} color="white" />
+              </TouchableOpacity>
+            ),
+          })}
+        />
+
+        <Stack.Screen name="Test" component={Test} />
+        <Stack.Screen
+          name="Profile"
+          component={Profile}
+          options={({
+            navigation,
+          }: {
+            navigation: NativeStackNavigationProp<
+              RootStackParamList,
+              "Profile"
             >;
           }) => ({
             title: "Profile",
@@ -112,9 +123,50 @@ export default function App() {
             ),
           })}
         />
-
-        
-        
+        <Stack.Screen
+          name="ViewProfile"
+          component={ViewProfile}
+          options={({
+            navigation,
+          }: {
+            navigation: NativeStackNavigationProp<
+              RootStackParamList,
+              "ViewProfile"
+            >;
+          }) => ({
+            title: "Profile",
+            headerLeft: () => (
+              <TouchableOpacity
+                onPress={() => navigation.goBack()}
+                style={{ marginLeft: 15 }}
+              >
+                <Ionicons name="arrow-back" size={24} color="white" />
+              </TouchableOpacity>
+            ),
+          })}
+        />
+        <Stack.Screen
+          name="EditProfile"
+          component={EditProfile}
+          options={({
+            navigation,
+          }: {
+            navigation: NativeStackNavigationProp<
+              RootStackParamList,
+              "EditProfile"
+            >;
+          }) => ({
+            title: "EditProfile",
+            headerLeft: () => (
+              <TouchableOpacity
+                onPress={() => navigation.goBack()}
+                style={{ marginLeft: 15 }}
+              >
+                <Ionicons name="arrow-back" size={24} color="white" />
+              </TouchableOpacity>
+            ),
+          })}
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );

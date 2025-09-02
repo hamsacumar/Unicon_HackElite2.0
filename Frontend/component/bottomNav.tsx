@@ -43,9 +43,9 @@ const styles = StyleSheet.create({
         elevation: 5,
     },
     loginButton: {
-        backgroundColor: "#E64A0D",
+        backgroundColor: "#FF5722",
         borderWidth: 2,
-        borderColor: "#E64A0D",
+        borderColor: "#FF5722",
         paddingVertical: 12,
         flex: 1,
         marginRight: 8,
@@ -61,7 +61,7 @@ const styles = StyleSheet.create({
     registerButton: {
         backgroundColor: "#fff",
         borderWidth: 2,
-        borderColor: "#E64A0D",
+        borderColor: "#FF5722",
         paddingVertical: 12,
         flex: 1,
         marginLeft: 8,
@@ -70,7 +70,7 @@ const styles = StyleSheet.create({
         justifyContent: "center",
     },
     registerText: {
-        color: "#E64A0D",
+        color: "#FF5722",
         fontSize: 16,
         fontWeight: "600",
     },

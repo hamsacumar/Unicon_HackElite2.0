@@ -17,17 +17,17 @@ import Ionicons from "react-native-vector-icons/Ionicons";
 
 // Define your stack param list
 type RootStackParamList = {
-  OrgProfile: undefined;
-  EditProfile: undefined;
+  StuProfile: undefined;
+  // Add other screens here if needed
 };
 
 // Define the type for navigation prop
 type OrgProfileNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
-  'OrgProfile'
+  'StuProfile'
 >;
 
-const OrgProfile: React.FC = () => {
+const StuProfile: React.FC = () => {
   const navigation = useNavigation<OrgProfileNavigationProp>();
 
   const posts = [
@@ -70,33 +70,22 @@ const OrgProfile: React.FC = () => {
           </View>
 
           <View style={styles.profileInfo}>
-            <Text style={styles.profileName}>WSO2</Text>
+            <Text style={styles.profileName}>Amile Sweety</Text>
             <View style={styles.statsContainer}>
               <View style={styles.statItem}>
-                <Text style={styles.statNumber}>24</Text>
-                <Text style={styles.statLabel}>posts</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>52</Text>
-                <Text style={styles.statLabel}>subscribers</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>20</Text>
+                <Text style={styles.statNumber}>4</Text>
                 <Text style={styles.statLabel}>subscribed</Text>
               </View>
             </View>
+            <Text style={styles.trustText}>We can do it, don't try hard,think smart</Text>
           </View>
         </View>
 
-        <Text style={styles.trustText}>Trusted by the World's best Enterprises</Text>
+        
 
         <View style={styles.buttonContainer}>
           <TouchableOpacity style={styles.editButton}>
-            <Text 
-              style={styles.buttonText}  
-              onPress={() => navigation.navigate('EditProfile')}>
-                Edit profile
-            </Text>
+            <Text style={styles.buttonText}>Edit profile</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.shareButton}>
             <Text style={styles.buttonText}>Share profile</Text>
@@ -105,11 +94,11 @@ const OrgProfile: React.FC = () => {
 
         <View style={styles.tabContainer}>
           <TouchableOpacity style={[styles.tab, styles.activeTab]}>
-            <Ionicons name="grid-outline" size={24} color="#FF5722" />
+            <Ionicons name="bookmark-outline" size={24} color="#FF5722" />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.tab}>
-            <Ionicons name="play-outline" size={24} color="#666666" />
+            <Ionicons name="settings-outline" size={24} color="#666666" />
           </TouchableOpacity>
         </View>
 
@@ -197,6 +186,7 @@ const styles = StyleSheet.create({
     borderColor: "#FF5722",
     justifyContent: "center",
     alignItems: "center",
+    marginTop:20,
   },
   profileImage: {
     width: 80,
@@ -343,4 +333,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default OrgProfile;
+export default StuProfile;
