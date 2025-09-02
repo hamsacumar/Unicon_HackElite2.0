@@ -8,6 +8,7 @@ import { useNavigation } from "@react-navigation/native";
 type RootStackParamList = {
   Test: undefined;
   OrgProfile: undefined;
+<<<<<<< HEAD
   LandingPage: undefined;
   Home: undefined;
   // Add other screens here if needed
@@ -20,6 +21,7 @@ type RootStackParamList = {
     currentUsername: string;
     otherUsername: string;
   };
+>>>>>>> f099792fbc5e93c06e2b58bcef865ec9a71624b9
 };
 
 
