@@ -9,5 +9,8 @@ namespace Backend.Services
         Task<List<EventModel>> GetAsync();
         Task<EventModel?> GetByIdAsync(string id);
         Task CreateAsync(EventModel ev);
+
+        // Mandatory: fetch events with user info
+        Task<List<EventDto>> GetEventsWithUsersAsync();
     }
 }

@@ -30,7 +30,7 @@ export default function App() {
   return (
     <NavigationContainer>
       <Stack.Navigator
-        initialRouteName="LandingPage"
+        initialRouteName="Test"
         screenOptions={{
           headerStyle: { backgroundColor: "#E64A0D" },
           headerTintColor: "#fff",
@@ -38,12 +38,26 @@ export default function App() {
         }}
       >
         <Stack.Screen
-          name="LandingPage"
-          component={LandingPage}
+          name="Home"
+          component={Home}
           options={{
-            title: "Events",
+            title: "EventTrix", // Title for header
           }}
         />
+        <Stack.Screen
+  name="LandingPage"
+  component={LandingPage}
+  options={({ navigation }: { navigation: NativeStackNavigationProp<RootStackParamList, "LandingPage"> }) => ({
+    title: "EventTrix",
+    headerLeft: () => (
+      <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginLeft: 15 }}>
+        <Ionicons name="arrow-back" size={24} color="white" />
+      </TouchableOpacity>
+    ),
+  })}
+/>
+
+
 
         <Stack.Screen name="Test" component={Test} />
         <Stack.Screen
@@ -99,13 +113,8 @@ export default function App() {
           })}
         />
 
-        <Stack.Screen
-          name="Home"
-          component={Home}
-          options={{
-            title: "EventTrix", // Title for header
-          }}
-        />
+        
+        
       </Stack.Navigator>
     </NavigationContainer>
   );

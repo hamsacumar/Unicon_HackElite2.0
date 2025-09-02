@@ -4,20 +4,18 @@ import { View, Text, FlatList, StyleSheet, Button } from "react-native";
 import { getTestData } from "../services/api";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useNavigation } from "@react-navigation/native";
-import BottomNav from "../component/bottomNav";
 
 // Define your stack param list
 type RootStackParamList = {
   Test: undefined;
   OrgProfile: undefined;
-  OrgSettings: undefined;
+  LandingPage: undefined;
+  Home: undefined;
+  // Add other screens here if needed
 };
 
 // Type for navigation prop
-type TestNavigationProp = NativeStackNavigationProp<
-  RootStackParamList,
-  "Test"
->;
+type TestNavigationProp = NativeStackNavigationProp<RootStackParamList, "Test">;
 
 // Define the type for each data item
 interface TestDataItem {
@@ -40,10 +38,6 @@ const Test: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <Button
-        title="OrgProfile"
-        onPress={() => navigation.navigate("OrgProfile")}
-      />
       <Text style={styles.title}>Test Data</Text>
       <FlatList
         data={data}
@@ -54,7 +48,19 @@ const Test: React.FC = () => {
           </Text>
         )}
       />
-      <BottomNav
+      <Button
+        title="OrgProfile"
+        onPress={() => navigation.navigate("OrgProfile")}
+      />
+      <Button
+        title="Landingpage"
+        onPress={() => navigation.navigate("LandingPage")}
+      />
+
+      <Button
+        title="Home"
+        onPress={() =>
+          navigation.navigate("Home")}
       />
     </View>
   );

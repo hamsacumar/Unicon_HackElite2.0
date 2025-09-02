@@ -5,7 +5,30 @@ using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 using Backend.Settings;
 using Backend.Services;
+using Backend.Models;
 using Microsoft.OpenApi.Models;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
+using MongoDB.Bson.Serialization.Conventions;
+using MongoDB.Bson.Serialization.Serializers;
+
+// Configure BSON serialization
+var pack = new ConventionPack
+{
+    new CamelCaseElementNameConvention(),
+    new IgnoreExtraElementsConvention(true),
+    new StringIdStoredAsObjectIdConvention()
+};
+ConventionRegistry.Register("CustomConventions", pack, t => true);
+
+BsonSerializer.RegisterSerializer(new StringSerializer(BsonType.ObjectId));
+BsonSerializer.RegisterSerializer(new GuidSerializer(BsonType.String));
+BsonSerializer.RegisterSerializer(new DateTimeOffsetSerializer(BsonType.String));
+BsonClassMap.RegisterClassMap<EventDto>(cm => 
+{
+    cm.AutoMap();
+    cm.SetIgnoreExtraElements(true);
+});
 
 var builder = WebApplication.CreateBuilder(args);
 

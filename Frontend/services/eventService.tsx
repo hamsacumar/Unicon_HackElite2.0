@@ -1,13 +1,17 @@
 import Constants from "expo-constants";
 import axios from "axios";
 
-// Matches your EventDto from backend
+// Matches your updated EventDto from backend
 export interface EventItem {
   id: string;
   title: string;
   description: string;
   category: string;
   imageUrl?: string;
+  userId: string;
+  username: string;       // ✅ match backend
+ 
+  userImage?: string;     // optional, future use
 }
 
 const api = axios.create({
