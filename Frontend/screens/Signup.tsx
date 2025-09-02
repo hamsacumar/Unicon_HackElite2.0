@@ -16,8 +16,16 @@ type RootStackParamList = {
   ResetPassword: undefined;
   OrgSettings: undefined;
   OrgProfile: undefined;
-  ClassifyAccount: undefined;
-  VerifyCode: { userId: string; email: string; purpose: string };
+  ClassifyAccount: { 
+    email: string;
+    userId: string;
+    message?: string;
+  };
+  VerifyCode: { 
+    email: string; 
+    userId: string;
+    purpose: 'signup' | 'reset-password';
+  };
 };
 type SignupScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -39,40 +47,97 @@ const Signup = () => {
   const authContext = useContext(AuthContext);
   const authLogin = authContext?.login;
 
-  const handleSignup = async () => {
+  const [isLoading, setIsLoading] = useState(false);
+
+  const validateForm = (): { isValid: boolean; error?: string } => {
     if (!username || !email || !password) {
-      setError("All fields are required");
+      return { isValid: false, error: "All fields are required" };
+    }
+    
+    // Username validation
+    if (username.length < 3) {
+      return { isValid: false, error: "Username must be at least 3 characters" };
+    }
+    
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return { isValid: false, error: "Please enter a valid email address" };
+    }
+    
+    // Password validation
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z\d]).{8,}$/;
+    if (!passwordRegex.test(password)) {
+      return {
+        isValid: false,
+        error: "Password must be at least 8 characters with uppercase, number, and special character"
+      };
+    }
+    
+    return { isValid: true };
+  };
+
+  const handleSignup = async () => {
+    const { isValid, error } = validateForm();
+    if (!isValid) {
+      setError(error || "Invalid form data");
       return;
     }
-    if (!email.includes("@") || !email.endsWith(".com")) {
-      setError("Email must include @ and end with .com");
-      return;
-    }
-    if (
-      password.length < 8 ||
-      !/[A-Z]/.test(password) ||
-      !/[0-9]/.test(password) ||
-      !/[^a-zA-Z0-9]/.test(password)
-    ) {
-      setError(
-        "Password must be at least 8 characters, include uppercase, number, and symbol"
-      );
-      return;
-    }
+
+    setIsLoading(true);
+    setError("");
+
     try {
-      setError("");
-      const data = await signup(username, email, password);
-      navigation.navigate("VerifyCode", {
-        userId: data.userId,
-        email: data.email,
-        purpose: "Signup",
-      });
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("An unexpected error occurred");
+      // Call the signup API
+      console.log('Calling signup API with:', { username, email });
+      const response = await signup(username, email, password);
+      console.log('Signup API response:', response);
+      
+      // The response contains 'userId' with lowercase 'u'
+      const userId = response.userId;
+      
+      if (!userId) {
+        console.error('User ID not found in response. Full response:', response);
+        throw new Error('User ID not received from server');
       }
+      
+      console.log('Extracted userId:', userId);
+      
+      // Show success message
+      Toast.show({
+        type: 'success',
+        text1: 'Account created!',
+        text2: 'Please check your email for the verification code.',
+        visibilityTime: 3000
+      });
+      
+      // Navigate to verification screen with user ID and email
+      navigation.navigate("VerifyCode", {
+        email: response.Email || response.email || email,
+        userId: userId,
+        purpose: 'signup' // Explicitly set the purpose
+      });
+      
+    } catch (err) {
+      console.error("Signup error:", err);
+      let errorMessage = "Failed to create account. Please try again.";
+      
+      if (err instanceof Error) {
+        // Handle specific error messages from the API
+        if (err.message.includes("already exists")) {
+          if (err.message.includes("Username")) {
+            errorMessage = "Username is already taken";
+          } else if (err.message.includes("Email")) {
+            errorMessage = "Email is already registered";
+          }
+        } else {
+          errorMessage = err.message;
+        }
+      }
+      
+      setError(errorMessage);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -112,11 +177,17 @@ const Signup = () => {
           />
         </TouchableOpacity>
       </View>
-      {error && <Text style={styles.error}>{error}</Text>}
-      <TouchableOpacity style={styles.button} onPress={handleSignup}>
-        <Text style={styles.buttonText}>Create Account</Text>
+      {error ? <Text style={styles.error}>{error}</Text> : null}
+      
+      <TouchableOpacity 
+        style={[styles.button, isLoading && styles.buttonDisabled]}
+        onPress={handleSignup}
+        disabled={isLoading}
+      >
+        <Text style={styles.buttonText}>
+          {isLoading ? 'Creating Account...' : 'Sign Up'}
+        </Text>
       </TouchableOpacity>
-      {/* REMOVE the Google Signup button */}
       <TouchableOpacity onPress={() => navigation.navigate("Login")}>
         <Text style={styles.link}>Already have an account? Log in</Text>
       </TouchableOpacity>
@@ -124,12 +195,11 @@ const Signup = () => {
   );
 };
 
-// Keep the styles the same
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
     padding: 20,
+    justifyContent: "center",
     backgroundColor: "#fff",
   },
   input: {
@@ -171,9 +241,15 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   error: {
-    color: "red",
+    color: '#d32f2f',
+    backgroundColor: '#ffebee',
+    padding: 10,
+    borderRadius: 5,
     marginBottom: 15,
-    textAlign: "center",
+    textAlign: 'center',
+  },
+  buttonDisabled: {
+    opacity: 0.7,
   },
 });
 

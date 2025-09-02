@@ -14,6 +14,7 @@ type AuthStackParamList = {
   Login: undefined;
   Signup: undefined;
   ForgotPassword: undefined;
+  VerifyCode: { email: string; userId?: string };
 };
 
 import Icon from "@expo/vector-icons/Ionicons";
@@ -35,21 +36,48 @@ const Login = () => {
   }
   const { login: authLogin } = authContext;
 
+  const [isLoading, setIsLoading] = useState(false);
+
   const handleLogin = async () => {
     if (!usernameOrEmail || !password) {
-      setError("All fields are required");
+      setError("Please enter both username/email and password");
       return;
     }
+
+    setIsLoading(true);
+    setError("");
+
     try {
-      setError("");
       const data = await login(usernameOrEmail, password);
       await authLogin(data);
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("An unexpected error occurred");
+      
+      // Check if email is verified
+      if (!data.isEmailVerified) {
+        // If not verified, navigate to verification screen
+        navigation.navigate("VerifyCode", { 
+          email: data.email,
+          userId: data.userId 
+        });
       }
+      // If verified, the AuthContext will handle the navigation
+    } catch (err) {
+      console.error("Login error:", err);
+      let errorMessage = "Failed to log in. Please try again.";
+      
+      if (err instanceof Error) {
+        // Handle specific error messages from the API
+        if (err.message.includes("Invalid credentials")) {
+          errorMessage = "Invalid username/email or password";
+        } else if (err.message.includes("Email not verified")) {
+          errorMessage = "Please verify your email before logging in";
+        } else {
+          errorMessage = err.message;
+        }
+      }
+      
+      setError(errorMessage);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -81,9 +109,18 @@ const Login = () => {
           />
         </TouchableOpacity>
       </View>
-      {error && <Text style={styles.error}>{error}</Text>}
-      <TouchableOpacity style={styles.button} onPress={handleLogin}>
-        <Text style={styles.buttonText}>Login</Text>
+      {error ? (
+        <Text style={styles.error}>{error}</Text>
+      ) : null}
+      
+      <TouchableOpacity 
+        style={[styles.button, isLoading && styles.buttonDisabled]}
+        onPress={handleLogin}
+        disabled={isLoading}
+      >
+        <Text style={styles.buttonText}>
+          {isLoading ? 'Signing in...' : 'Login'}
+        </Text>
       </TouchableOpacity>
 
       <TouchableOpacity onPress={() => navigation.navigate("ForgotPassword")}>
@@ -105,6 +142,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     padding: 20,
     backgroundColor: "#fff",
+  },
+  buttonDisabled: {
+    opacity: 0.7,
   },
   input: {
     borderWidth: 1,

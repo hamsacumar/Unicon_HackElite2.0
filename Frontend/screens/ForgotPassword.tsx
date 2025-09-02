@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
+import { startForgotPassword } from '../services/api';
 
 type RootStackParamList = {
   Login: undefined;
@@ -19,23 +20,35 @@ const ForgotPassword = () => {
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+  const [isLoading, setIsLoading] = useState(false);
+  const [codeSent, setCodeSent] = useState(false);
 
   const handleSubmit = async () => {
     if (!email || !email.includes('@') || !email.endsWith('.com')) {
-      setError('Enter a valid email');
+      setError('Please enter a valid email address');
       return;
     }
+
     try {
       setError('');
-      // TODO: Implement startForgotPassword API call
-      // const data = await startForgotPassword(email);
-      navigation.navigate('VerifyCode', { userId: '', email, purpose: 'PasswordReset' }); // userId not needed for reset
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError('An unexpected error occurred');
-      }
+      setIsLoading(true);
+      
+      // Call the API to send the verification code
+      await startForgotPassword(email);
+      
+      // If successful, navigate to verification screen
+      setCodeSent(true);
+      navigation.navigate('VerifyCode', { 
+        userId: '', 
+        email: email.trim().toLowerCase(), 
+        purpose: 'PasswordReset' 
+      });
+      
+    } catch (err: any) {
+      console.error('Forgot password error:', err);
+      setError(err.message || 'Failed to send verification code. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 

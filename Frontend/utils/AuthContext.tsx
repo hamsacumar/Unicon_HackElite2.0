@@ -12,9 +12,11 @@ import Toast from "react-native-toast-message";
 const BASE_URL = Constants.expoConfig?.extra?.backendUrl;
 
 interface User {
+  id?: string;
   username: string;
   email: string;
   role: string;
+  isEmailVerified?: boolean;
 }
 
 interface AuthContextType {
@@ -42,21 +44,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const savedToken = await SecureStore.getItemAsync("accessToken");
       if (savedToken) {
         try {
+          // First try to get user info using the token
           const response = await fetch(`${BASE_URL}/api/account/me`, {
-            headers: { Authorization: `Bearer ${savedToken}` },
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${savedToken}` 
+            },
           });
+          
           if (response.ok) {
             const data = await response.json();
             setToken(savedToken);
             setUser({
-              username: data.username,
-              email: data.email,
-              role: data.role,
+              id: data.Id,
+              username: data.Username,
+              email: data.Email,
+              role: data.Role,
+              isEmailVerified: data.IsEmailVerified
             });
           } else {
+            console.warn('Failed to fetch user info, logging out');
             await logout();
           }
-        } catch {
+        } catch (error) {
+          console.error('Error loading auth:', error);
           await logout();
         }
       }
@@ -69,10 +80,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     username: string;
     email: string;
     role: string;
+    userId?: string;
+    isEmailVerified?: boolean;
   }) => {
     await SecureStore.setItemAsync("accessToken", data.accessToken);
     setToken(data.accessToken);
-    setUser({ username: data.username, email: data.email, role: data.role });
+    setUser({ 
+      username: data.username, 
+      email: data.email, 
+      role: data.role,
+      id: data.userId,
+      isEmailVerified: data.isEmailVerified || false
+    });
   };
 
   const logout = async () => {
