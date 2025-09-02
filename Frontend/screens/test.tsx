@@ -1,17 +1,24 @@
-// screens/Test.tsx
 import React, { useEffect, useState } from "react";
 import { View, Text, FlatList, StyleSheet, Button } from "react-native";
 import { getTestData } from "../services/api";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useNavigation } from "@react-navigation/native";
-import BottomNav from "../component/bottomNav";
 
 // Define your stack param list
 type RootStackParamList = {
   Test: undefined;
-  OrgSettings: undefined;
-  ViewProfile: undefined;
+  OrgProfile: undefined;
+  InputPage: undefined;
+  InboxScreen: { currentUserId: string };
+  Chat: {
+    currentUserId: string;
+    otherUserId: string;
+    currentUsername: string;
+    otherUsername: string;
+  };
 };
+
+
 
 // Type for navigation prop
 type TestNavigationProp = NativeStackNavigationProp<
@@ -19,7 +26,6 @@ type TestNavigationProp = NativeStackNavigationProp<
   "Test"
 >;
 
-// Define the type for each data item
 interface TestDataItem {
   id: string;
   value: string;
@@ -28,6 +34,7 @@ interface TestDataItem {
 const Test: React.FC = () => {
   const navigation = useNavigation<TestNavigationProp>();
   const [data, setData] = useState<TestDataItem[]>([]);
+  const currentUserId = "user1"; // example user id
 
   useEffect(() => {
     fetchTestData();
@@ -40,15 +47,6 @@ const Test: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <Button
-        title="OrgSettings"
-        onPress={() => navigation.navigate("OrgSettings")}
-      />
-      <Button
-        title="ViewProfile"
-        onPress={() => navigation.navigate("ViewProfile")}
-      />
-      
       <Text style={styles.title}>Test Data</Text>
       <FlatList
         data={data}
@@ -59,7 +57,31 @@ const Test: React.FC = () => {
           </Text>
         )}
       />
-      <BottomNav
+    
+      <Button
+        title="Input Page"
+        onPress={() => navigation.navigate("InputPage")}
+      />
+
+      {/* Navigate to Chat with required params */}
+      <Button
+        title="Chat"
+        onPress={() =>
+          navigation.navigate("Chat", {
+            currentUserId,
+            otherUserId: "user2",
+            currentUsername: "User1",
+            otherUsername: "User2",
+          })
+        }
+      />
+
+      {/* Navigate to InboxScreen with required params */}
+      <Button
+        title="InboxScreen"
+        onPress={() =>
+          navigation.navigate("InboxScreen", { currentUserId })
+        }
       />
     </View>
   );
