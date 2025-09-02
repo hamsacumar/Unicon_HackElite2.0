@@ -5,13 +5,14 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  Alert,
 } from "react-native";
 import Icon from "@expo/vector-icons/Ionicons";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import * as SecureStore from 'expo-secure-store';
-import { verifyEmail, resendCode } from "../services/api";
+import { verifyEmail, resendCode } from "../../services/api";
 import Toast from "react-native-toast-message";
+import CustomButton from "../../component/ui/CustomButton";
+import { colors, spacing, borderRadius, fontSize, globalStyles } from "../../styles/globalStyles";
 
 interface VerifyCodeParams {
   email: string;
@@ -19,7 +20,7 @@ interface VerifyCodeParams {
   purpose?: 'signup' | 'reset-password';
 }
 
-const VerifyCode = () => {
+const VerifyCodeScreen = () => {
   const route = useRoute();
   const { email, userId, purpose = 'signup' } = route.params as VerifyCodeParams;
   const [code, setCode] = useState(["", "", "", "", "", ""]);
@@ -96,7 +97,6 @@ const VerifyCode = () => {
         const response = await verifyEmail(email, fullCode);
         console.log('Verify email response in handleSubmit:', response);
         
-        // Even if there's no token, we might still have a successful verification
         if (response.Message && response.Message.includes('verified')) {
           Toast.show({
             type: 'success',
@@ -105,7 +105,6 @@ const VerifyCode = () => {
             visibilityTime: 3000
           });
           
-          // After successful verification, navigate to ClassifyAccount with user info and token
           const token = response.Token || response.token;
           if (token) {
             await SecureStore.setItemAsync("accessToken", token);
@@ -114,12 +113,10 @@ const VerifyCode = () => {
           navigation.navigate("ClassifyAccount", { 
             email: response.Email || response.email || email,
             userId: response.UserId || response.userId || userId,
-            token: token, // Pass the token directly as well
+            token: token,
             message: 'Please complete your profile information.'
           });
         } else {
-          // If we get here, the verification might have succeeded but without a token
-          // Let's still proceed to the classify account screen
           console.log('Verification successful but no token received');
           Toast.show({
             type: 'info',
@@ -135,8 +132,6 @@ const VerifyCode = () => {
           });
         }
       } else {
-        // For password reset, just navigate to reset password with the code
-        // The code will be verified when they actually try to reset the password
         navigation.navigate("ResetPassword", { 
           email, 
           code: fullCode 
@@ -148,7 +143,6 @@ const VerifyCode = () => {
       const errorMessage = err instanceof Error ? err.message : 'Code is incorrect or has expired';
       setError(errorMessage);
       
-      // Clear the code on error
       setCode(["", "", "", "", "", ""]);
       inputs.current[0]?.focus();
       
@@ -158,7 +152,6 @@ const VerifyCode = () => {
   };
 
   const handleResendCode = async () => {
-    // If countdown is active, show remaining time
     if (countdown > 0) {
       const minutes = Math.floor(countdown / 60);
       const seconds = countdown % 60;
@@ -176,24 +169,18 @@ const VerifyCode = () => {
     try {
       setIsResending(true);
       
-      // Show loading state
       Toast.show({
         type: 'info',
         text1: 'Sending code...',
         visibilityTime: 1000
       });
       
-      // Add a small delay to ensure the loading toast is shown
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       try {
-        // Use the purpose from route params or default to 'signup'
         const response = await resendCode(email, purpose);
-        
-        // Start the countdown timer (2 minutes)
         setCountdown(120);
         
-        // Show success message based on purpose
         const successMessage = purpose === 'reset-password' 
           ? 'If an account exists with this email, a reset code has been sent.'
           : 'Verification code sent! Please check your email.';
@@ -207,7 +194,6 @@ const VerifyCode = () => {
       } catch (error) {
         console.error('Resend error:', error);
         
-        // Show error message from the API or a default message
         const errorMessage = error instanceof Error ? error.message : 'Failed to resend code';
         
         Toast.show({
@@ -217,7 +203,6 @@ const VerifyCode = () => {
           visibilityTime: 4000
         });
         
-        // If the error indicates the email is already verified, navigate to login
         if (errorMessage.includes('already verified')) {
           setTimeout(() => {
             navigation.navigate('Login');
@@ -228,11 +213,9 @@ const VerifyCode = () => {
     } catch (error) {
       console.error('Resend error:', error);
       
-      // Check if this is a rate limit error
       const errorMessage = error instanceof Error ? error.message : 'Please try again later.';
       
       if (errorMessage.includes('2 minutes') || errorMessage.includes('Wait')) {
-        // If we hit the rate limit, set the countdown to 2 minutes
         setCountdown(120);
         
         Toast.show({
@@ -242,7 +225,6 @@ const VerifyCode = () => {
           visibilityTime: 4000
         });
       } else {
-        // For other errors, show the error message
         Toast.show({
           type: 'error',
           text1: 'Failed to resend code',
@@ -255,29 +237,36 @@ const VerifyCode = () => {
     }
   };
 
+  const formatEmail = (email: string) => {
+    const [localPart, domain] = email.split('@');
+    if (localPart.length <= 3) return email;
+    return `${localPart.slice(0, 2)}***@${domain}`;
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.iconContainer}>
-        <Icon name="lock-closed" size={40} color="#E64A0D" />
+        <Icon name="lock-closed" size={40} color={colors.white} />
       </View>
+      
       <Text style={styles.title}>Verification Code</Text>
       <Text style={styles.subtitle}>
-        We've sent a 6-digit code to{' '}
-        <Text style={{ fontWeight: 'bold' }}>{email}</Text>
+        We've sent a 6-digit code to{'\n'}
+        <Text style={styles.emailText}>{formatEmail(email)}</Text>
       </Text>
+      
       <View style={styles.otpContainer}>
         {code.map((digit, index) => (
           <TextInput
             key={index}
             style={[
               styles.otpInput,
+              digit && styles.otpInputFilled,
               error && styles.otpInputError,
-              digit && styles.otpInputFilled
             ]}
             value={digit}
             onChangeText={(text) => handleChange(text, index)}
             onKeyPress={({ nativeEvent }) => {
-              // Handle backspace
               if (nativeEvent.key === 'Backspace' && !digit && index > 0) {
                 inputs.current[index - 1]?.focus();
               }
@@ -288,25 +277,23 @@ const VerifyCode = () => {
             textAlign="center"
             selectTextOnFocus
             editable={!isLoading}
-            selectionColor="#E64A0D"
+            selectionColor={colors.primary}
           />
         ))}
       </View>
+      
       {error ? (
-        <Text style={styles.error}>{error}</Text>
+        <Text style={styles.errorText}>{error}</Text>
       ) : (
-        <Text style={styles.hint}>Enter the 6-digit code sent to your email</Text>
+        <Text style={styles.hintText}>Enter the 6-digit code sent to your email</Text>
       )}
       
-      <TouchableOpacity 
-        style={[styles.button, isLoading && styles.buttonDisabled]}
+      <CustomButton
+        title={isLoading ? 'Verifying...' : 'Submit'}
         onPress={handleSubmit}
-        disabled={isLoading}
-      >
-        <Text style={styles.buttonText}>
-          {isLoading ? 'Verifying...' : 'Verify Account'}
-        </Text>
-      </TouchableOpacity>
+        loading={isLoading}
+        style={styles.submitButton}
+      />
       
       <View style={styles.resendContainer}>
         <Text style={styles.resendText}>Didn't receive the code? </Text>
@@ -319,10 +306,10 @@ const VerifyCode = () => {
             (countdown > 0 || isResending) && styles.resendLinkDisabled
           ]}>
             {isResending 
-              ? 'Sending...' 
+              ? 'Resend' 
               : countdown > 0 
                 ? `Resend (${countdown}s)` 
-                : 'Resend Code'}
+                : 'Resend'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -333,109 +320,100 @@ const VerifyCode = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 25,
-    backgroundColor: "#fff",
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: spacing.xl,
+    backgroundColor: colors.white,
   },
   iconContainer: {
-    backgroundColor: "#FF7F50",
-    borderRadius: 50,
-    padding: 20,
-    marginBottom: 20,
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.round,
+    width: 80,
+    height: 80,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.lg,
   },
   title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 10,
+    fontSize: fontSize.title,
+    fontWeight: 'bold',
+    color: colors.black,
+    textAlign: 'center',
+    marginBottom: spacing.sm,
   },
   subtitle: {
-    color: "gray",
-    marginBottom: 30,
-    textAlign: "center",
+    fontSize: fontSize.md,
+    color: colors.gray,
+    textAlign: 'center',
+    marginBottom: spacing.xxl,
+    lineHeight: 20,
+  },
+  emailText: {
+    fontWeight: '600',
+    color: colors.black,
+  },
+  otpContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '85%',
+    marginBottom: spacing.lg,
+  },
+  otpInput: {
+    width: 45,
+    height: 55,
+    borderWidth: 1,
+    borderColor: colors.borderGray,
+    backgroundColor: colors.inputBackground,
+    borderRadius: borderRadius.md,
+    fontSize: fontSize.xl,
+    fontWeight: '600',
+    color: colors.black,
+    textAlign: 'center',
+  },
+  otpInputFilled: {
+    borderColor: colors.primary,
+    backgroundColor: colors.white,
+  },
+  otpInputError: {
+    borderColor: colors.error,
+  },
+  errorText: {
+    color: colors.error,
+    backgroundColor: colors.errorBackground,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.sm,
+    marginBottom: spacing.lg,
+    textAlign: 'center',
+    fontSize: fontSize.md,
+  },
+  hintText: {
+    color: colors.gray,
+    marginBottom: spacing.xl,
+    textAlign: 'center',
+    fontSize: fontSize.md,
+  },
+  submitButton: {
+    width: '100%',
+    marginBottom: spacing.lg,
   },
   resendContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: spacing.sm,
   },
   resendText: {
-    color: '#666',
-    fontSize: 14,
+    color: colors.gray,
+    fontSize: fontSize.md,
   },
   resendLink: {
-    color: '#E64A0D',
-    fontWeight: '500',
-    fontSize: 14,
+    color: colors.primary,
+    fontWeight: '600',
+    fontSize: fontSize.md,
   },
   resendLinkDisabled: {
-    color: '#aaa',
-  },
-  otpContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    width: "80%",
-    marginBottom: 20,
-  },
-  otpInput: {
-    width: 48,
-    height: 60,
-    borderWidth: 1.5,
-    borderColor: '#e0e0e0',
-    borderRadius: 8,
-    margin: 5,
-    fontSize: 24,
-    fontWeight: '600',
-    color: '#333',
-    backgroundColor: '#f9f9f9',
-  },
-  otpInputFilled: {
-    borderColor: '#E64A0D',
-    backgroundColor: '#fff',
-  },
-  otpInputError: {
-    borderColor: '#ff4444',
-  },
-  button: {
-    backgroundColor: "#E64A0D",
-    padding: 16,
-    borderRadius: 8,
-    width: "100%",
-    alignItems: "center",
-    marginTop: 10,
-    marginBottom: 20,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  buttonDisabled: {
-    opacity: 0.7,
-  },
-  buttonText: {
-    color: "#fff",
-    textAlign: "center",
-    fontWeight: "bold",
-  },
-  link: {
-    color: "#E64A0D",
-  },
-  error: {
-    color: '#d32f2f',
-    backgroundColor: '#ffebee',
-    padding: 12,
-    borderRadius: 6,
-    marginBottom: 20,
-    width: '100%',
-    textAlign: 'center',
-  },
-  hint: {
-    color: '#666',
-    marginBottom: 25,
-    textAlign: 'center',
-    fontSize: 14,
+    color: colors.lightGray,
   },
 });
 
-export default VerifyCode;
+export default VerifyCodeScreen;
