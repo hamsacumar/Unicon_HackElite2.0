@@ -6,6 +6,7 @@ import {
   createNativeStackNavigator,
   NativeStackNavigationProp,
 } from "@react-navigation/native-stack";
+
 import { Ionicons } from "@expo/vector-icons";
 
 import Test from "./screens/test";
@@ -13,6 +14,9 @@ import OrgSettings from "./screens/OrgSettings";
 
 import Home from "./screens/Home";
 import LandingPage from "./screens/LandingPage";
+import InputPage from "./screens/input"; // ✅ import your InputPage
+import Chat from "./screens/Chat";
+import InboxScreen from "./screens/InboxScreen";
 import Profile from "./screens/Profile";
 import ViewProfile from "./screens/ViewProfile";
 import EditProfile from "./screens/EditProfile";
@@ -23,6 +27,14 @@ export type RootStackParamList = {
   OrgSettings: undefined;
   Home: undefined;
   LandingPage: undefined;
+  InputPage: undefined;
+  InboxScreen: { currentUserId: string };
+  Chat: {
+    currentUserId: string;
+    otherUserId: string;
+    currentUsername: string;
+    otherUsername: string;
+  };
   ViewProfile: undefined;
   EditProfile: undefined;
 };
@@ -122,6 +134,24 @@ export default function App() {
               </TouchableOpacity>
             ),
           })}
+        />
+        {/* ✅ Add InputPage screen */}
+        <Stack.Screen
+          name="InputPage"
+          component={InputPage}
+          options={{ title: "Create Event" }}
+        />
+
+        <Stack.Screen
+          name="InboxScreen"
+          component={InboxScreen}
+          options={{ title: "Inbox" }}
+        />
+
+        <Stack.Screen
+          name="Chat"
+          component={Chat}
+          options={{ title: "Chat" }}
         />
         <Stack.Screen
           name="ViewProfile"

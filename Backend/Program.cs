@@ -80,9 +80,13 @@ builder.Services.AddAuthentication("Bearer")
         options.CallbackPath = "/signin-google";
     });
 
-// ----------------------------
-// Add Controllers & Swagger
-// ----------------------------
+// Add Authorization and policy for "Organization" role
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("OrganizationOnly", policy =>
+        policy.RequireRole("Organizer"));
+});
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -126,6 +130,8 @@ builder.Services.AddSingleton<IJwtService, JwtService>();
 builder.Services.AddSingleton<IGoogleAuthService, GoogleAuthService>();
 builder.Services.AddScoped<IPostService, PostService>();
 
+builder.Services.AddScoped<InputService>();
+builder.Services.AddScoped<IMessageService, MessageService>();
 
 // ----------------------------
 // CORS Policy
@@ -151,6 +157,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+// Static files (images)
+app.UseStaticFiles(); 
+
 
 // Enable CORS, Authentication & Authorization
 app.UseCors("AllowAll");
