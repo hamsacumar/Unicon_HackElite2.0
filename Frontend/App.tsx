@@ -13,6 +13,7 @@ import OrgProfile from "./screens/OrgProfile";
 import OrgSettings from "./screens/OrgSettings";
 
 import Home from "./screens/Home";
+import LandingPage from "./screens/LandingPage";
 
 // Define your stack param list
 export type RootStackParamList = {
@@ -20,6 +21,7 @@ export type RootStackParamList = {
   OrgProfile: undefined;
   OrgSettings: undefined;
   Home: undefined;
+  LandingPage: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -28,13 +30,21 @@ export default function App() {
   return (
     <NavigationContainer>
       <Stack.Navigator
-        initialRouteName="Test"
+        initialRouteName="LandingPage"
         screenOptions={{
           headerStyle: { backgroundColor: "#E64A0D" },
           headerTintColor: "#fff",
           headerTitleStyle: { fontWeight: "bold" },
         }}
       >
+        <Stack.Screen
+          name="LandingPage"
+          component={LandingPage}
+          options={{
+            title: "Events",
+          }}
+        />
+
         <Stack.Screen name="Test" component={Test} />
         <Stack.Screen
           name="OrgProfile"
