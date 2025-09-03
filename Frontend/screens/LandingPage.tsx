@@ -1,4 +1,3 @@
-//screens/Home.tsx
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -12,18 +11,17 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../App";
-import RoleBasedBottomNav from "../component/rolebasedNav";
+import BottomNav from "../component/bottomNav";
 import { EventItem, getEvents } from "../services/eventService";
 import Constants from "expo-constants";
-
-type HomeNavigationProp = NativeStackNavigationProp<
+type LandingPageNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
-  "Home"
+  "LandingPage"
 >;
 const API_URL = Constants.expoConfig?.extra?.apiUrl?.replace("/api", "");
 
-export default function Home() {
-  const navigation = useNavigation<HomeNavigationProp>();
+export default function LandingPage() {
+  const navigation = useNavigation<LandingPageNavigationProp>();
   const [events, setEvents] = useState<EventItem[]>([]);
 
   // Fetch events from API on component mount
@@ -53,29 +51,26 @@ export default function Home() {
                 }}
                 style={styles.avatar}
               />
-              <Text style={styles.username}>
-  {item.username}
-</Text>
+              <Text style={styles.username}>{item.username}</Text>
             </View>
 
             {/* Post image */}
-                       {item.imageUrl ? (
-                         <Image
-                         source={{
-                           uri: item.imageUrl 
-                             ? item.imageUrl.startsWith('http') 
-                               ? item.imageUrl 
-                               : `${API_URL}${item.imageUrl.startsWith('/') ? '' : '/'}${item.imageUrl}`
-                             : 'https://via.placeholder.com/300x200' // fallback image
-                         }}
-                         style={styles.postImage}
-                       />
-                       ) : (
-                         <View style={styles.noImage}>
-                           <Text style={styles.noImageText}>No Image</Text>
-                         </View>
-                       )}
-           
+            {item.imageUrl ? (
+              <Image
+              source={{
+                uri: item.imageUrl 
+                  ? item.imageUrl.startsWith('http') 
+                    ? item.imageUrl 
+                    : `${API_URL}${item.imageUrl.startsWith('/') ? '' : '/'}${item.imageUrl}`
+                  : 'https://via.placeholder.com/300x200' // fallback image
+              }}
+              style={styles.postImage}
+            />
+            ) : (
+              <View style={styles.noImage}>
+                <Text style={styles.noImageText}>No Image</Text>
+              </View>
+            )}
 
             {/* Post category and content */}
             <Text style={styles.category}>{item.category}</Text>
@@ -96,9 +91,9 @@ export default function Home() {
         contentContainerStyle={styles.listContent}
       />
 
-      
-      <RoleBasedBottomNav navigation={navigation} />
-      </View>
+      {/* Bottom navigation */}
+      <BottomNav />
+    </View>
   );
 }
 
@@ -192,5 +187,3 @@ const styles = StyleSheet.create({
     color: "#e74c3c",
   },
 });
-
-

@@ -1,8 +1,12 @@
+
+//Models/EventModel.cs
+
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using System;
 
-namespace Backend.Models{
+namespace Backend.Models
+{
 public class EventModel
 {
     [BsonId]
