@@ -93,6 +93,7 @@ builder.Services.AddSingleton<IJwtService, JwtService>();
 builder.Services.AddSingleton<IGoogleAuthService, GoogleAuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ITokenCheckService, TokenCheckService>();
+builder.Services.AddScoped<ProfileDetailService>();
 
 // ✅ Add CORS policy
 builder.Services.AddCors(options =>
