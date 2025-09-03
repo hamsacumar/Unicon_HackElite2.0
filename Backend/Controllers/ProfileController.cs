@@ -26,9 +26,9 @@ namespace Backend.Controllers
 
             // Save to local folder (can replace with Google Cloud later)
             var fileName = $"{Guid.NewGuid()}_{file.FileName}";
-            var savePath = Path.Combine("wwwroot/profile-images", fileName);
+            var savePath = Path.Combine("wwwroot/uploads", fileName);
 
-            Directory.CreateDirectory("wwwroot/profile-images");
+            Directory.CreateDirectory("wwwroot/uploads");
 
             using (var stream = new FileStream(savePath, FileMode.Create))
             {
@@ -36,7 +36,7 @@ namespace Backend.Controllers
             }
 
             var userId = User.FindFirst("id")?.Value; // get user id from JWT
-            var imageUrl = $"/profile-images/{fileName}";
+            var imageUrl = $"/uploads/{fileName}";
 
             await _userService.UpdateProfileImage(userId, imageUrl);
 

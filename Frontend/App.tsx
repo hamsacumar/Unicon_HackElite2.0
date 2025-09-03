@@ -1,7 +1,7 @@
 import React from "react";
 import { NavigationContainer } from "@react-navigation/native";
-import { createNativeStackNavigator, NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { createStackNavigator } from "@react-navigation/stack";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { createStackNavigator, StackNavigationProp } from "@react-navigation/stack";
 import { TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
@@ -16,15 +16,12 @@ import ClassifyAccount from "./screens/auth/ClassifyAccountScreen";
 import ForgotPasswordScreen from "./screens/auth/ForgotPasswordScreen";
 import ResetPasswordScreen from "./screens/auth/ResetPasswordScreen";
 import Home from "./screens/Home";
-import InputPage from "./screens/input";
-import Home from "./screens/Home";
 import LandingPage from "./screens/LandingPage";
 import InputPage from "./screens/input"; // Input Page
 import Chat from "./screens/Chat";
 import InboxScreen from "./screens/InboxScreen";
 import Profile from "./screens/Profile";
 import ViewProfile from "./screens/ViewProfile";
-import EditProfile from "./screens/EditProfile";
 import ProfileSetup from "./screens/ProfileSetup";
 
 // Context
@@ -44,7 +41,6 @@ export type RootStackParamList = {
   ClassifyAccount: undefined;
   ForgotPassword: undefined;
   ResetPassword: undefined;
-  Home: undefined;
   Home: undefined;
   LandingPage: undefined;
   InputPage: undefined;
@@ -107,10 +103,7 @@ const AppStack = () => {
           options={({
             navigation,
           }: {
-            navigation: NativeStackNavigationProp<
-              RootStackParamList,
-              "LandingPage"
-            >;
+            navigation: StackNavigationProp<RootStackParamList, "LandingPage">;
           }) => ({
             title: "EventTrix",
             headerLeft: () => (
@@ -130,10 +123,7 @@ const AppStack = () => {
           options={({
             navigation,
           }: {
-            navigation: NativeStackNavigationProp<
-              RootStackParamList,
-              "OrgProfile"
-            >;
+            navigation: StackNavigationProp<RootStackParamList, "OrgProfile">;
           }) => ({
             title: "Organization Profile", // header title
             headerLeft: () => (
@@ -157,23 +147,21 @@ const AppStack = () => {
           options={({
             navigation,
           }: {
-            navigation: NativeStackNavigationProp<
-              RootStackParamList,
-              "Profile"
-            >;
+            navigation: StackNavigationProp<RootStackParamList, "Profile">;
           }) => ({
             title: "Profile",
             headerLeft: () => (
-              <TouchableOpacity
-                onPress={() => navigation.goBack()}
-                style={{ marginLeft: 15 }}
-              >
-                <Ionicons name="arrow-back" size={24} color="white" />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
-                <Ionicons name="person" size={24} color="white" />
-              </TouchableOpacity>
-            </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <TouchableOpacity
+                  onPress={() => navigation.goBack()}
+                  style={{ marginLeft: 15 }}
+                >
+                  <Ionicons name="arrow-back" size={24} color="white" />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => navigation.navigate('Profile')} style={{ marginLeft: 10 }}>
+                  <Ionicons name="person" size={24} color="white" />
+                </TouchableOpacity>
+              </View>
           ),
         })}
       />
@@ -208,6 +196,7 @@ const AppStack = () => {
         })}
       />
     </Stack.Navigator>
+    </NavigationContainer>
   );
 };
 
