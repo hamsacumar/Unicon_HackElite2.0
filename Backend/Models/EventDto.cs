@@ -7,7 +7,7 @@ namespace Backend.Models
     public class EventDto
     {
         // MongoDB _id stored as ObjectId, represented as string in C#
-        [BsonId]
+        [BsonElement("id")] 
         [BsonRepresentation(BsonType.ObjectId)]
         [JsonPropertyName("id")]
         public string Id { get; set; } = null!;   // guaranteed string from $toString

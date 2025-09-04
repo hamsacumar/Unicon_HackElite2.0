@@ -7,29 +7,7 @@ using Backend.Settings;
 using Backend.Models;
 using Backend.Services;
 using Microsoft.OpenApi.Models;
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization;
-using MongoDB.Bson.Serialization.Conventions;
-using MongoDB.Bson.Serialization.Serializers;
 
-// ----------------------------
-// Configure BSON serialization
-// ----------------------------
-var pack = new ConventionPack
-{
-    new CamelCaseElementNameConvention(),
-    new IgnoreExtraElementsConvention(true),
-    new StringIdStoredAsObjectIdConvention()
-};
-ConventionRegistry.Register("CustomConventions", pack, t => true);
-
-BsonSerializer.RegisterSerializer(new GuidSerializer(BsonType.String));
-BsonSerializer.RegisterSerializer(new DateTimeOffsetSerializer(BsonType.String));
-BsonClassMap.RegisterClassMap<EventDto>(cm =>
-{
-    cm.AutoMap();
-    cm.SetIgnoreExtraElements(true);
-});
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -145,6 +123,7 @@ builder.Services.AddScoped<ITokenCheckService, TokenCheckService>();
 builder.Services.AddScoped<InputService>();
 builder.Services.AddScoped<IMessageService, MessageService>();
 builder.Services.AddScoped<IPostService, PostService>();
+builder.Services.AddScoped<ProfileDetailService>();
 
 //
 // ✅ CORS Policy (Allow All)
