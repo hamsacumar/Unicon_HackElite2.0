@@ -49,5 +49,29 @@ namespace Backend.Controllers
 
             return Ok(new { Message = "Account classified successfully." });
         }
+
+        [HttpGet("me")]
+        public async Task<IActionResult> GetMe()
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userId == null) return Unauthorized();
+            
+            var user = await _userService.GetById(userId);
+            if (user == null) return NotFound("User not found");
+
+            return Ok(new 
+            {
+                Id = user.Id,
+                Username = user.Username,
+                Email = user.Email,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                Role = user.Role,
+                IsEmailVerified = user.IsEmailVerified,
+                Address = user.Address,
+                Description = user.Description,
+                CreatedAt = user.CreatedAt
+            });
+        }
     }
 }
