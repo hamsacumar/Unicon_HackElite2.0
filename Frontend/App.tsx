@@ -1,17 +1,20 @@
-// App.tsx
 import React from "react";
-import { TouchableOpacity } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
-import {
-  createNativeStackNavigator,
-  NativeStackNavigationProp,
-} from "@react-navigation/native-stack";
-
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { createStackNavigator, StackNavigationProp } from "@react-navigation/stack";
+import { TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import Toast from "react-native-toast-message";
 
-// Import screens
+// Screens
 import Test from "./screens/test";
 import OrgSettings from "./screens/OrgSettings";
+import LoginScreen from "./screens/auth/LoginScreen";
+import SignupScreen from "./screens/auth/SignupScreen";
+import VerifyCodeScreen from "./screens/auth/VerifyCodeScreen";
+import ClassifyAccount from "./screens/auth/ClassifyAccountScreen";
+import ForgotPasswordScreen from "./screens/auth/ForgotPasswordScreen";
+import ResetPasswordScreen from "./screens/auth/ResetPasswordScreen";
 import Home from "./screens/Home";
 import LandingPage from "./screens/LandingPage";
 import InputPage from "./screens/input"; // Input Page
@@ -19,15 +22,31 @@ import Chat from "./screens/Chat";
 import InboxScreen from "./screens/InboxScreen";
 import Profile from "./screens/Profile";
 import ViewProfile from "./screens/ViewProfile";
+import ProfileSetup from "./screens/ProfileSetup";
+
+// Context
+import { AuthProvider, useAuth } from "./utils/AuthContext";
+
 import EditProfile from "./screens/EditProfile";
 import OrgProfile from "./screens/OrgProfile";
 import PostDetail from "./screens/PostDetail";
 import { EventItem } from "./services/eventService";
 // Define type for stack navigator
 export type RootStackParamList = {
+  // Main app screens
+  App: undefined;
+  Auth: undefined;
+  
+  // Other screens
   Test: undefined;
   Profile: undefined;
   OrgSettings: undefined;
+  Login: undefined;
+  Signup: undefined;
+  VerifyCode: undefined;
+  ClassifyAccount: undefined;
+  ForgotPassword: undefined;
+  ResetPassword: undefined;
   Home: undefined;
   LandingPage: undefined;
   InputPage: undefined;
@@ -40,23 +59,40 @@ export type RootStackParamList = {
   };
   ViewProfile: undefined;
   EditProfile: undefined;
+  ProfileSetup: undefined;
   OrgProfile: undefined;
   PostDetail: { post: EventItem };
 };
 
-const Stack = createNativeStackNavigator<RootStackParamList>();
+const NativeStack = createNativeStackNavigator<RootStackParamList>();
+const Stack = createStackNavigator<RootStackParamList>();
 
-export default function App() {
+// Auth Stack
+const AuthStack = () => {
   return (
-    <NavigationContainer>
-      <Stack.Navigator
-        initialRouteName="Test"
-        screenOptions={{
-          headerStyle: { backgroundColor: "#FF5722" },
-          headerTintColor: "#fff",
-          headerTitleStyle: { fontWeight: "bold" },
-        }}
-      >
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="Login" component={LoginScreen} />
+      <Stack.Screen name="Signup" component={SignupScreen} />
+      <Stack.Screen name="VerifyCode" component={VerifyCodeScreen} />
+      <Stack.Screen name="ClassifyAccount" component={ClassifyAccount} />
+      <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+      <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
+      <Stack.Screen name="ProfileSetup" component={ProfileSetup} />
+    </Stack.Navigator>
+  );
+};
+
+// Main App Stack
+const AppStack = () => {
+  return (
+    <Stack.Navigator
+      initialRouteName="Home"
+      screenOptions={{
+        headerStyle: { backgroundColor: "#FF5722" },
+        headerTintColor: "#fff",
+        headerTitleStyle: { fontWeight: "bold" },
+      }}
+    >
         {/* Home screen */}
         <Stack.Screen
           name="Home"
@@ -73,10 +109,7 @@ export default function App() {
           options={({
             navigation,
           }: {
-            navigation: NativeStackNavigationProp<
-              RootStackParamList,
-              "LandingPage"
-            >;
+            navigation: StackNavigationProp<RootStackParamList, "LandingPage">;
           }) => ({
             title: "EventTrix",
             headerLeft: () => (
@@ -96,10 +129,7 @@ export default function App() {
           options={({
             navigation,
           }: {
-            navigation: NativeStackNavigationProp<
-              RootStackParamList,
-              "OrgProfile"
-            >;
+            navigation: StackNavigationProp<RootStackParamList, "OrgProfile">;
           }) => ({
             title: "Organization Profile", // header title
             headerLeft: () => (
@@ -123,10 +153,7 @@ export default function App() {
           options={({
             navigation,
           }: {
-            navigation: NativeStackNavigationProp<
-              RootStackParamList,
-              "Profile"
-            >;
+            navigation: StackNavigationProp<RootStackParamList, "Profile">;
           }) => ({
             title: "Profile",
             headerLeft: () => (
@@ -245,4 +272,5 @@ export default function App() {
       </Stack.Navigator>
     </NavigationContainer>
   );
-}
+};
+
