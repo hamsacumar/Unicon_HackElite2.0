@@ -1,4 +1,5 @@
 // App.tsx
+import "react-native-gesture-handler";
 import React from "react";
 import { TouchableOpacity } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
@@ -11,26 +12,19 @@ import { Ionicons } from "@expo/vector-icons";
 import Test from "./screens/test";
 import OrgSettings from "./screens/OrgSettings";
 import InputPage from "./screens/input"; // ✅ import your InputPage
-import Chat from "./screens/Chat";
-import InboxScreen from "./screens/InboxScreen";
 import Profile from "./screens/Profile";
 import ViewProfile from "./screens/ViewProfile";
-import EditProfile from "./screens/EditProfile"
+import EditProfile from "./screens/EditProfile";
+import MessagesPage from "./screens/MessagePage";
 // Define your stack param list
 export type RootStackParamList = {
   Test: undefined;
   Profile: undefined;
   OrgSettings: undefined;
   InputPage: undefined;
-  InboxScreen: { currentUserId: string };
-  Chat: {
-    currentUserId: string;
-    otherUserId: string;
-    currentUsername: string;
-    otherUsername: string;
-  };
   ViewProfile: undefined;
   EditProfile: undefined;
+  MessagePage: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -50,7 +44,14 @@ export default function App() {
         <Stack.Screen
           name="Profile"
           component={Profile}
-          options={({ navigation }: { navigation: NativeStackNavigationProp<RootStackParamList, "Profile"> }) => ({
+          options={({
+            navigation,
+          }: {
+            navigation: NativeStackNavigationProp<
+              RootStackParamList,
+              "Profile"
+            >;
+          }) => ({
             title: "Profile",
             headerLeft: () => (
               <TouchableOpacity
@@ -98,25 +99,23 @@ export default function App() {
           component={InputPage}
           options={{ title: "Create Event" }}
         />
-
-        <Stack.Screen
-          name="InboxScreen"
-          component={InboxScreen}
-          options={{ title: "Inbox" }}
-        />
-
-        <Stack.Screen
-          name="Chat"
-          component={Chat}
-          options={{ title: "Chat" }}
-        />
         <Stack.Screen
           name="ViewProfile"
           component={ViewProfile}
-          options={({ navigation }: { navigation: NativeStackNavigationProp<RootStackParamList, "ViewProfile"> }) => ({
+          options={({
+            navigation,
+          }: {
+            navigation: NativeStackNavigationProp<
+              RootStackParamList,
+              "ViewProfile"
+            >;
+          }) => ({
             title: "Profile",
             headerLeft: () => (
-              <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginLeft: 15 }}>
+              <TouchableOpacity
+                onPress={() => navigation.goBack()}
+                style={{ marginLeft: 15 }}
+              >
                 <Ionicons name="arrow-back" size={24} color="white" />
               </TouchableOpacity>
             ),
@@ -125,14 +124,30 @@ export default function App() {
         <Stack.Screen
           name="EditProfile"
           component={EditProfile}
-          options={({ navigation }: { navigation: NativeStackNavigationProp<RootStackParamList, "EditProfile"> }) => ({
+          options={({
+            navigation,
+          }: {
+            navigation: NativeStackNavigationProp<
+              RootStackParamList,
+              "EditProfile"
+            >;
+          }) => ({
             title: "EditProfile",
             headerLeft: () => (
-              <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginLeft: 15 }}>
+              <TouchableOpacity
+                onPress={() => navigation.goBack()}
+                style={{ marginLeft: 15 }}
+              >
                 <Ionicons name="arrow-back" size={24} color="white" />
               </TouchableOpacity>
             ),
           })}
+        />
+
+        <Stack.Screen
+          name="MessagePage"
+          component={MessagesPage}
+          options={{ title: "Messages" }}
         />
       </Stack.Navigator>
     </NavigationContainer>

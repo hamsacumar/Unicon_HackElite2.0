@@ -35,7 +35,7 @@ const RoleBasedBottomNav: React.FC<Props> = ({ navigation }) => {
       <Org_BottomNav
         onPressHome={() => console.log("home pressed")}
         onPressFilter={() => console.log("Filter pressed")}
-        onPressAdd={() => console.log("input pressed")}
+        onPressAdd={() => navigation.navigate("InputPage")}
         onPressNotification={() => console.log("Notification pressed")}
         onPressProfile={() => navigation.navigate("Profile")}
       />

@@ -2,24 +2,26 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Backend.Models;
 using Backend.Services;
-using Microsoft.Extensions.Logging;
-using System;
-using System.Threading.Tasks;
-using System.Collections.Generic;
+using MongoDB.Bson;
 
 namespace Backend.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize] // You can restrict by role if needed: [Authorize(Roles = "Student,Organizer,Admin")]
+    [Authorize]
     public class MessagesController : ControllerBase
     {
         private readonly IMessageService _messageService;
+        private readonly IUserService _userService; // ✅ add this
         private readonly ILogger<MessagesController> _logger;
 
-        public MessagesController(IMessageService messageService, ILogger<MessagesController> logger)
+        public MessagesController(
+            IMessageService messageService, 
+            IUserService userService,    // ✅ inject here
+            ILogger<MessagesController> logger)
         {
             _messageService = messageService;
+            _userService = userService;
             _logger = logger;
         }
 
@@ -35,6 +37,46 @@ namespace Backend.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to send message");
+                return StatusCode(500, new { success = false, error = ex.Message });
+            }
+        }
+
+        // POST: api/messages/sendByUsername
+        [HttpPost("sendByUsername")]
+        public async Task<IActionResult> SendByUsername([FromBody] SendByUsernameDto dto)
+        {
+            try
+            {
+                // 1. Find receiver by username
+                var receiver = await _userService.GetByUsername(dto.ReceiverUsername);
+                if (receiver == null)
+                    return NotFound(new { success = false, message = "Receiver not found" });
+
+                var senderId = User.FindFirst("id")?.Value;
+                var senderUsername = User.Identity?.Name;
+                if (senderId == null || senderUsername == null)
+                    return Unauthorized(new { success = false, message = "Invalid sender" });
+                // 2. Build message object
+                var message = new Message
+                {
+                    Id = ObjectId.GenerateNewId().ToString(),
+                    SenderId = senderId,
+                    SenderUsername = senderUsername,
+                    ReceiverId = receiver.Id,
+                    ReceiverUsername = receiver.Username,
+                    Text = dto.Text,
+                    Timestamp = DateTime.UtcNow,
+                    Status = "sent"
+                };
+
+                // 3. Save
+                await _messageService.CreateAsync(message);
+
+                return Ok(new { success = true, message = "Message sent successfully", data = message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send message by username");
                 return StatusCode(500, new { success = false, error = ex.Message });
             }
         }
@@ -80,9 +122,8 @@ namespace Backend.Controllers
         {
             try
             {
-                // Use the service to get messages where the user is the receiver
-                var messages = await _messageService.GetConversationAsync(userId, userId); 
-                // Optionally, filter in the service to only receiverId == userId
+                // ✅ FIX: use proper inbox service
+                var messages = await _messageService.GetInboxAsync(userId);
                 return Ok(new { success = true, data = messages });
             }
             catch (Exception ex)
@@ -91,5 +132,13 @@ namespace Backend.Controllers
                 return StatusCode(500, new { success = false, error = ex.Message });
             }
         }
+    }
+
+    public class SendByUsernameDto
+    {
+        public string SenderId { get; set; } = null!;
+        public string SenderUsername { get; set; } = null!;
+        public string ReceiverUsername { get; set; } = null!;
+        public string Text { get; set; } = null!;
     }
 }
