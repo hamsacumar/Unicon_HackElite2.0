@@ -16,6 +16,6 @@ namespace Backend.Services
         Task SaveVerification(EmailVerification verification);
         Task<EmailVerification> GetVerification(string userId, string type);
         Task UpdateVerification(EmailVerification verification);
-        Task UpdateProfileImage(string userId, string? imageUrl);
+        Task<bool> UpdateProfileImage(string userId, string? imageUrl);
     }
 }

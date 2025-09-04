@@ -8,18 +8,47 @@ export interface TestDataItem {
   value: string;
 }
 
-// Ensure BASE_URL ends with /api and has no trailing slash
-const BASE_URL = Constants.expoConfig?.extra?.apiUrl || 'http://10.10.0.203:5179';
+// Ensure BASE_URL has no trailing slash
+const BASE_URL = Constants.expoConfig?.extra?.apiUrl || 'http://10.10.8.24:5179';
 const API_BASE = `${BASE_URL.replace(/\/+$/, '')}`;
 
 // Create axios instance with base URL
 export const api = axios.create({
-  baseURL: `${API_BASE}/api`,
+  baseURL: `${API_BASE}`,
   timeout: 10000,
   validateStatus: function (status) {
     return status >= 200 && status < 500;
   },
+  headers: {
+    'Accept': 'application/json',
+    'Content-Type': 'application/json',
+  },
 });
+
+// Add request interceptor to include auth toke
+api.interceptors.request.use(
+  async (config: any) => {
+    const token = await SecureStore.getItemAsync('token');
+    if (token && config.headers) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error: any) => {
+    return Promise.reject(error);
+  }
+);
+
+// Add response interceptor to handle errors
+api.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  (error) => {
+    console.error('API Error:', error);
+    return Promise.reject(error);
+  }
+);
 
 // Add console log to verify the URL
 console.log("API Base URL:", API_BASE);

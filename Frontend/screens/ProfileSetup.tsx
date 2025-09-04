@@ -11,19 +11,19 @@ import {
   ScrollView 
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
-import { api } from "../services/api"; // your axios instance
-import { useAuth } from "../utils/AuthContext"; // get JWT token
+import { api } from "../services/api";
+import { useAuth } from "../utils/AuthContext";
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../App';
 import { Ionicons } from '@expo/vector-icons';
 
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../App';
+type ProfileSetupNavigationProp = NativeStackNavigationProp<RootStackParamList, 'ProfileSetup'>;
 
-type ProfileSetupScreenNavigationProp = NativeStackNavigationProp<
-  RootStackParamList,
-  'ProfileSetup'
->;
+type NavProp = NativeStackNavigationProp<RootStackParamList>;
 
-export default function ProfileSetup({ navigation }: { navigation: ProfileSetupScreenNavigationProp }) {
+function ProfileSetup() {
+  const navigation = useNavigation<ProfileSetupNavigationProp>();
   const [image, setImage] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isSkipping, setIsSkipping] = useState(false);
@@ -82,47 +82,121 @@ export default function ProfileSetup({ navigation }: { navigation: ProfileSetupS
   };
 
   const uploadImage = async () => {
-    if (!image) return;
+    if (!image) {
+      Alert.alert("Error", "Please select an image first");
+      return;
+    }
 
+    console.log("Starting image upload...");
+    console.log("Image URI:", image);
+    
     setIsUploading(true);
-    const formData = new FormData();
-    formData.append("file", {
-      uri: image,
-      name: "profile.jpg",
-      type: "image/jpeg",
-    } as any);
-
+    
     try {
-      await api.post("/profile/upload-image", formData, {
+      // First, test the API connection
+      const isConnected = await testApiConnection();
+      if (!isConnected) {
+        throw new Error('Cannot connect to the server. Please check your internet connection.');
+      }
+
+      console.log("Preparing to upload image...");
+      const formData = new FormData();
+      
+      // Create a file object with the correct structure for React Native
+      const file = {
+        uri: image,
+        name: `profile_${Date.now()}.jpg`,
+        type: 'image/jpeg',
+      };
+      
+      formData.append('File', file as any);
+      
+      console.log("Sending request to upload image...");
+      
+      // Remove transformRequest to let axios handle FormData automatically
+      const response = await api.post("/Profile/upload-image", formData, {
         headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data",
+          'Content-Type': 'multipart/form-data',
         },
       });
       
+      console.log("Upload response:", response);
+      
+      if (response.status >= 200 && response.status < 300) {
+        console.log("Upload successful, navigating to Home");
+        navigation.replace('Home');
+      } else {
+        // Handle potential response data structure
+        const responseData = response.data as { message?: string };
+        const errorMessage = responseData?.message || 'Failed to upload image';
+        throw new Error(errorMessage);
+      }
+    } catch (err: any) {
+      console.error("Upload error:", err);
+      console.error("Error details:", err.response?.data || err.message);
       Alert.alert(
-        "Success!",
-        "Your profile photo has been uploaded successfully!",
-        [{ text: "Continue", onPress: () => navigation.replace("Home") }]
+        "Upload Failed", 
+        err.response?.data?.message || "Failed to upload image. Please try again."
       );
-    } catch (err) {
-      console.error(err);
-      Alert.alert("Error", "Failed to upload image. Please try again.");
     } finally {
       setIsUploading(false);
     }
   };
 
-  const skipImage = async () => {
-    setIsSkipping(true);
+  // Test API connection first
+  const testApiConnection = async () => {
     try {
-      await api.post("/profile/skip-image", {}, {
-        headers: { Authorization: `Bearer ${token}` },
+      console.log("Testing API connection...");
+      const response = await api.get("/Profile/test");
+      console.log("API connection test response:", response.data);
+      return true;
+    } catch (error: any) {
+      console.error("API connection test failed:", {
+        message: error.message,
+        response: error.response?.data
       });
-      navigation.replace("Home");
-    } catch (err) {
-      console.error(err);
-      Alert.alert("Error", "Something went wrong. Please try again.");
+      return false;
+    }
+  };
+
+  const skipImage = async () => {
+    console.log("Skipping profile image...");
+    setIsSkipping(true);
+    
+    try {
+      // First, test the API connection
+      const isConnected = await testApiConnection();
+      if (!isConnected) {
+        throw new Error('Cannot connect to the server. Please check your internet connection.');
+      }
+
+      console.log("Sending skip request...");
+      
+      const response = await api.post("/Profile/skip-image", {}, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      console.log("Skip response status:", response.status);
+      console.log("Skip response data:", response.data);
+      
+      if (response.status >= 200 && response.status < 300) {
+        console.log("Skip successful, navigating to Home");
+        navigation.replace('Home');
+      } else {
+        // Handle potential response data structure
+        const responseData = response.data as { message?: string };
+        const errorMessage = responseData?.message || 'Failed to skip image upload';
+        throw new Error(errorMessage);
+      }
+    } catch (err: any) {
+      console.error("Skip error:", err);
+      console.error("Error details:", err.response?.data || err.message);
+      Alert.alert(
+        "Error", 
+        err.response?.data?.message || "Something went wrong. Please try again."
+      );
     } finally {
       setIsSkipping(false);
     }
@@ -218,6 +292,8 @@ export default function ProfileSetup({ navigation }: { navigation: ProfileSetupS
     </SafeAreaView>
   );
 }
+
+export default ProfileSetup;
 
 const styles = StyleSheet.create({
   safeArea: {

@@ -72,11 +72,20 @@ namespace Backend.Services
             await _verifications.ReplaceOneAsync(v => v.Id == verification.Id, verification);
         }
 
-        public async Task UpdateProfileImage(string userId, string? imageUrl)
+        public async Task<bool> UpdateProfileImage(string userId, string? imageUrl)
         {
-            var filter = Builders<AppUser>.Filter.Eq(u => u.Id, userId);
-            var update = Builders<AppUser>.Update.Set(u => u.ProfileImageUrl, imageUrl);
-            await _users.UpdateOneAsync(filter, update);
+            try
+            {
+                var filter = Builders<AppUser>.Filter.Eq(u => u.Id, userId);
+                var update = Builders<AppUser>.Update.Set(u => u.ProfileImageUrl, imageUrl);
+                var result = await _users.UpdateOneAsync(filter, update);
+                return result.IsAcknowledged && result.ModifiedCount > 0;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error updating profile image: {ex.Message}");
+                return false;
+            }
         }
     }
 }

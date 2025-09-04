@@ -32,6 +32,11 @@ import OrgProfile from "./screens/OrgProfile";
 
 // Define type for stack navigator
 export type RootStackParamList = {
+  // Main app screens
+  App: undefined;
+  Auth: undefined;
+  
+  // Other screens
   Test: undefined;
   Profile: undefined;
   OrgSettings: undefined;
@@ -78,15 +83,14 @@ const AuthStack = () => {
 // Main App Stack
 const AppStack = () => {
   return (
-    <NavigationContainer>
-      <Stack.Navigator
-        initialRouteName="Test"
-        screenOptions={{
-          headerStyle: { backgroundColor: "#FF5722" },
-          headerTintColor: "#fff",
-          headerTitleStyle: { fontWeight: "bold" },
-        }}
-      >
+    <Stack.Navigator
+      initialRouteName="Home"
+      screenOptions={{
+        headerStyle: { backgroundColor: "#FF5722" },
+        headerTintColor: "#fff",
+        headerTitleStyle: { fontWeight: "bold" },
+      }}
+    >
         {/* Home screen */}
         <Stack.Screen
           name="Home"
@@ -165,19 +169,6 @@ const AppStack = () => {
           ),
         })}
       />
-      <Stack.Screen
-        name="Profile"
-        component={Profile}
-        options={({ navigation }) => ({
-          title: "Profile",
-          headerLeft: () => (
-            <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginLeft: 15 }}>
-              <Ionicons name="arrow-back" size={24} color="white" />
-            </TouchableOpacity>
-          ),
-        })}
-      />
-      <Stack.Screen name="Test" component={Test} />
       <Stack.Screen name="InputPage" component={InputPage} options={{ title: "Create Event" }} />
       <Stack.Screen name="InboxScreen" component={InboxScreen} options={{ title: "Inbox" }} />
       <Stack.Screen name="Chat" component={Chat} options={{ title: "Chat" }} />
@@ -196,7 +187,6 @@ const AppStack = () => {
         })}
       />
     </Stack.Navigator>
-    </NavigationContainer>
   );
 };
 
@@ -206,7 +196,13 @@ const RootNavigator = () => {
   
   return (
     <NavigationContainer>
-      {token ? <AppStack /> : <AuthStack />}
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        {token ? (
+          <Stack.Screen name="App" component={AppStack} />
+        ) : (
+          <Stack.Screen name="Auth" component={AuthStack} />
+        )}
+      </Stack.Navigator>
       <Toast />
     </NavigationContainer>
   );
