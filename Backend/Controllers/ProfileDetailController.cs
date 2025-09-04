@@ -21,7 +21,6 @@ namespace Backend.Controllers
         [Authorize]
         public async Task<IActionResult> GetMyProfile()
         {
-            // Extract only the userId from JWT
             var userId = User.Claims
                 .FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")
                 ?.Value;
@@ -29,12 +28,10 @@ namespace Backend.Controllers
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized("User ID not found in token.");
 
-            // Get full profile from MongoDB
             var user = await _profileService.GetUserByIdAsync(userId);
             if (user == null)
                 return NotFound("User not found.");
 
-            // Return only what you want
             return Ok(new
             {
                 user.Username,
@@ -42,5 +39,20 @@ namespace Backend.Controllers
             });
         }
 
+        [HttpGet("my-events")]
+        [Authorize]
+        public async Task<IActionResult> GetMyEvents()
+        {
+            var userId = User.Claims
+                .FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")
+                ?.Value;
+
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized("User ID not found in token.");
+
+            var events = await _profileService.GetEventsByUserIdAsync(userId);
+
+            return Ok(events);
+        }
     }
 }

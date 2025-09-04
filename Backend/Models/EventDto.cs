@@ -5,9 +5,9 @@ namespace Backend.Models
 {
     public class EventDto
     {
-        [BsonElement("id")]                 // maps aggregation result "id" to this property
+        [BsonElement("id")]                 
         [JsonPropertyName("id")]
-        public string? Id { get; set; }
+        public string Id { get; set; } = null!;   // guaranteed string from $toString
 
         [BsonElement("title")]
         [JsonPropertyName("title")]
@@ -27,12 +27,10 @@ namespace Backend.Models
 
         [BsonElement("userId")]
         [JsonPropertyName("userId")]
-        public string UserId { get; set; } = null!;
+        public string UserId { get; set; } = null!;  // guaranteed string from $toString
 
         [BsonElement("username")]
         [JsonPropertyName("username")]
         public string Username { get; set; } = null!;
-
-        
     }
 }
