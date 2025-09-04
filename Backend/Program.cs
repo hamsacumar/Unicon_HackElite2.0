@@ -12,7 +12,9 @@ using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Bson.Serialization.Serializers;
 
+// ----------------------------
 // Configure BSON serialization
+// ----------------------------
 var pack = new ConventionPack
 {
     new CamelCaseElementNameConvention(),
@@ -24,7 +26,7 @@ ConventionRegistry.Register("CustomConventions", pack, t => true);
 BsonSerializer.RegisterSerializer(new StringSerializer(BsonType.ObjectId));
 BsonSerializer.RegisterSerializer(new GuidSerializer(BsonType.String));
 BsonSerializer.RegisterSerializer(new DateTimeOffsetSerializer(BsonType.String));
-BsonClassMap.RegisterClassMap<EventDto>(cm => 
+BsonClassMap.RegisterClassMap<EventDto>(cm =>
 {
     cm.AutoMap();
     cm.SetIgnoreExtraElements(true);
@@ -80,13 +82,18 @@ builder.Services.AddAuthentication("Bearer")
         options.CallbackPath = "/signin-google";
     });
 
-// Add Authorization and policy for "Organization" role
+// ----------------------------
+// Authorization Policies
+// ----------------------------
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("OrganizationOnly", policy =>
         policy.RequireRole("Organizer"));
 });
 
+// ----------------------------
+// Controllers & Swagger
+// ----------------------------
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -157,9 +164,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-// Static files (images)
-app.UseStaticFiles(); 
 
+// Static files (images)
+app.UseStaticFiles();
 
 // Enable CORS, Authentication & Authorization
 app.UseCors("AllowAll");
@@ -169,5 +176,7 @@ app.UseAuthorization();
 // Map Controllers
 app.MapControllers();
 
+// ----------------------------
 // Run the application
+// ----------------------------
 app.Run();

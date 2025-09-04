@@ -17,7 +17,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 type Props = {
   postId: string;                     // ID of the post to fetch comments for
-  userId: string;                     // ID of the currently logged-in user
+  userId?: string | null;             // ID of the currently logged-in user (null for unauthenticated)
   onCommentAdd?: (count: number) => void; // Callback after adding a comment
   initialComments?: Comment[];        // Optional initial comments
   initialCommentCount?: number;       // Optional initial comment count
@@ -65,7 +65,10 @@ export default function CommentSection({
 
   // Handle adding a new comment
   const handleAddComment = async () => {
-    if (!text.trim() || isSubmitting) return;
+    if (!text.trim() || isSubmitting || !userId) {
+      console.log("Please log in to comment");
+      return;
+    }
 
     try {
       setIsSubmitting(true);
@@ -152,25 +155,30 @@ export default function CommentSection({
         )}
       </View>
 
-      {/* Comment input */}
+      {/* Comment input with login prompt for unauthenticated users */}
       <View style={styles.inputContainer}>
         <TextInput
           ref={inputRef}
-          style={styles.input}
+          style={[styles.input, !userId && styles.disabledInput]}
           value={text}
           onChangeText={setText}
-          placeholder="Add a comment..."
+          placeholder={userId ? "Add a comment..." : "Log in to comment"}
           placeholderTextColor="#999"
           multiline
           maxLength={500}
           onSubmitEditing={handleAddComment}
           returnKeyType="send"
           blurOnSubmit={false}
+          editable={!!userId}
+          pointerEvents={userId ? 'auto' : 'none'}
         />
         <TouchableOpacity
-          style={[styles.sendButton, (!text.trim() || isSubmitting) && styles.sendButtonDisabled]}
+          style={[
+            styles.sendButton, 
+            (!text.trim() || isSubmitting || !userId) && styles.sendButtonDisabled
+          ]}
           onPress={handleAddComment}
-          disabled={!text.trim() || isSubmitting}
+          disabled={!text.trim() || isSubmitting || !userId}
         >
           {isSubmitting ? (
             <ActivityIndicator size="small" color="#fff" />
@@ -179,6 +187,20 @@ export default function CommentSection({
           )}
         </TouchableOpacity>
       </View>
+      {!userId && (
+        <View style={styles.loginPrompt}>
+          <Text style={styles.loginText}>
+            <Text>Please </Text>
+            <Text 
+              style={styles.loginLink}
+              onPress={() => console.log("Navigate to login")}
+            >
+              log in
+            </Text>
+            <Text> to add a comment</Text>
+          </Text>
+        </View>
+      )}
     </KeyboardAvoidingView>
   );
 }
@@ -201,8 +223,46 @@ const styles = StyleSheet.create({
   commentAuthor: { fontWeight: '600', fontSize: 14, color: '#333', marginBottom: 4 },
   commentText: { fontSize: 14, color: '#333', lineHeight: 20 },
   commentTime: { fontSize: 12, color: '#999', marginTop: 4 },
-  inputContainer: { flexDirection: 'row', alignItems: 'center', padding: 12, borderTopWidth: 1, borderTopColor: '#eee', backgroundColor: '#fff' },
-  input: { flex: 1, backgroundColor: '#f5f5f5', borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10, fontSize: 14, color: '#333', maxHeight: 120, marginRight: 8 },
+  inputContainer: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    borderTopWidth: 1, 
+    borderTopColor: '#eee',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#fff'
+  },
+  loginPrompt: {
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loginText: {
+    color: '#666',
+    fontSize: 14,
+  },
+  loginLink: {
+    color: '#e74c3c',
+    fontWeight: '600',
+  },
+  input: { 
+    flex: 1, 
+    backgroundColor: '#f5f5f5', 
+    borderRadius: 20, 
+    paddingHorizontal: 16, 
+    paddingVertical: 10, 
+    fontSize: 14, 
+    color: '#333', 
+    maxHeight: 120, 
+    marginRight: 8,
+  },
+  disabledInput: {
+    backgroundColor: '#f9f9f9',
+    color: '#999',
+  },
   sendButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#e74c3c', justifyContent: 'center', alignItems: 'center' },
   sendButtonDisabled: { opacity: 0.5 },
 });

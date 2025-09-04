@@ -176,21 +176,21 @@ export default function PostDetail({ route, navigation }: Props) {
         {/* Post Actions */}
         <PostActions 
           postId={postId} 
-          userId={post.userId}
+          userId={null} // Pass null for unauthenticated users
           initialLikeCount={likeCount}
           initialCommentCount={commentCount}
           initialIsLiked={isLiked}
           onLikeUpdate={handleLikeUpdate}
           onCommentPress={() => {
-            // Focus the comment input when comment button is pressed
-            // This would require a ref to the CommentSection component
+            // For unauthenticated users, this will show the login prompt
+            // For authenticated users, you can implement focus logic here
           }}
         />
 
         {/* Comments Section */}
         <CommentSection 
           postId={postId} 
-          userId={post.userId}
+          userId={null} // Pass null for unauthenticated users
           onCommentAdd={handleCommentAdd}
         />
       </ScrollView>
