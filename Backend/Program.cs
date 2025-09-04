@@ -4,6 +4,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 using Backend.Settings;
+using Backend.Models;
 using Backend.Services;
 using Microsoft.OpenApi.Models;
 using MongoDB.Bson;
@@ -143,6 +144,7 @@ builder.Services.AddSingleton<IGoogleAuthService, GoogleAuthService>();
 builder.Services.AddScoped<ITokenCheckService, TokenCheckService>();
 builder.Services.AddScoped<InputService>();
 builder.Services.AddScoped<IMessageService, MessageService>();
+builder.Services.AddScoped<IPostService, PostService>();
 
 //
 // ✅ CORS Policy (Allow All)
