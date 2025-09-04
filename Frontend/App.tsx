@@ -2,21 +2,44 @@
 import React from "react";
 import { TouchableOpacity } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
-import { createNativeStackNavigator, NativeStackNavigationProp } from "@react-navigation/native-stack";
+import {
+  createNativeStackNavigator,
+  NativeStackNavigationProp,
+} from "@react-navigation/native-stack";
+
 import { Ionicons } from "@expo/vector-icons";
 
+// Import screens
 import Test from "./screens/test";
 import OrgSettings from "./screens/OrgSettings";
+import Home from "./screens/Home";
+import LandingPage from "./screens/LandingPage";
+import InputPage from "./screens/input"; // Input Page
+import Chat from "./screens/Chat";
+import InboxScreen from "./screens/InboxScreen";
 import Profile from "./screens/Profile";
 import ViewProfile from "./screens/ViewProfile";
-import EditProfile from "./screens/EditProfile"
-// Define your stack param list
+import EditProfile from "./screens/EditProfile";
+import OrgProfile from "./screens/OrgProfile";
+
+// Define type for stack navigator
 export type RootStackParamList = {
   Test: undefined;
   Profile: undefined;
   OrgSettings: undefined;
+  Home: undefined;
+  LandingPage: undefined;
+  InputPage: undefined;
+  InboxScreen: { currentUserId: string };
+  Chat: {
+    currentUserId: string;
+    otherUserId: string;
+    currentUsername: string;
+    otherUsername: string;
+  };
   ViewProfile: undefined;
   EditProfile: undefined;
+  OrgProfile: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -32,55 +55,184 @@ export default function App() {
           headerTitleStyle: { fontWeight: "bold" },
         }}
       >
+        {/* Home screen */}
+        <Stack.Screen
+          name="Home"
+          component={Home}
+          options={{
+            title: "EventTrix",
+          }}
+        />
+
+        {/* Landing Page screen with back button */}
+        <Stack.Screen
+          name="LandingPage"
+          component={LandingPage}
+          options={({
+            navigation,
+          }: {
+            navigation: NativeStackNavigationProp<
+              RootStackParamList,
+              "LandingPage"
+            >;
+          }) => ({
+            title: "EventTrix",
+            headerLeft: () => (
+              <TouchableOpacity
+                onPress={() => navigation.goBack()}
+                style={{ marginLeft: 15 }}
+              >
+                <Ionicons name="arrow-back" size={24} color="white" />
+              </TouchableOpacity>
+            ),
+          })}
+        />
+        {/* OrgProfile screen with back button */}
+        <Stack.Screen
+          name="OrgProfile"
+          component={OrgProfile} // make sure to import OrgProfile at the top
+          options={({
+            navigation,
+          }: {
+            navigation: NativeStackNavigationProp<
+              RootStackParamList,
+              "OrgProfile"
+            >;
+          }) => ({
+            title: "Organization Profile", // header title
+            headerLeft: () => (
+              <TouchableOpacity
+                onPress={() => navigation.goBack()}
+                style={{ marginLeft: 15 }}
+              >
+                <Ionicons name="arrow-back" size={24} color="white" />
+              </TouchableOpacity>
+            ),
+          })}
+        />
+
+        {/* Test screen */}
         <Stack.Screen name="Test" component={Test} />
+
+        {/* Profile screen with back and menu buttons */}
         <Stack.Screen
           name="Profile"
           component={Profile}
-          options={({ navigation }: { navigation: NativeStackNavigationProp<RootStackParamList, "Profile"> }) => ({
+          options={({
+            navigation,
+          }: {
+            navigation: NativeStackNavigationProp<
+              RootStackParamList,
+              "Profile"
+            >;
+          }) => ({
             title: "Profile",
             headerLeft: () => (
-              <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginLeft: 15 }}>
+              <TouchableOpacity
+                onPress={() => navigation.goBack()}
+                style={{ marginLeft: 15 }}
+              >
                 <Ionicons name="arrow-back" size={24} color="white" />
               </TouchableOpacity>
             ),
             headerRight: () => (
-              <TouchableOpacity onPress={() => navigation.navigate("OrgSettings")} style={{ marginRight: 15 }}>
+              <TouchableOpacity
+                onPress={() => navigation.navigate("OrgSettings")}
+                style={{ marginRight: 15 }}
+              >
                 <Ionicons name="menu" size={28} color="white" />
               </TouchableOpacity>
             ),
           })}
         />
+
+        {/* OrgSettings screen */}
         <Stack.Screen
           name="OrgSettings"
           component={OrgSettings}
-          options={({ navigation }: { navigation: NativeStackNavigationProp<RootStackParamList, "OrgSettings"> }) => ({
+          options={({
+            navigation,
+          }: {
+            navigation: NativeStackNavigationProp<
+              RootStackParamList,
+              "OrgSettings"
+            >;
+          }) => ({
             title: "Settings and Activity",
             headerLeft: () => (
-              <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginLeft: 15 }}>
+              <TouchableOpacity
+                onPress={() => navigation.goBack()}
+                style={{ marginLeft: 15 }}
+              >
                 <Ionicons name="arrow-back" size={24} color="white" />
               </TouchableOpacity>
             ),
           })}
         />
+
+        {/* InputPage screen */}
+        <Stack.Screen
+          name="InputPage"
+          component={InputPage}
+          options={{ title: "Create Event" }}
+        />
+
+        {/* InboxScreen screen */}
+        <Stack.Screen
+          name="InboxScreen"
+          component={InboxScreen}
+          options={{ title: "Inbox" }}
+        />
+
+        {/* Chat screen */}
+        <Stack.Screen
+          name="Chat"
+          component={Chat}
+          options={{ title: "Chat" }}
+        />
+
+        {/* ViewProfile screen */}
         <Stack.Screen
           name="ViewProfile"
           component={ViewProfile}
-          options={({ navigation }: { navigation: NativeStackNavigationProp<RootStackParamList, "ViewProfile"> }) => ({
+          options={({
+            navigation,
+          }: {
+            navigation: NativeStackNavigationProp<
+              RootStackParamList,
+              "ViewProfile"
+            >;
+          }) => ({
             title: "Profile",
             headerLeft: () => (
-              <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginLeft: 15 }}>
+              <TouchableOpacity
+                onPress={() => navigation.goBack()}
+                style={{ marginLeft: 15 }}
+              >
                 <Ionicons name="arrow-back" size={24} color="white" />
               </TouchableOpacity>
             ),
           })}
         />
+
+        {/* EditProfile screen */}
         <Stack.Screen
           name="EditProfile"
           component={EditProfile}
-          options={({ navigation }: { navigation: NativeStackNavigationProp<RootStackParamList, "EditProfile"> }) => ({
-            title: "EditProfile",
+          options={({
+            navigation,
+          }: {
+            navigation: NativeStackNavigationProp<
+              RootStackParamList,
+              "EditProfile"
+            >;
+          }) => ({
+            title: "Edit Profile",
             headerLeft: () => (
-              <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginLeft: 15 }}>
+              <TouchableOpacity
+                onPress={() => navigation.goBack()}
+                style={{ marginLeft: 15 }}
+              >
                 <Ionicons name="arrow-back" size={24} color="white" />
               </TouchableOpacity>
             ),
