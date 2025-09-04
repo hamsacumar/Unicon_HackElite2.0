@@ -1,38 +1,41 @@
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
-using System;
+using System.Text.Json.Serialization;
 
 namespace Backend.Models
 {
-    public class EventModel
+    public class EventDto
     {
+        // MongoDB _id stored as ObjectId, represented as string in C#
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
+        [JsonPropertyName("id")]
         public string? Id { get; set; }
 
         [BsonElement("title")]
+        [JsonPropertyName("title")]
         public string Title { get; set; } = null!;
 
         [BsonElement("description")]
+        [JsonPropertyName("description")]
         public string Description { get; set; } = null!;
 
         [BsonElement("category")]
+        [JsonPropertyName("category")]
         public string Category { get; set; } = null!;
 
-        [BsonElement("startDate")]
-        public DateTime StartDate { get; set; }
-
-        [BsonElement("endDate")]
-        public DateTime EndDate { get; set; }
-
         [BsonElement("imageUrl")]
+        [JsonPropertyName("imageUrl")]
         public string? ImageUrl { get; set; }
 
+        // UserId stored as ObjectId in DB, represented as string in C#
         [BsonElement("userId")]
-        [BsonRepresentation(BsonType.ObjectId)]  // <-- Fix applied
+        [BsonRepresentation(BsonType.ObjectId)]
+        [JsonPropertyName("userId")]
         public string UserId { get; set; } = null!;
 
-        [BsonElement("createdAt")]
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        [BsonElement("username")]
+        [JsonPropertyName("username")]
+        public string Username { get; set; } = null!;
     }
 }

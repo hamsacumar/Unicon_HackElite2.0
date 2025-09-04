@@ -33,7 +33,7 @@ const RoleBasedBottomNav: React.FC<Props> = ({ navigation }) => {
   if (role === "Organizer") {
     return (
       <Org_BottomNav
-        onPressHome={() => console.log("home pressed")}
+        onPressHome={() => navigation.navigate("Home")}
         onPressFilter={() => console.log("Filter pressed")}
         onPressAdd={() => navigation.navigate("InputPage")}
         onPressNotification={() => console.log("Notification pressed")}
@@ -45,10 +45,10 @@ const RoleBasedBottomNav: React.FC<Props> = ({ navigation }) => {
   if (role === "Student") {
     return (
       <Stu_BottomNav
-        onPressHome={() => console.log("home pressed")}
+        onPressHome={() => navigation.navigate("Home")}
         onPressFilter={() => console.log("Filter pressed")}
         onPressNotification={() => console.log("Notification pressed")}
-        onPressProfile={() => navigation.navigate("Profile")}
+        onPressProfile={() => navigation.navigate("OrgProfile")}
       />
     );
   }
