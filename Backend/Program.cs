@@ -5,6 +5,7 @@ using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 using Backend.Settings;
 using Backend.Services;
+using Backend.Models;
 using Microsoft.OpenApi.Models;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
@@ -32,7 +33,9 @@ BsonClassMap.RegisterClassMap<EventDto>(cm =>
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Load settings
+// ----------------------------
+// Load Configuration Settings
+// ----------------------------
 builder.Services.Configure<MongoDbSettings>(
     builder.Configuration.GetSection("MongoDbSettings")
 );
@@ -40,17 +43,21 @@ builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSet
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 builder.Services.Configure<GoogleAuthSettings>(builder.Configuration.GetSection("GoogleAuth"));
 
+// ----------------------------
+// MongoDB Client Singleton
+// ----------------------------
 builder.Services.AddSingleton<IMongoClient>(s =>
 {
     var settings = s.GetRequiredService<IOptions<MongoDbSettings>>().Value;
     return new MongoClient(settings.ConnectionString);
 });
 
+// ----------------------------
+// JWT & Google Authentication
+// ----------------------------
 var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>()!;
-var emailSettings = builder.Configuration.GetSection("EmailSettings").Get<EmailSettings>()!;
 var googleAuthSettings = builder.Configuration.GetSection("GoogleAuth").Get<GoogleAuthSettings>()!;
 
-// Add Authentication
 builder.Services.AddAuthentication("Bearer")
     .AddJwtBearer(options =>
     {
@@ -86,14 +93,17 @@ builder.Services.AddAuthorization(options =>
 // ----------------------------
 // Controllers & Swagger
 // ----------------------------
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+    });
 
+builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "Backend API", Version = "v1" });
 
-    // 🔑 Add JWT Authentication
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -115,38 +125,44 @@ builder.Services.AddSwaggerGen(c =>
                     Id = "Bearer"
                 }
             },
-            new string[] {}
+            Array.Empty<string>()
         }
     });
 });
 
-// Add services and interface
+// ----------------------------
+// Dependency Injection (DI) for Services
+// ----------------------------
 builder.Services.AddScoped<ITestService, TestService>();
+builder.Services.AddScoped<ITokenCheckService, TokenCheckService>();
 builder.Services.AddSingleton<IUserService, UserService>();
 builder.Services.AddSingleton<IEmailService, EmailService>();
 builder.Services.AddSingleton<IJwtService, JwtService>();
 builder.Services.AddSingleton<IGoogleAuthService, GoogleAuthService>();
-builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<ITokenCheckService, TokenCheckService>();
-builder.Services.AddScoped<InputService>();
-builder.Services.AddScoped<IMessageService, MessageService>();
-builder.Services.AddScoped<ProfileDetailService>();
 builder.Services.AddScoped<IPostService, PostService>();
 
-// ✅ Add CORS policy
+builder.Services.AddScoped<InputService>();
+builder.Services.AddScoped<IMessageService, MessageService>();
+
+// ----------------------------
+// CORS Policy
+// ----------------------------
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
-        policy
-            .AllowAnyOrigin()   
-            .AllowAnyMethod()
-            .AllowAnyHeader();
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
     });
 });
 
+// ----------------------------
+// Build the app
+// ----------------------------
 var app = builder.Build();
 
+// Swagger & Development Tools
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -154,15 +170,14 @@ if (app.Environment.IsDevelopment())
 }
 
 // Static files (images)
-app.UseStaticFiles(); 
-
+app.UseStaticFiles();
 
 // Enable CORS, Authentication & Authorization
 app.UseCors("AllowAll");
-
 app.UseAuthentication();
 app.UseAuthorization();
 
+// Map Controllers
 app.MapControllers();
 
 // ----------------------------
