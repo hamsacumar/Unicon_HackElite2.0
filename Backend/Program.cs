@@ -23,7 +23,6 @@ var pack = new ConventionPack
 };
 ConventionRegistry.Register("CustomConventions", pack, t => true);
 
-BsonSerializer.RegisterSerializer(new StringSerializer(BsonType.ObjectId));
 BsonSerializer.RegisterSerializer(new GuidSerializer(BsonType.String));
 BsonSerializer.RegisterSerializer(new DateTimeOffsetSerializer(BsonType.String));
 BsonClassMap.RegisterClassMap<EventDto>(cm =>

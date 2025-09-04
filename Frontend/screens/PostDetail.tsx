@@ -17,6 +17,7 @@ import { getEventById, EventItem } from "../services/eventService";
 import { Ionicons } from "@expo/vector-icons";
 import { format } from 'date-fns';
 import Constants from "expo-constants";
+import BottomNav from "../component/bottomNav";
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl?.replace("/api", "");
 
@@ -171,6 +172,7 @@ export default function PostDetail({ route, navigation }: Props) {
           <Text style={[styles.statsText, { marginLeft: 16 }]}>
             {commentCount} {commentCount === 1 ? 'comment' : 'comments'}
           </Text>
+         
         </View>
 
         {/* Post Actions */}
@@ -194,6 +196,7 @@ export default function PostDetail({ route, navigation }: Props) {
           onCommentAdd={handleCommentAdd}
         />
       </ScrollView>
+      <BottomNav />
     </View>
   );
 }
