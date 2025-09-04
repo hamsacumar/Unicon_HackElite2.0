@@ -21,7 +21,8 @@ import Profile from "./screens/Profile";
 import ViewProfile from "./screens/ViewProfile";
 import EditProfile from "./screens/EditProfile";
 import OrgProfile from "./screens/OrgProfile";
-
+import PostDetail from "./screens/PostDetail";
+import { EventItem } from "./services/eventService";
 // Define type for stack navigator
 export type RootStackParamList = {
   Test: undefined;
@@ -40,6 +41,7 @@ export type RootStackParamList = {
   ViewProfile: undefined;
   EditProfile: undefined;
   OrgProfile: undefined;
+  PostDetail: { post: EventItem };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -238,6 +240,8 @@ export default function App() {
             ),
           })}
         />
+
+<Stack.Screen name="PostDetail" component={PostDetail} options={{ title: "Post" }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -12,5 +12,13 @@ namespace Backend.Services
 
         // Mandatory: fetch events with user info
         Task<List<EventDto>> GetEventsWithUsersAsync();
+
+        // New methods for likes & comments
+        Task AddLikeAsync(string postId, string userId);
+        Task<int> GetLikeCountAsync(string postId);
+
+        Task AddCommentAsync(CommentModel comment);
+        Task<List<CommentModel>> GetCommentsByPostIdAsync(string postId);
+        Task<bool> CheckIfLikedAsync(string postId, string userId);
     }
 }

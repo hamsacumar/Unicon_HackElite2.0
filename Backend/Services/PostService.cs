@@ -10,17 +10,70 @@ namespace Backend.Services
 {
     public class PostService : IPostService
     {
-        private readonly IMongoCollection<EventModel> _events; // MongoDB collection for events
-        private readonly IMongoCollection<AppUser> _users;     // MongoDB collection for users
+        private readonly IMongoCollection<EventModel> _events;   
+        private readonly IMongoCollection<AppUser> _users;       
+        private readonly IMongoCollection<LikeModel> _likes;     
+        private readonly IMongoCollection<CommentModel> _comments;
 
         public PostService(IMongoClient mongoClient, IOptions<MongoDbSettings> settings)
         {
-            var database = mongoClient.GetDatabase(settings.Value.DatabaseName); // Get database from settings
-            _events = database.GetCollection<EventModel>("events");               // Initialize events collection
-            _users = database.GetCollection<AppUser>("Users");                    // Initialize users collection
+            var database = mongoClient.GetDatabase(settings.Value.DatabaseName);
+
+            // Collections used in this service
+            _events = database.GetCollection<EventModel>("events");
+            _users = database.GetCollection<AppUser>("Users");
+            _likes = database.GetCollection<LikeModel>("Likes");
+            _comments = database.GetCollection<CommentModel>("Comments");
         }
 
-        // Get all events from the database
+        /* ================================
+           Likes
+        ================================== */
+
+        // Add a like to a post, but only if this user hasn't liked it before
+        public async Task AddLikeAsync(string postId, string userId)
+        {
+            var existing = await _likes.Find(l => l.PostId == postId && l.UserId == userId).FirstOrDefaultAsync();
+            if (existing == null)
+            {
+                await _likes.InsertOneAsync(new LikeModel { PostId = postId, UserId = userId });
+            }
+        }
+
+        // Get total like count for a post
+        public async Task<int> GetLikeCountAsync(string postId)
+        {
+            return (int)await _likes.CountDocumentsAsync(l => l.PostId == postId);
+        }
+
+        // Check whether a specific user has already liked a post
+        public async Task<bool> CheckIfLikedAsync(string postId, string userId)
+        {
+            var existing = await _likes.Find(l => l.PostId == postId && l.UserId == userId).FirstOrDefaultAsync();
+            return existing != null;
+        }
+
+        /* ================================
+           Comments
+        ================================== */
+
+        // Add a comment to a post
+        public async Task AddCommentAsync(CommentModel comment)
+        {
+            await _comments.InsertOneAsync(comment);
+        }
+
+        // Get all comments for a given post
+        public async Task<List<CommentModel>> GetCommentsByPostIdAsync(string postId)
+        {
+            return await _comments.Find(c => c.PostId == postId).ToListAsync();
+        }
+
+        /* ================================
+           Events
+        ================================== */
+
+        // Get all events
         public async Task<List<EventModel>> GetAsync() =>
             await _events.Find(_ => true).ToListAsync();
 
@@ -28,41 +81,43 @@ namespace Backend.Services
         public async Task<EventModel?> GetByIdAsync(string id) =>
             await _events.Find(ev => ev.Id == id).FirstOrDefaultAsync();
 
-        // Insert a new event into the database
+        // Create a new event
         public async Task CreateAsync(EventModel ev) =>
             await _events.InsertOneAsync(ev);
 
-        // Return events along with their associated user info (mandatory)
+        // Get all events along with user information
         public async Task<List<EventDto>> GetEventsWithUsersAsync()
         {
             var pipeline = new[]
             {
                 new BsonDocument("$lookup", new BsonDocument
                 {
-                    { "from", "Users" }, // Join with Users collection
-                    { "let", new BsonDocument("userId", new BsonDocument("$toObjectId", "$userId")) }, // Convert string userId to ObjectId
+                    { "from", "Users" },
+                    { "let", new BsonDocument("userId", new BsonDocument("$toObjectId", "$userId")) },
                     { "pipeline", new BsonArray
-                    {
-                        new BsonDocument("$match", new BsonDocument(
-                            "$expr", new BsonDocument(
-                                "$eq", new BsonArray { "$_id", "$$userId" }))) // Match user by _id
-                    }},
-                    { "as", "user" } // Resulting user info will be in 'user' field
+                        {
+                            new BsonDocument("$match", new BsonDocument(
+                                "$expr", new BsonDocument(
+                                    "$eq", new BsonArray { "$_id", "$$userId" }
+                                )
+                            ))
+                        }
+                    },
+                    { "as", "user" }
                 }),
-                new BsonDocument("$unwind", "$user"), // Flatten the user array to a single object
+                new BsonDocument("$unwind", "$user"),
                 new BsonDocument("$project", new BsonDocument
                 {
-                    { "id", "$_id" },               
-                    { "title", "$title" },         
-                    { "description", "$description" }, 
-                    { "category", "$category" },    
-                    { "imageUrl", "$imageUrl" },    
-                    { "userId", "$user._id" },      
-                    { "username", "$user.Username" }, 
-                }  )  
+                    { "id", "$_id" },
+                    { "title", "$title" },
+                    { "description", "$description" },
+                    { "category", "$category" },
+                    { "imageUrl", "$imageUrl" },
+                    { "userId", "$user._id" },
+                    { "username", "$user.Username" }
+                })
             };
 
-            // Execute the aggregation pipeline and return as a list of EventDto
             return await _events.Aggregate<EventDto>(pipeline).ToListAsync();
         }
     }

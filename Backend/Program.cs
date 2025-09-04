@@ -6,6 +6,29 @@ using MongoDB.Driver;
 using Backend.Settings;
 using Backend.Services;
 using Microsoft.OpenApi.Models;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
+using MongoDB.Bson.Serialization.Conventions;
+using MongoDB.Bson.Serialization.Serializers;
+
+// ----------------------------
+// Configure BSON serialization
+// ----------------------------
+var pack = new ConventionPack
+{
+    new CamelCaseElementNameConvention(),
+    new IgnoreExtraElementsConvention(true),
+    new StringIdStoredAsObjectIdConvention()
+};
+ConventionRegistry.Register("CustomConventions", pack, t => true);
+
+BsonSerializer.RegisterSerializer(new GuidSerializer(BsonType.String));
+BsonSerializer.RegisterSerializer(new DateTimeOffsetSerializer(BsonType.String));
+BsonClassMap.RegisterClassMap<EventDto>(cm =>
+{
+    cm.AutoMap();
+    cm.SetIgnoreExtraElements(true);
+});
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -51,13 +74,18 @@ builder.Services.AddAuthentication("Bearer")
         options.CallbackPath = "/signin-google";
     });
 
-// Add Authorization and policy for "Organization" role
+// ----------------------------
+// Authorization Policies
+// ----------------------------
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("OrganizationOnly", policy =>
         policy.RequireRole("Organizer"));
 });
 
+// ----------------------------
+// Controllers & Swagger
+// ----------------------------
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
@@ -124,11 +152,12 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
 // Static files (images)
 app.UseStaticFiles(); 
 
 
-// ✅ Enable CORS before Authorization
+// Enable CORS, Authentication & Authorization
 app.UseCors("AllowAll");
 
 app.UseAuthentication();
@@ -136,4 +165,7 @@ app.UseAuthorization();
 
 app.MapControllers();
 
+// ----------------------------
+// Run the application
+// ----------------------------
 app.Run();
