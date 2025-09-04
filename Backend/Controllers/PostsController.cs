@@ -67,27 +67,56 @@ namespace Backend.Controllers
             }
         }
 
-        // POST: api/posts
-        [HttpPost]
-        public async Task<ActionResult> CreatePost([FromBody] EventModel ev)
+        // POST: api/posts/{id}/like
+        [HttpPost("{id}/like")]
+        public async Task<IActionResult> LikePost(string id, [FromBody] LikeRequest request)
         {
-            try
-            {
-                if (ev == null)
-                    return BadRequest(new { success = false, message = "Invalid post data." });
+            await _postService.AddLikeAsync(id, request.UserId);
+            var likeCount = await _postService.GetLikeCountAsync(id);
+            return Ok(new { success = true, likeCount });
+        }
 
-                await _postService.CreateAsync(ev);
-                return Ok(new { success = true, postId = ev.Id });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to create post.");
-                return StatusCode(500, new
-                {
-                    success = false,
-                    message = "Unable to create post. " + ex.Message
-                });
-            }
+        // POST: api/posts/{id}/comment
+        [HttpPost("{id}/comment")]
+        public async Task<IActionResult> CommentPost(string id, [FromBody] CommentModel comment)
+        {
+            comment.PostId = id;
+            comment.CreatedAt = DateTime.UtcNow;
+            await _postService.AddCommentAsync(comment);
+
+            return Ok(new { success = true, comment });
+        }
+
+        // GET: api/posts/{id}/comments
+        [HttpGet("{id}/comments")]
+        public async Task<ActionResult<List<CommentModel>>> GetComments(string id)
+        {
+            var comments = await _postService.GetCommentsByPostIdAsync(id);
+            return Ok(comments);
+        }
+
+        // GET: api/posts/{id}/likeCount
+        [HttpGet("{id}/likeCount")]
+        public async Task<IActionResult> GetLikeCount(string id)
+        {
+            var count = await _postService.GetLikeCountAsync(id);
+            return Ok(new { likeCount = count });
+        }
+
+        // GET: api/posts/{id}/isLiked?userId=123
+        [HttpGet("{id}/isLiked")]
+        public async Task<IActionResult> IsLiked(string id, [FromQuery] string userId)
+        {
+            var existing = await _postService.CheckIfLikedAsync(id, userId);
+            return Ok(new { isLiked = existing });
+        }
+
+        // GET: api/posts/{id}/comments/count
+        [HttpGet("{id}/comments/count")]
+        public async Task<IActionResult> GetCommentCount(string id)
+        {
+            var comments = await _postService.GetCommentsByPostIdAsync(id);
+            return Ok(new { count = comments.Count });
         }
     }
 }
