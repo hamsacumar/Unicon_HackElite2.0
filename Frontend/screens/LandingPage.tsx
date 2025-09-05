@@ -145,7 +145,12 @@ const styles = StyleSheet.create({
   },
   noImageText: { color: "#555" },
 
-  category: { fontWeight: "bold", marginTop: 8, fontSize: 14, color: "#E64A0D" },
+  category: {
+    fontWeight: "bold",
+    marginTop: 8,
+    fontSize: 14,
+    color: "#E64A0D",
+  },
   title: { fontSize: 16, marginTop: 4, fontWeight: "600", color: "#333" },
   description: { fontSize: 13, marginTop: 4, color: "#666" },
 });

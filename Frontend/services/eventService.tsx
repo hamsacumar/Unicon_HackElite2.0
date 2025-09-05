@@ -1,3 +1,5 @@
+// Frontend/services/eventService.tsx
+
 import Constants from "expo-constants";
 import axios from "axios";
 
@@ -19,7 +21,7 @@ export interface Comment {
   userId: string;
   username: string;
   userImage?: string;
-  text: string;                  // Comment text
+  text: string; // Comment text
   createdAt: Date | string;
   updatedAt?: Date | string;
 }
@@ -92,9 +94,14 @@ export async function getEventById(postId: string): Promise<EventItem | null> {
 // ---------------------------
 
 // Like a post
-export async function likePost(postId: string, userId: string): Promise<boolean> {
+export async function likePost(
+  postId: string,
+  userId: string
+): Promise<boolean> {
   try {
-    const response = await api.post<LikeResponse>(`/Posts/${postId}/like`, { userId });
+    const response = await api.post<LikeResponse>(`/Posts/${postId}/like`, {
+      userId,
+    });
     return response.data.success;
   } catch (error) {
     console.error("Error liking post:", error);
@@ -105,7 +112,9 @@ export async function likePost(postId: string, userId: string): Promise<boolean>
 // Get like count for a post
 export async function getLikeCount(postId: string): Promise<number> {
   try {
-    const response = await api.get<{ likeCount: number }>(`/Posts/${postId}/likeCount`);
+    const response = await api.get<{ likeCount: number }>(
+      `/Posts/${postId}/likeCount`
+    );
     return response.data.likeCount;
   } catch (error) {
     console.error("Error getting like count:", error);
@@ -114,7 +123,10 @@ export async function getLikeCount(postId: string): Promise<number> {
 }
 
 // Check if the user has liked a post
-export async function checkIfLiked(postId: string, userId: string): Promise<boolean> {
+export async function checkIfLiked(
+  postId: string,
+  userId: string
+): Promise<boolean> {
   try {
     const response = await api.get<{ isLiked: boolean }>(
       `/Posts/${postId}/isLiked?userId=${userId}`
@@ -131,12 +143,18 @@ export async function checkIfLiked(postId: string, userId: string): Promise<bool
 // ---------------------------
 
 // Add a comment to a post
-export async function addComment(postId: string, data: { userId: string; text: string }) {
+export async function addComment(
+  postId: string,
+  data: { userId: string; text: string }
+) {
   try {
-    const response = await api.post<CommentResponse>(`/Posts/${postId}/comment`, {
-      userId: data.userId,
-      text: data.text, // Must match backend property
-    });
+    const response = await api.post<CommentResponse>(
+      `/Posts/${postId}/comment`,
+      {
+        userId: data.userId,
+        text: data.text, // Must match backend property
+      }
+    );
     return response.data.comment;
   } catch (error) {
     console.error("Error adding comment:", error);
@@ -158,7 +176,9 @@ export async function getComments(postId: string): Promise<Comment[]> {
 // Get comment count for a post
 export async function getCommentCount(postId: string): Promise<number> {
   try {
-    const response = await api.get<{ count: number }>(`/Posts/${postId}/comments/count`);
+    const response = await api.get<{ count: number }>(
+      `/Posts/${postId}/comments/count`
+    );
     return response.data.count;
   } catch (error) {
     console.error("Error getting comment count:", error);
