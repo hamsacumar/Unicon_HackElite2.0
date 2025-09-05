@@ -1,17 +1,14 @@
-
-//Models/EventModel.cs
-
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using System;
 
 namespace Backend.Models
 {
-public class EventModel
+    public class EventModel
 {
     [BsonId]
     [BsonRepresentation(BsonType.ObjectId)]
-    public string? Id { get; set; }   // Nullable, let Mongo generate
+    public string? Id { get; set; }
 
     [BsonElement("title")]
     public string Title { get; set; } = null!;
@@ -29,13 +26,14 @@ public class EventModel
     public DateTime EndDate { get; set; }
 
     [BsonElement("imageUrl")]
-    public string? ImageUrl { get; set; }   // Make nullable
+    public string? ImageUrl { get; set; }
 
     [BsonElement("userId")]
+    [BsonRepresentation(BsonType.ObjectId)]
     public string UserId { get; set; } = null!;
-
 
     [BsonElement("createdAt")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
+
 }

@@ -4,8 +4,10 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 using Backend.Settings;
+using Backend.Models;
 using Backend.Services;
 using Microsoft.OpenApi.Models;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -64,19 +66,24 @@ builder.Services.AddAuthentication("Bearer")
         options.CallbackPath = "/signin-google"; // Google OAuth callback
     });
 
-
-//  Authorization Policy
-
+// ----------------------------
+// Authorization Policies
+// ----------------------------
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("OrganizationOnly", policy =>
         policy.RequireRole("Organizer"));
 });
 
+// ----------------------------
+// Controllers & Swagger
+// ----------------------------
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+    });
 
-//  Controllers + Swagger
-
-builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddSwaggerGen(c =>
@@ -119,9 +126,9 @@ builder.Services.AddScoped<ITokenCheckService, TokenCheckService>();
 builder.Services.AddScoped<InputService>();
 builder.Services.AddScoped<IMessageService, MessageService>();
 
-
-//  CORS Policy (Allow All)
-
+//
+// ✅ CORS Policy (Allow All)
+//
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -144,16 +151,19 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+// Static files (images)
+app.UseStaticFiles();
 
-//  Middleware pipeline
-
-app.UseStaticFiles();     // Serve static files (images, etc.)
-app.UseCors("AllowAll");  // Enable CORS before auth
-app.UseAuthentication();  // Authentication
-app.UseAuthorization();   // Authorization
+// Enable CORS, Authentication & Authorization
+app.UseCors("AllowAll");
+app.UseAuthentication();
+app.UseAuthorization();
 
 
 
 app.MapControllers();
 
+// ----------------------------
+// Run the application
+// ----------------------------
 app.Run();

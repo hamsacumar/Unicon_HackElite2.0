@@ -1,3 +1,4 @@
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using System.Text.Json.Serialization;
 
@@ -5,9 +6,11 @@ namespace Backend.Models
 {
     public class EventDto
     {
-        [BsonElement("id")]                 // maps aggregation result "id" to this property
+        // MongoDB _id stored as ObjectId, represented as string in C#
+        [BsonElement("id")] 
+        [BsonRepresentation(BsonType.ObjectId)]
         [JsonPropertyName("id")]
-        public string? Id { get; set; }
+        public string Id { get; set; } = null!;   // guaranteed string from $toString
 
         [BsonElement("title")]
         [JsonPropertyName("title")]
@@ -25,14 +28,14 @@ namespace Backend.Models
         [JsonPropertyName("imageUrl")]
         public string? ImageUrl { get; set; }
 
+        // UserId stored as ObjectId in DB, represented as string in C#
         [BsonElement("userId")]
+        [BsonRepresentation(BsonType.ObjectId)]
         [JsonPropertyName("userId")]
-        public string UserId { get; set; } = null!;
+        public string UserId { get; set; } = null!;  // guaranteed string from $toString
 
         [BsonElement("username")]
         [JsonPropertyName("username")]
         public string Username { get; set; } = null!;
-
-        
     }
 }
