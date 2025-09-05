@@ -1,4 +1,4 @@
-//screens / Home.tsx
+// screens/Home.tsx
 
 import React, { useEffect, useState } from "react";
 import {
@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Image,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -16,15 +17,52 @@ import { EventItem, getEvents } from "../services/eventService";
 import Constants from "expo-constants";
 import PostActions from "../component/PostActions";
 import RoleBasedBottomNav from "./Profile";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
 // Type for navigation props
 type HomeNavigationProp = NativeStackNavigationProp<RootStackParamList, "Home">;
-// Base API URL from Expo constants
-const API_URL = Constants.expoConfig?.extra?.apiUrl?.replace("/api", "");
 
+// Base API URL
+const API_URL = Constants.expoConfig?.extra?.apiUrl?.replace("/api", "");
+const TEMP_USER_ID = "niro1234"; // any unique string
 export default function Home() {
   const navigation = useNavigation<HomeNavigationProp>();
   const [events, setEvents] = useState<EventItem[]>([]);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
+  // Fetch logged-in user ID
+  /*useEffect(() => {
+    async function fetchUser() {
+      try {
+        const id = await AsyncStorage.getItem("userId"); // adjust key if needed
+        if (id) setUserId(id);
+      } catch (err) {
+        console.error("Error fetching userId:", err);
+      }
+    }
+    fetchUser();
+  }, []);
+*/
+  useEffect(() => {
+  async function fetchUser() {
+    try {
+      let id = await AsyncStorage.getItem("userId"); // try to get stored ID
+      if (!id) {
+        // if not found, set the temp ID
+        await AsyncStorage.setItem("userId", TEMP_USER_ID);
+        id = TEMP_USER_ID;
+      }
+      setUserId(id); // update state
+    } catch (err) {
+      console.error("Error fetching userId:", err);
+    }
+  }
+  fetchUser();
+}, []);
+
+  
+  // Fetch events
   useEffect(() => {
     async function fetchData() {
       try {
@@ -32,14 +70,25 @@ export default function Home() {
         setEvents(data);
       } catch (error) {
         console.error("Error fetching events:", error);
+      } finally {
+        setLoading(false);
       }
     }
     fetchData();
   }, []);
 
   const handlePostPress = (item: EventItem) => {
-    navigation.navigate("PostDetail", { post: item });
+    navigation.navigate("PostDetail", { post: item, userId });
   };
+
+  if (loading)
+    return (
+      <ActivityIndicator
+        size="large"
+        color="#e74c3c"
+        style={{ flex: 1, justifyContent: "center" }}
+      />
+    );
 
   return (
     <View style={styles.container}>
@@ -91,14 +140,10 @@ export default function Home() {
             {/* Post actions: Like + Comment */}
             <PostActions
               postId={item.id}
-              userId={null} // Pass null for unauthenticated users
+              userId={TEMP_USER_ID} // ✅ logged-in user temporary
               initialLikeCount={item.likeCount || 0}
               initialCommentCount={item.commentCount || 0}
-              onCommentPress={() => {
-                // For unauthenticated users, you might want to show a login prompt
-                // For now, we'll just log to console
-                console.log("Please login to comment");
-              }}
+              onCommentPress={() => handlePostPress(item)} // navigate to PostDetail for commenting
             />
           </View>
         )}

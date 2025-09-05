@@ -1,32 +1,102 @@
-// Frontend/services/eventService.tsx
+/*
+import Constants from "expo-constants";
+import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+// ---------------------------
+// Types
+// ---------------------------
+export interface User { id: string; username: string; imageUrl?: string; }
+export interface Comment { id: string; postId: string; userId: string; username: string; userImage?: string; text: string; createdAt: Date | string; }
+export interface EventItem { id: string; title: string; description: string; category: string; imageUrl?: string; userId: string; username: string; userImage?: string; likeCount?: number; commentCount?: number; isLiked?: boolean; }
+export interface LikeResponse { success: boolean; likeCount: number; }
+export interface CommentResponse { success: boolean; comment: Comment; }
+
+// ---------------------------
+// Axios API
+// ---------------------------
+const api = axios.create({ baseURL: Constants.expoConfig?.extra?.apiUrl });
+
+// ---------------------------
+// Helper: Get token
+// ---------------------------
+async function getToken(): Promise<string | null> {
+  return AsyncStorage.getItem("token");
+}
+
+// ---------------------------
+// Read-only APIs (for all users)
+// ---------------------------
+export async function getEvents(): Promise<EventItem[]> {
+  try { const res = await api.get<EventItem[]>("/Posts"); return res.data; } 
+  catch { return []; }
+}
+
+export async function getEventById(postId: string): Promise<EventItem | null> {
+  try { const res = await api.get<EventItem>(`/Posts/${postId}`); return res.data; } 
+  catch { return null; }
+}
+
+export async function getComments(postId: string): Promise<Comment[]> {
+  try { const res = await api.get<Comment[]>(`/Posts/${postId}/comments`); return res.data; } 
+  catch { return []; }
+}
+
+export async function getCommentCount(postId: string): Promise<number> {
+  try { const res = await api.get<{ count: number }>(`/Posts/${postId}/comments/count`); return res.data.count; } 
+  catch { return 0; }
+}
+
+export async function getLikeCount(postId: string): Promise<number> {
+  try { const res = await api.get<{ likeCount: number }>(`/Posts/${postId}/likeCount`); return res.data.likeCount; } 
+  catch { return 0; }
+}
+
+export async function checkIfLiked(postId: string, userId: string): Promise<boolean> {
+  try { const res = await api.get<{ isLiked: boolean }>(`/Posts/${postId}/isLiked?userId=${userId}`); return res.data.isLiked; } 
+  catch { return false; }
+}
+
+// ---------------------------
+// Write APIs (token required)
+// ---------------------------
+export async function addComment(postId: string, data: { text: string }) {
+  try {
+    const token = await getToken(); if (!token) throw new Error("Not authenticated");
+    const res = await api.post(`/Posts/${postId}/comment`, data, { headers: { Authorization: `Bearer ${token}` } });
+    return res.data;
+  } catch { return null; }
+}
+
+export async function likePost(postId: string) {
+  try {
+    const token = await getToken(); if (!token) throw new Error("Not authenticated");
+    const res = await api.post(`/Posts/${postId}/like`, {}, { headers: { Authorization: `Bearer ${token}` } });
+    return res.data;
+  } catch { return null; }
+}
+*/
 
 import Constants from "expo-constants";
 import axios from "axios";
 
 // ---------------------------
-// Types for application data
+// Types
 // ---------------------------
-
-// User information
 export interface User {
   id: string;
   username: string;
   imageUrl?: string;
 }
-
-// Comment model
 export interface Comment {
   id: string;
   postId: string;
   userId: string;
   username: string;
   userImage?: string;
-  text: string; // Comment text
+  text: string;
   createdAt: Date | string;
-  updatedAt?: Date | string;
 }
-
-// Event/Post model
 export interface EventItem {
   id: string;
   title: string;
@@ -39,149 +109,120 @@ export interface EventItem {
   likeCount?: number;
   commentCount?: number;
   isLiked?: boolean;
-  date?: string | Date;
-  createdAt?: string | Date;
-  updatedAt?: string | Date;
+  date?: string;
 }
-
-// Response for liking a post
 export interface LikeResponse {
   success: boolean;
   likeCount: number;
 }
-
-// Response for adding a comment
 export interface CommentResponse {
   success: boolean;
   comment: Comment;
 }
 
 // ---------------------------
-// Axios API instance
+// Axios API
 // ---------------------------
-const api = axios.create({
-  baseURL: Constants.expoConfig?.extra?.apiUrl, // Base URL from Expo config
-});
+const api = axios.create({ baseURL: Constants.expoConfig?.extra?.apiUrl });
 
 // ---------------------------
-// Event / Post APIs
+// Temporary hardcoded token
 // ---------------------------
+const TEMP_TOKEN =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8v...GvPmYCg1uIFVfm80VfxGeN-6RkfJdrOiXtLE-u4GWSM";
+const TEMP_USER_ID = "niro1234"; // any unique string
 
-// Fetch all events/posts
+// ---------------------------
+// Read-only APIs (for all users)
+// ---------------------------
 export async function getEvents(): Promise<EventItem[]> {
   try {
-    const response = await api.get<EventItem[]>("/Posts");
-    return response.data;
-  } catch (error) {
-    console.error("Error fetching events:", error);
+    const res = await api.get<EventItem[]>("/Posts");
+    return res.data;
+  } catch {
     return [];
   }
 }
 
-// Fetch a single event/post by ID
 export async function getEventById(postId: string): Promise<EventItem | null> {
   try {
-    const response = await api.get<EventItem>(`/Posts/${postId}`);
-    return response.data;
-  } catch (error) {
-    console.error("Error fetching event:", error);
+    const res = await api.get<EventItem>(`/Posts/${postId}`);
+    return res.data;
+  } catch {
     return null;
   }
 }
 
-// ---------------------------
-// Like APIs
-// ---------------------------
-
-// Like a post
-export async function likePost(
-  postId: string,
-  userId: string
-): Promise<boolean> {
+export async function getComments(postId: string): Promise<Comment[]> {
   try {
-    const response = await api.post<LikeResponse>(`/Posts/${postId}/like`, {
-      userId,
-    });
-    return response.data.success;
-  } catch (error) {
-    console.error("Error liking post:", error);
-    return false;
+    const res = await api.get<Comment[]>(`/Posts/${postId}/comments`);
+    return res.data;
+  } catch {
+    return [];
   }
 }
 
-// Get like count for a post
-export async function getLikeCount(postId: string): Promise<number> {
+export async function getCommentCount(postId: string): Promise<number> {
   try {
-    const response = await api.get<{ likeCount: number }>(
-      `/Posts/${postId}/likeCount`
+    const res = await api.get<{ count: number }>(
+      `/Posts/${postId}/comments/count`
     );
-    return response.data.likeCount;
-  } catch (error) {
-    console.error("Error getting like count:", error);
+    return res.data.count;
+  } catch {
     return 0;
   }
 }
 
-// Check if the user has liked a post
+export async function getLikeCount(postId: string): Promise<number> {
+  try {
+    const res = await api.get<{ likeCount: number }>(
+      `/Posts/${postId}/likeCount`
+    );
+    return res.data.likeCount;
+  } catch {
+    return 0;
+  }
+}
+
 export async function checkIfLiked(
   postId: string,
   userId: string
 ): Promise<boolean> {
   try {
-    const response = await api.get<{ isLiked: boolean }>(
+    const res = await api.get<{ isLiked: boolean }>(
       `/Posts/${postId}/isLiked?userId=${userId}`
     );
-    return response.data.isLiked;
-  } catch (error) {
-    console.error("Error checking like status:", error);
+    return res.data.isLiked;
+  } catch {
     return false;
   }
 }
 
 // ---------------------------
-// Comment APIs
+// Write APIs (token required)
 // ---------------------------
-
-// Add a comment to a post
-export async function addComment(
-  postId: string,
-  data: { userId: string; text: string }
-) {
+export async function addComment(postId: string, data: { text: string }) {
   try {
-    const response = await api.post<CommentResponse>(
-      `/Posts/${postId}/comment`,
-      {
-        userId: data.userId,
-        text: data.text, // Must match backend property
-      }
-    );
-    return response.data.comment;
+    const res = await api.post(`/Posts/${postId}/comment`, data, {
+      headers: { Authorization: `Bearer ${TEMP_TOKEN}` },
+    });
+    return res.data;
   } catch (error) {
     console.error("Error adding comment:", error);
     return null;
   }
 }
 
-// Get all comments for a post
-export async function getComments(postId: string): Promise<Comment[]> {
+export async function likePost(postId: string) {
   try {
-    const response = await api.get<Comment[]>(`/Posts/${postId}/comments`);
-    return response.data;
-  } catch (error) {
-    console.error("Error fetching comments:", error);
-    return [];
-  }
-}
-
-// Get comment count for a post
-export async function getCommentCount(postId: string): Promise<number> {
-  try {
-    const response = await api.get<{ count: number }>(
-      `/Posts/${postId}/comments/count`
+    const res = await api.post(
+      `/Posts/${postId}/like`,
+      {},
+      { headers: { Authorization: `Bearer ${TEMP_TOKEN}` } }
     );
-    return response.data.count;
+    return res.data;
   } catch (error) {
-    console.error("Error getting comment count:", error);
-    return 0;
+    console.error("Error liking post:", error);
+    return null;
   }
 }

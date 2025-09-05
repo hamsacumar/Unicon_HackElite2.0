@@ -41,7 +41,7 @@ export type RootStackParamList = {
   ViewProfile: undefined;
   EditProfile: undefined;
   OrgProfile: undefined;
-  PostDetail: { post: EventItem };
+  PostDetail: { post: EventItem; userId?: string | null };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();

@@ -12,17 +12,18 @@ import {
   Animated,
   Image,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import {
   addComment,
   getComments,
-  Comment,
   getCommentCount,
+  Comment,
 } from "../services/eventService";
-import { Ionicons } from "@expo/vector-icons";
 
+// Props
 type Props = {
   postId: string;
-  userId?: string | null;
+  userId?: string | null; // null = logged-out
   onCommentAdd?: (count: number) => void;
   initialComments?: Comment[];
   initialCommentCount?: number;
@@ -40,63 +41,84 @@ export default function CommentSection({
   const [isLoading, setIsLoading] = useState(!initialComments.length);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [commentCount, setCommentCount] = useState(initialCommentCount);
-
-  const inputRef = useRef<TextInput>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
+  // Load comments on mount
   useEffect(() => {
-    const loadComments = async () => {
-      if (initialComments.length === 0) {
-        try {
-          setIsLoading(true);
-          const [fetchedComments, count] = await Promise.all([
-            getComments(postId),
-            getCommentCount(postId),
-          ]);
-          setComments(fetchedComments);
-          setCommentCount(count);
-        } catch (error) {
-          console.error("Error loading comments:", error);
-        } finally {
-          setIsLoading(false);
-        }
-      }
-    };
-    loadComments();
+    if (!initialComments.length) loadComments();
   }, [postId]);
 
+  const loadComments = async () => {
+    setIsLoading(true);
+    try {
+      const [fetched, count] = await Promise.all([
+        getComments(postId),
+        getCommentCount(postId),
+      ]);
+      setComments(fetched);
+      setCommentCount(count);
+    } catch (error) {
+      console.error("Error loading comments:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Add comment handler
   const handleAddComment = async () => {
-    if (!text.trim() || isSubmitting || !userId) return;
+    if (!text.trim() || isSubmitting) return;
+
+    // Create temporary comment for optimistic UI
+    const tempComment: Comment = {
+      id: `temp-${Date.now()}`,
+      postId,
+      userId: userId || "guest",
+      username: userId ? "You" : "Guest",
+
+      text,
+      createdAt: new Date().toISOString(),
+    };
+
+    setComments([tempComment, ...comments]);
+    const updatedCount = commentCount + 1;
+    setCommentCount(updatedCount);
+    setText("");
+    onCommentAdd?.(updatedCount);
+
+    fadeAnim.setValue(0);
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+
+    // If user is logged out, skip API call
+    if (!userId) return;
 
     try {
       setIsSubmitting(true);
-      const newComment = await addComment(postId, { userId, text });
+      const newCommentFromServer = (await addComment(postId, {
+        text,
+      })) as Comment;
 
-      if (newComment) {
-        const updatedComments = [newComment, ...comments];
-        const updatedCount = commentCount + 1;
-
-        setComments(updatedComments);
-        setCommentCount(updatedCount);
-        setText("");
-        onCommentAdd?.(updatedCount);
-
-        fadeAnim.setValue(0);
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }).start();
-      }
+      // Replace temp comment with server response
+      setComments((prev) => [
+        newCommentFromServer,
+        ...prev.filter((c) => c.id !== tempComment.id),
+      ]);
     } catch (error) {
       console.error("Error adding comment:", error);
+
+      // Rollback if server fails
+      setComments((prev) => prev.filter((c) => c.id !== tempComment.id));
+      setCommentCount((prev) => prev - 1);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const renderComment = ({ item }: { item: Comment }) => (
-    <Animated.View style={[styles.commentContainer, { opacity: fadeAnim }]}>
+    <Animated.View style={{ opacity: fadeAnim, ...styles.commentContainer }}>
       <View style={styles.commentHeader}>
         {item.userImage ? (
           <Image source={{ uri: item.userImage }} style={styles.avatar} />
@@ -125,27 +147,15 @@ export default function CommentSection({
     </Animated.View>
   );
 
-  const renderEmptyState = () => (
-    <View style={styles.emptyState}>
-      <Ionicons name="chatbubble-ellipses-outline" size={48} color="#ccc" />
-      <Text style={styles.emptyStateText}>No comments yet</Text>
-      <Text style={styles.emptyStateSubtext}>Be the first to comment!</Text>
-    </View>
-  );
-
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={styles.container}
       keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
     >
-      <View style={styles.commentsContainer}>
+      <View style={[styles.commentsContainer, { height: 'auto' }]}>
         {isLoading ? (
-          <ActivityIndicator
-            size="large"
-            color="#e74c3c"
-            style={styles.loader}
-          />
+          <ActivityIndicator size="large" color="#e74c3c" />
         ) : (
           <FlatList
             data={comments}
@@ -153,16 +163,23 @@ export default function CommentSection({
               `${item.id || index}-${item.createdAt || ""}`
             }
             renderItem={renderComment}
-            ListEmptyComponent={renderEmptyState}
-            contentContainerStyle={styles.commentsList}
-            keyboardShouldPersistTaps="handled"
+            scrollEnabled={false}
+            ListEmptyComponent={
+              <View style={styles.emptyState}>
+                <Ionicons
+                  name="chatbubble-ellipses-outline"
+                  size={48}
+                  color="#ccc"
+                />
+                <Text style={styles.emptyText}>No comments yet</Text>
+              </View>
+            }
           />
         )}
       </View>
 
       <View style={styles.inputContainer}>
         <TextInput
-          ref={inputRef}
           style={[styles.input, !userId && styles.disabledInput]}
           value={text}
           onChangeText={setText}
@@ -192,43 +209,13 @@ export default function CommentSection({
           )}
         </TouchableOpacity>
       </View>
-
-      {!userId && (
-        <View style={styles.loginPrompt}>
-          <Text style={styles.loginText}>
-            <Text>Please </Text>
-            <Text
-              style={styles.loginLink}
-              onPress={() => console.log("Navigate to login")}
-            >
-              log in
-            </Text>
-            <Text> to add a comment</Text>
-          </Text>
-        </View>
-      )}
     </KeyboardAvoidingView>
   );
 }
 
-// Styles remain unchanged
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
-  commentsContainer: { flex: 1, paddingHorizontal: 16 },
-  commentsList: { paddingBottom: 16 },
-  loader: { marginTop: 24 },
-  emptyState: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 40,
-  },
-  emptyStateText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#666",
-    marginTop: 12,
-  },
-  emptyStateSubtext: { fontSize: 14, color: "#999", marginTop: 4 },
+  container: { backgroundColor: "#fff" },
+  commentsContainer: { paddingHorizontal: 16 },
   commentContainer: {
     marginBottom: 16,
     backgroundColor: "#f8f9fa",
@@ -265,16 +252,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     backgroundColor: "#fff",
   },
-  loginPrompt: {
-    padding: 16,
-    borderTopWidth: 1,
-    borderTopColor: "#eee",
-    backgroundColor: "#fff",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  loginText: { color: "#666", fontSize: 14 },
-  loginLink: { color: "#e74c3c", fontWeight: "600" },
   input: {
     flex: 1,
     backgroundColor: "#f5f5f5",
@@ -296,4 +273,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   sendButtonDisabled: { opacity: 0.5 },
+  emptyState: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 40,
+  },
+  emptyText: { fontSize: 16, color: "#666", marginTop: 12 },
 });

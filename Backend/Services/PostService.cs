@@ -22,8 +22,8 @@ namespace Backend.Services
             // Collections used in this service
             _events = database.GetCollection<EventModel>("events");
             _users = database.GetCollection<AppUser>("Users");
-            _likes = database.GetCollection<LikeModel>("Likes");
-            _comments = database.GetCollection<CommentModel>("Comments");
+            _likes = database.GetCollection<LikeModel>("likes");
+            _comments = database.GetCollection<CommentModel>("comments");
         }
 
         /* ================================
