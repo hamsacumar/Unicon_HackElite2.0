@@ -7,6 +7,7 @@ using Backend.Settings;
 using Backend.Models;
 using Backend.Services;
 using Microsoft.OpenApi.Models;
+using Backend.Filters;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -109,6 +110,7 @@ builder.Services.AddSwaggerGen(c =>
 
     // ✅ Enable file uploads in Swagger if needed
     c.OperationFilter<FileUploadOperationFilter>();
+    c.OperationFilter<SwaggerFileOperationFilter>();
 });
 
 //
