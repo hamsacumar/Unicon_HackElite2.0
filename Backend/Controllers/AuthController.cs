@@ -114,7 +114,6 @@ namespace Backend.Controllers
                 Username = user.Username
             };
             
-            Console.WriteLine($"Sending response: {System.Text.Json.JsonSerializer.Serialize(response)}");
             return Ok(response);
         }
 

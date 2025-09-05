@@ -100,9 +100,7 @@ const ClassifyAccount = () => {
         console.error('Token validation error:', authError);
         throw new Error('Authentication failed. Please log in again.');
       }
-      
-      console.log('Submitting classification with token:', token);
-      
+            
       // Make the classification request
       const response = await classifyAccount(
         userId,

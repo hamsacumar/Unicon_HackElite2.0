@@ -471,11 +471,11 @@ export const classifyAccount = async (
   role: 'Student' | 'Organizer' | 'Admin'
 ) => {
   try {
-    console.log('Sending classify account request for user:', userId);
+    
     
     // Get the token from secure storage
     const token = await SecureStore.getItemAsync("accessToken");
-    console.log('Token for classify request:', token ? 'Present' : 'Missing');
+    
     
     if (!token) {
       throw new Error('Authentication token not found. Please log in again.');
@@ -498,7 +498,7 @@ export const classifyAccount = async (
     });
     
     const responseText = await response.text();
-    console.log('Raw classify response:', responseText);
+    
     
     if (!response.ok) {
       throw new Error(`Request failed with status ${response.status}`);
@@ -525,9 +525,7 @@ export const login = async (usernameOrEmail: string, password: string) => {
     const loginData = isEmail(usernameOrEmail)
       ? { email: usernameOrEmail, password }
       : { username: usernameOrEmail, password };
-    
-    console.log("Sending login request with data:", loginData);
-    
+        
     // Call the login endpoint
     const response = await fetch(`${API_BASE}/auth/login`, {
       method: "POST",

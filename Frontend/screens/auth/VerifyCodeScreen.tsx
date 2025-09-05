@@ -95,7 +95,7 @@ const VerifyCodeScreen = () => {
       if (purpose === 'signup') {
         console.log('Verifying email with code...');
         const response = await verifyEmail(email, fullCode);
-        console.log('Verify email response in handleSubmit:', response);
+        
         
         if (response.Message && response.Message.includes('verified')) {
           Toast.show({
