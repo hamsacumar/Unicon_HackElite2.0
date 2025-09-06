@@ -62,13 +62,5 @@ namespace Backend.Services
                                   .SortByDescending(m => m.Timestamp)
                                   .ToListAsync();
         }
-
-        public async Task<List<Message>> GetSentMessagesAsync(string userId)
-        {
-            var filter = Builders<Message>.Filter.Eq(m => m.SenderId, userId);
-            return await _messages.Find(filter)
-                                .SortByDescending(m => m.Timestamp)
-                                .ToListAsync();
-        }
     }
 }

@@ -12,6 +12,5 @@ namespace Backend.Services
         Task<bool> MarkSeenAsync(string messageId);
         Task DeleteAsync(string id);
         Task<List<Message>> GetInboxAsync(string userId);
-        Task<List<Message>> GetSentMessagesAsync(string userId);
     }
 }

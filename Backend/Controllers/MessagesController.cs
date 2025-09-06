@@ -81,7 +81,7 @@ namespace Backend.Controllers
 
         // ✅ Inbox
         [HttpGet("inbox/{userId}")]
-        public async Task<IActionResult> GetInbox(string userId) 
+        public async Task<IActionResult> GetInbox(string userId)
         {
             try
             {
@@ -91,21 +91,6 @@ namespace Backend.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to get inbox");
-                return StatusCode(500, new { success = false, error = ex.Message });
-            }
-        }
-
-        [HttpGet("sent/{userId}")]
-        public async Task<IActionResult> GetSentMessages(string userId)
-        {
-            try
-            {
-                var messages = await _messageService.GetSentMessagesAsync(userId);
-                return Ok(new { success = true, data = messages });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to get sent messages");
                 return StatusCode(500, new { success = false, error = ex.Message });
             }
         }
