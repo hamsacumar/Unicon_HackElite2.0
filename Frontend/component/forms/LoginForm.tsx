@@ -7,6 +7,7 @@ import ErrorMessage from "../ui/ErrorMessage";
 import { colors, spacing, globalStyles } from "../../styles/globalStyles";
 import { login } from "../../services/api";
 import { AuthContext } from "../../utils/AuthContext";
+import AsyncStorage from "@react-native-async-storage/async-storage"; // add at top
 
 interface LoginFormProps {
   onForgotPassword: () => void;
@@ -49,7 +50,12 @@ const LoginForm: React.FC<LoginFormProps> = ({
   try {
     const data = await login(usernameOrEmail, password);
     await authLogin(data);
-
+if (data.accessToken) {
+    await AsyncStorage.setItem("token", data.accessToken);
+  }
+  if (data.userId) {
+    await AsyncStorage.setItem("userId", data.userId);
+  }
     // Directly call onLoginSuccess
     if (onLoginSuccess) {
       onLoginSuccess(data.userId, data.accessToken);

@@ -29,11 +29,12 @@ import EditProfile from "./screens/EditProfile";
 import OrgProfile from "./screens/OrgProfile";
 import PostDetail from "./screens/PostDetail";
 import { EventItem } from "./services/eventService";
-
+import SplashScreen from "./screens/SplashScreen"; 
 // Context
 import { AuthProvider } from "./utils/AuthContext";
 
 export type RootStackParamList = {
+  SplashScreen: undefined;
   Auth: undefined;
   Home: undefined;
   LandingPage: undefined;
@@ -65,19 +66,41 @@ export type RootStackParamList = {
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const AppStack = () => (
+
   <Stack.Navigator
-    initialRouteName="Test"
+    initialRouteName="SplashScreen" // intial start screen is SplashScreen
     screenOptions={{
       headerStyle: { backgroundColor: "#FF5722" },
       headerTintColor: "#fff",
       headerTitleStyle: { fontWeight: "bold" },
     }}
   >
+
     <Stack.Screen
-      name="Home"
-      component={Home}
-      options={{ title: "EventTrix" }}
+      name="SplashScreen"
+      component={SplashScreen}
+      options={{ headerShown: false }}
     />
+    <Stack.Screen
+  name="Home"
+  component={Home}
+  options={({
+    navigation,
+  }: {
+    navigation: NativeStackNavigationProp<RootStackParamList, "Home">;
+  }) => ({
+    title: "EventTrix",
+    headerRight: () => (
+      <TouchableOpacity
+        onPress={() => navigation.navigate("InboxScreen", { currentUserId: "123" })} 
+        style={{ marginRight: 15 }}
+      >
+        <Ionicons name="chatbubble-ellipses-outline" size={26} color="white" />
+      </TouchableOpacity>
+    ),
+  })}
+/>
+
 
     <Stack.Screen
       name="LandingPage"

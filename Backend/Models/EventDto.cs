@@ -37,5 +37,9 @@ namespace Backend.Models
         [BsonElement("username")]
         [JsonPropertyName("username")]
         public string Username { get; set; } = null!;
+    
+    [BsonElement("userImage")]
+[JsonPropertyName("userImage")]
+public string? UserImage { get; set; }
     }
 }

@@ -18,16 +18,20 @@ import Constants from "expo-constants";
 import PostActions from "../component/PostActions";
 import RoleBasedBottomNav from "./Profile";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import CommentSection from "../component/CommentSection"; // ✅ import
 
 // Type for navigation props
 type HomeNavigationProp = NativeStackNavigationProp<RootStackParamList, "Home">;
 
+// Extend EventItem with UI-only field
+type EventWithUI = EventItem & { showComments?: boolean };
+
 // Base API URL
- const API_URL = Constants.expoConfig?.extra?.apiUrl?.replace("/api", "");
-// const TEMP_USER_ID = "niro1234"; // any unique string
+const API_URL = Constants.expoConfig?.extra?.apiUrl?.replace("/api", "");
+
 export default function Home() {
   const navigation = useNavigation<HomeNavigationProp>();
-  const [events, setEvents] = useState<EventItem[]>([]);
+  const [events, setEvents] = useState<EventWithUI[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -35,7 +39,7 @@ export default function Home() {
   useEffect(() => {
     async function fetchUser() {
       try {
-        const id = await AsyncStorage.getItem("userId"); // adjust key if needed
+        const id = await AsyncStorage.getItem("userId");
         if (id) setUserId(id);
       } catch (err) {
         console.error("Error fetching userId:", err);
@@ -44,30 +48,17 @@ export default function Home() {
     fetchUser();
   }, []);
 
-  /*useEffect(() => {
-  async function fetchUser() {
-    try {
-      let id = await AsyncStorage.getItem("userId"); // try to get stored ID
-      if (!id) {
-        // if not found, set the temp ID
-        await AsyncStorage.setItem("userId", TEMP_USER_ID);
-        id = TEMP_USER_ID;
-      }
-      setUserId(id); // update state
-    } catch (err) {
-      console.error("Error fetching userId:", err);
-    }
-  }
-  fetchUser();
-}, []);
-
-  */
   // Fetch events
   useEffect(() => {
     async function fetchData() {
       try {
         const data = await getEvents();
-        setEvents(data);
+        // Add UI field (showComments: false)
+        const dataWithUI: EventWithUI[] = data.map((ev) => ({
+          ...ev,
+          showComments: false,
+        }));
+        setEvents(dataWithUI);
       } catch (error) {
         console.error("Error fetching events:", error);
       } finally {
@@ -77,7 +68,7 @@ export default function Home() {
     fetchData();
   }, []);
 
-  const handlePostPress = (item: EventItem) => {
+  const handlePostPress = (item: EventWithUI) => {
     navigation.navigate("PostDetail", { post: item, userId });
   };
 
@@ -113,12 +104,14 @@ export default function Home() {
             {/* Post image (clickable) */}
             {item.imageUrl ? (
               <TouchableOpacity onPress={() => handlePostPress(item)}>
-                <Image
-                  source={{
-                    uri: item.imageUrl.startsWith("http")
-                      ? item.imageUrl
-                      : `${API_URL}${item.imageUrl.startsWith("/") ? "" : "/"}${item.imageUrl}`,
-                  }}
+               <Image
+  source={{
+    uri: item.imageUrl
+      ? item.imageUrl.startsWith('http')
+        ? item.imageUrl
+        : `${API_URL}${item.imageUrl.startsWith('/') ? '' : '/'}${item.imageUrl}`
+      : 'https://via.placeholder.com/300x200', // fallback
+  }}
                   style={styles.postImage}
                 />
               </TouchableOpacity>
@@ -130,7 +123,7 @@ export default function Home() {
               </TouchableOpacity>
             )}
 
-            {/* Post category, title, and description (clickable) */}
+            {/* Post category, title, and description */}
             <TouchableOpacity onPress={() => handlePostPress(item)}>
               <Text style={styles.category}>{item.category}</Text>
               <Text style={styles.title}>{item.title}</Text>
@@ -140,11 +133,34 @@ export default function Home() {
             {/* Post actions: Like + Comment */}
             <PostActions
               postId={item.id}
-              userId={userId} // ✅ logged-in user temporary
+              userId={userId}
               initialLikeCount={item.likeCount || 0}
               initialCommentCount={item.commentCount || 0}
-              onCommentPress={() => handlePostPress(item)} // navigate to PostDetail for commenting
+              onCommentPress={() => {
+                setEvents((prev) =>
+                  prev.map((ev) =>
+                    ev.id === item.id
+                      ? { ...ev, showComments: !ev.showComments }
+                      : ev
+                  )
+                );
+              }}
             />
+
+            {/* Inline Comment Section */}
+            {item.showComments && (
+              <CommentSection
+                postId={item.id}
+                userId={userId}
+                onCommentAdd={(newCount) => {
+                  setEvents((prev) =>
+                    prev.map((ev) =>
+                      ev.id === item.id ? { ...ev, commentCount: newCount } : ev
+                    )
+                  );
+                }}
+              />
+            )}
           </View>
         )}
         contentContainerStyle={styles.listContent}
