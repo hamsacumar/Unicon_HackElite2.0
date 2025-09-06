@@ -1,3 +1,5 @@
+//screens/LandingPage.tsx
+
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -108,7 +110,10 @@ export default function LandingPage() {
         contentContainerStyle={styles.listContent}
       />
 
-      <BottomNav />
+      <BottomNav
+        onPressLogin={() => navigation.navigate("Login")}
+        onPressRegister={() => navigation.navigate("Signup")}
+      />
     </View>
   );
 }
@@ -145,7 +150,12 @@ const styles = StyleSheet.create({
   },
   noImageText: { color: "#555" },
 
-  category: { fontWeight: "bold", marginTop: 8, fontSize: 14, color: "#E64A0D" },
+  category: {
+    fontWeight: "bold",
+    marginTop: 8,
+    fontSize: 14,
+    color: "#E64A0D",
+  },
   title: { fontSize: 16, marginTop: 4, fontWeight: "600", color: "#333" },
   description: { fontSize: 13, marginTop: 4, color: "#666" },
 });

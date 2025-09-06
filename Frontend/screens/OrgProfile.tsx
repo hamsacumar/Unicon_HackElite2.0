@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -15,6 +15,8 @@ import RoleBasedBottomNav from "../component/rolebasedNav";
 
 import Ionicons from "react-native-vector-icons/Ionicons";
 
+import { ProfileService, Profile, Post } from '../services/ProfileService';
+
 // Define your stack param list
 type RootStackParamList = {
   OrgProfile: undefined;
@@ -30,29 +32,39 @@ type OrgProfileNavigationProp = NativeStackNavigationProp<
 const OrgProfile: React.FC = () => {
   const navigation = useNavigation<OrgProfileNavigationProp>();
 
-  const posts = [
-    {
-      id: 1,
-      title: "Submissions Are Now Open of",
-      subtitle: "Get ready to apply the scholarship of 2025!!!",
-      description: "Complete your submission here!!! https://scholarsarchive.net/scholarship/ Submission Deadline: https://scholarsarchive.net/ scholarship-deadline/",
-      image: require('../assets/icon.png'), // Replace with your image path
-    },
-    {
-      id: 2,
-      title: "Submissions Are Now Open of",
-      subtitle: "Get ready to apply the scholarship of 2025!!!",
-      description: "Complete your submission here!!! https://scholarsarchive.net/scholarship/ Submission Deadline: https://scholarsarchive.net/ scholarship-deadline/",
-      image: require('../assets/icon.png'), // Replace with your image path
-    },
-    {
-      id: 3,
-      title: "It's a Time to Get Hands-On!",
-      subtitle: "Workshop of Interview with Behavior 2024 is here!",
-      description: "Get ready for Interview! Ace Soft- Skills Interview Workshop on Improve Your Chances! Successfully Landing Your Next Job! Registration Link: https://behavioralinterviewworkshop.com/ Contact us at 14 July 2024 3:00 PM to 4:00 PM",
-      image: require('../assets/icon.png'), // Replace with your image path
-    },
-  ];
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [postCount, setPostCount] = useState<number>(0);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const profileData = await ProfileService.getProfile();
+        const postsData = await ProfileService.getPosts();
+        setProfile(profileData);
+        setPosts(postsData);
+
+        const count = await ProfileService.getPostCount();
+      setPostCount(count);
+      
+      } catch (error) {
+        console.error("Error fetching profile or posts:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <Text style={{ textAlign: 'center', marginTop: 50 }}>Loading...</Text>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -70,10 +82,10 @@ const OrgProfile: React.FC = () => {
           </View>
 
           <View style={styles.profileInfo}>
-            <Text style={styles.profileName}>WSO2</Text>
+            <Text style={styles.profileName}>{profile?.username}</Text>
             <View style={styles.statsContainer}>
               <View style={styles.statItem}>
-                <Text style={styles.statNumber}>24</Text>
+          <Text style={styles.statNumber}>{postCount}</Text>
                 <Text style={styles.statLabel}>posts</Text>
               </View>
               <View style={styles.statItem}>
@@ -88,7 +100,7 @@ const OrgProfile: React.FC = () => {
           </View>
         </View>
 
-        <Text style={styles.trustText}>Trusted by the World's best Enterprises</Text>
+        <Text style={styles.trustText}>{profile?.description}</Text>
 
         <View style={styles.buttonContainer}>
           <TouchableOpacity style={styles.editButton}>
@@ -119,23 +131,29 @@ const OrgProfile: React.FC = () => {
       <ScrollView style={styles.postsContainer} showsVerticalScrollIndicator={false}>
         {posts.map((post) => (
           <View key={post.id} style={styles.postCard}>
-            <View style={styles.postContent}>
-              <View style={styles.postTextContainer}>
-                <Text style={styles.postTitle}>{post.title}</Text>
-                <Text style={styles.postSubtitle}>{post.subtitle}</Text>
-                <Text style={styles.postDescription} numberOfLines={4}>
-                  {post.description}
-                </Text>
-              </View>
-              <View style={styles.postImageContainer}>
+          <View style={styles.postContent}>
+            <View style={styles.postTextContainer}>
+              <Text style={styles.postTitle}>{post.title}</Text>
+              <Text style={styles.postSubtitle}>{post.category}</Text>
+              <Text style={styles.postDescription} numberOfLines={4}>
+                {post.description}
+              </Text>
+            </View>
+            <View style={styles.postImageContainer}>
+              {post.imageUrl ? (
                 <Image
-                  source={post.image} // <-- use the post.image here
-                  style={styles.postImage} // ensure proper width/height
-                  resizeMode="cover"     // or 'contain' as needed
+                  source={{ uri: post.imageUrl }}
+                  style={styles.postImage}
+                  resizeMode="cover"
                 />
-              </View>
+              ) : (
+                <View style={[styles.postImage, { justifyContent: 'center', alignItems: 'center' }]}>
+                  <Text style={styles.postImagePlaceholder}>No Image</Text>
+                </View>
+              )}
             </View>
           </View>
+        </View>
 
         ))}
       </ScrollView>

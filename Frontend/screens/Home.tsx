@@ -1,4 +1,5 @@
-//screens/Home.tsx
+// screens/Home.tsx
+
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -12,107 +13,174 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../App";
-import RoleBasedBottomNav from "../component/rolebasedNav";
 import { EventItem, getEvents } from "../services/eventService";
 import Constants from "expo-constants";
+import PostActions from "../component/PostActions";
+import RoleBasedBottomNav from "./Profile";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import CommentSection from "../component/CommentSection"; // ✅ import
 
-type HomeNavigationProp = NativeStackNavigationProp<
-  RootStackParamList,
-  "Home"
->;
+// Type for navigation props
+type HomeNavigationProp = NativeStackNavigationProp<RootStackParamList, "Home">;
+
+// Extend EventItem with UI-only field
+type EventWithUI = EventItem & { showComments?: boolean };
+
+// Base API URL
 const API_URL = Constants.expoConfig?.extra?.apiUrl?.replace("/api", "");
 
 export default function Home() {
   const navigation = useNavigation<HomeNavigationProp>();
-  const [events, setEvents] = useState<EventItem[]>([]);
+  const [events, setEvents] = useState<EventWithUI[]>([]);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Fetch events from API on component mount
+  // Fetch logged-in user ID
+  useEffect(() => {
+    async function fetchUser() {
+      try {
+        const id = await AsyncStorage.getItem("userId");
+        if (id) setUserId(id);
+      } catch (err) {
+        console.error("Error fetching userId:", err);
+      }
+    }
+    fetchUser();
+  }, []);
+
+  // Fetch events
   useEffect(() => {
     async function fetchData() {
-      const data = await getEvents();
-      setEvents(data);
+      try {
+        const data = await getEvents();
+        // Add UI field (showComments: false)
+        const dataWithUI: EventWithUI[] = data.map((ev) => ({
+          ...ev,
+          showComments: false,
+        }));
+        setEvents(dataWithUI);
+      } catch (error) {
+        console.error("Error fetching events:", error);
+      } finally {
+        setLoading(false);
+      }
     }
     fetchData();
   }, []);
 
+  const handlePostPress = (item: EventWithUI) => {
+    navigation.navigate("PostDetail", { post: item, userId });
+  };
+
+  if (loading)
+    return (
+      <ActivityIndicator
+        size="large"
+        color="#e74c3c"
+        style={{ flex: 1, justifyContent: "center" }}
+      />
+    );
+
   return (
     <View style={styles.container}>
-      {/* Event list */}
       <FlatList
         data={events}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
           <View style={styles.postCard}>
-            {/* Profile section (avatar + username) */}
+            {/* Profile section */}
             <View style={styles.userRow}>
               <Image
                 source={{
                   uri: item.userImage
                     ? item.userImage
-                    : "https://cdn-icons-png.flaticon.com/512/3135/3135715.png", // fallback avatar
+                    : "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
                 }}
                 style={styles.avatar}
               />
-              <Text style={styles.username}>
-  {item.username}
-</Text>
+              <TouchableOpacity onPress={() => navigation.navigate("ViewProfile", { username: item.username })}>
+                <Text style={styles.username}>
+                  {item.username}
+                </Text>
+              </TouchableOpacity>
+
             </View>
 
-            {/* Post image */}
-                       {item.imageUrl ? (
-                         <Image
-                         source={{
-                           uri: item.imageUrl 
-                             ? item.imageUrl.startsWith('http') 
-                               ? item.imageUrl 
-                               : `${API_URL}${item.imageUrl.startsWith('/') ? '' : '/'}${item.imageUrl}`
-                             : 'https://via.placeholder.com/300x200' // fallback image
-                         }}
-                         style={styles.postImage}
-                       />
-                       ) : (
-                         <View style={styles.noImage}>
-                           <Text style={styles.noImageText}>No Image</Text>
-                         </View>
-                       )}
-           
-
-            {/* Post category and content */}
-            <Text style={styles.category}>{item.category}</Text>
-            <Text style={styles.title}>{item.title}</Text>
-            <Text style={styles.description}>{item.description}</Text>
-
-            {/* Actions (like + comment) */}
-            <View style={styles.actions}>
-              <TouchableOpacity>
-                <Text style={styles.actionButton}>❤️ Like</Text>
+            {/* Post image (clickable) */}
+            {item.imageUrl ? (
+              <TouchableOpacity onPress={() => handlePostPress(item)}>
+               <Image
+  source={{
+    uri: item.imageUrl
+      ? item.imageUrl.startsWith('http')
+        ? item.imageUrl
+        : `${API_URL}${item.imageUrl.startsWith('/') ? '' : '/'}${item.imageUrl}`
+      : 'https://via.placeholder.com/300x200', // fallback
+  }}
+                  style={styles.postImage}
+                />
               </TouchableOpacity>
-              <TouchableOpacity>
-                <Text style={styles.actionButton}>💬 Comment</Text>
+            ) : (
+              <TouchableOpacity onPress={() => handlePostPress(item)}>
+                <View style={styles.noImage}>
+                  <Text style={styles.noImageText}>No Image</Text>
+                </View>
               </TouchableOpacity>
-            </View>
+            )}
+
+            {/* Post category, title, and description */}
+            <TouchableOpacity onPress={() => handlePostPress(item)}>
+              <Text style={styles.category}>{item.category}</Text>
+              <Text style={styles.title}>{item.title}</Text>
+              <Text style={styles.description}>{item.description}</Text>
+            </TouchableOpacity>
+
+            {/* Post actions: Like + Comment */}
+            <PostActions
+              postId={item.id}
+              userId={userId}
+              initialLikeCount={item.likeCount || 0}
+              initialCommentCount={item.commentCount || 0}
+              onCommentPress={() => {
+                setEvents((prev) =>
+                  prev.map((ev) =>
+                    ev.id === item.id
+                      ? { ...ev, showComments: !ev.showComments }
+                      : ev
+                  )
+                );
+              }}
+            />
+
+            {/* Inline Comment Section */}
+            {item.showComments && (
+              <CommentSection
+                postId={item.id}
+                userId={userId}
+                onCommentAdd={(newCount) => {
+                  setEvents((prev) =>
+                    prev.map((ev) =>
+                      ev.id === item.id ? { ...ev, commentCount: newCount } : ev
+                    )
+                  );
+                }}
+              />
+            )}
           </View>
         )}
         contentContainerStyle={styles.listContent}
       />
 
-      
       <RoleBasedBottomNav navigation={navigation} />
-      </View>
+    </View>
   );
 }
 
+// Styles
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-  },
-  listContent: {
-    padding: 10,
-    paddingBottom: 100, // avoid content hidden behind footer
-  },
+  container: { flex: 1, backgroundColor: "#fff" },
+  listContent: { padding: 10, paddingBottom: 100 },
 
-  /* Post card container */
   postCard: {
     backgroundColor: "#f9f9f9",
     marginBottom: 15,
@@ -125,30 +193,11 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
 
-  /* Profile row (avatar + username) */
-  userRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20, // circular avatar
-    marginRight: 10,
-  },
-  username: {
-    fontWeight: "600",
-    fontSize: 14,
-    color: "#333",
-  },
+  userRow: { flexDirection: "row", alignItems: "center", marginBottom: 8 },
+  avatar: { width: 40, height: 40, borderRadius: 20, marginRight: 10 },
+  username: { fontWeight: "600", fontSize: 14, color: "#333" },
 
-  /* Post image */
-  postImage: {
-    width: "100%",
-    height: 150,
-    borderRadius: 8,
-  },
+  postImage: { width: "100%", height: 150, borderRadius: 8 },
   noImage: {
     width: "100%",
     height: 150,
@@ -157,40 +206,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  noImageText: {
-    color: "#555",
-  },
+  noImageText: { color: "#555" },
 
-  /* Post category and content */
   category: {
     fontWeight: "bold",
     marginTop: 8,
     fontSize: 14,
     color: "#E64A0D",
   },
-  title: {
-    fontSize: 16,
-    marginTop: 4,
-    fontWeight: "600",
-    color: "#333",
-  },
-  description: {
-    fontSize: 13,
-    marginTop: 4,
-    color: "#666",
-  },
-
-  /* Action buttons */
-  actions: {
-    flexDirection: "row",
-    marginTop: 8,
-    justifyContent: "space-around",
-  },
-  actionButton: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#e74c3c",
-  },
+  title: { fontSize: 16, marginTop: 4, fontWeight: "600", color: "#333" },
+  description: { fontSize: 13, marginTop: 4, color: "#666" },
 });
-
-

@@ -54,5 +54,95 @@ namespace Backend.Controllers
 
             return Ok(events);
         }
+
+[HttpGet("events/{username}")]
+[AllowAnonymous] // or [Authorize]
+public async Task<IActionResult> GetEventsByUsername(string username)
+{
+    if (string.IsNullOrWhiteSpace(username))
+        return BadRequest("Username is required.");
+
+    var events = await _profileService.GetEventsByUsernameAsync(username);
+
+    if (events == null || !events.Any())
+        return NotFound($"No events found for user '{username}'.");
+
+    return Ok(events);
+}
+
+[HttpGet("description/{username}")]
+[AllowAnonymous] // or [Authorize] if you want only logged-in users
+public async Task<IActionResult> GetDescriptionByUsername(string username)
+{
+    if (string.IsNullOrWhiteSpace(username))
+        return BadRequest("Username is required.");
+
+    var description = await _profileService.GetDescriptionByUsernameAsync(username);
+
+    if (description == null)
+        return NotFound($"No description found for user '{username}'.");
+
+    return Ok(new { Username = username, Description = description });
+}
+
+[HttpGet("posts/count/{username}")]
+[AllowAnonymous] // or [Authorize]
+public async Task<IActionResult> GetPostCountByUsername(string username)
+{
+    if (string.IsNullOrWhiteSpace(username))
+        return BadRequest("Username is required.");
+
+    var count = await _profileService.GetPostCountByUsernameAsync(username);
+    return Ok(new { username, postCount = count });
+}
+
+
+[HttpGet("my-postcount")]
+[Authorize]
+public async Task<IActionResult> GetMyPostCount()
+{
+    var userId = User.Claims
+        .FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")
+        ?.Value;
+
+    if (string.IsNullOrEmpty(userId))
+        return Unauthorized("User ID not found in token.");
+
+    var count = await _profileService.GetPostCountByUserIdAsync(userId);
+    return Ok(new { count });
+}
+
+[HttpGet("profile-image/me")]
+[Authorize]
+public async Task<IActionResult> GetMyProfileImage()
+{
+    var userId = User.Claims
+        .FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")
+        ?.Value;
+
+    if (string.IsNullOrEmpty(userId))
+        return Unauthorized("User ID not found in token.");
+
+    var imageUrl = await _profileService.GetProfileImageByUserIdAsync(userId);
+    if (imageUrl == null)
+        return NotFound("Profile image not found.");
+
+    return Ok(new { ProfileImageUrl = imageUrl });
+}
+
+[HttpGet("profile-image/{username}")]
+[AllowAnonymous]
+public async Task<IActionResult> GetProfileImageByUsername(string username)
+{
+    if (string.IsNullOrWhiteSpace(username))
+        return BadRequest("Username is required.");
+
+    var imageUrl = await _profileService.GetProfileImageByUsernameAsync(username);
+    if (imageUrl == null)
+        return NotFound($"Profile image not found for user '{username}'.");
+
+    return Ok(new { ProfileImageUrl = imageUrl });
+}
+
     }
 }

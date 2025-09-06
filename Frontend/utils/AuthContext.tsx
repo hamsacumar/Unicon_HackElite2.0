@@ -8,6 +8,7 @@ import React, {
 import * as SecureStore from "expo-secure-store";
 import Constants from "expo-constants";
 import Toast from "react-native-toast-message";
+import { saveToken, clearToken } from "../services/navService";
 
 const BASE_URL = Constants.expoConfig?.extra?.backendUrl;
 
@@ -90,7 +91,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     userId?: string;
     isEmailVerified?: boolean;
   }) => {
-    await SecureStore.setItemAsync("accessToken", data.accessToken);
+    // Save token using our navService
+    await saveToken(data.accessToken);
     setToken(data.accessToken);
     setUser({ 
       username: data.username, 
@@ -102,7 +104,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const logout = async () => {
-    await SecureStore.deleteItemAsync("accessToken");
+    await clearToken();
     setToken(null);
     setUser(null);
     Toast.show({ type: "success", text1: "Logged out" });

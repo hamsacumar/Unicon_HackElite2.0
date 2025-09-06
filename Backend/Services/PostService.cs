@@ -22,9 +22,13 @@ namespace Backend.Services
             // Collections used in this service
             _events = database.GetCollection<EventModel>("events");
             _users = database.GetCollection<AppUser>("Users");
-            _likes = database.GetCollection<LikeModel>("Likes");
-            _comments = database.GetCollection<CommentModel>("Comments");
+            _likes = database.GetCollection<LikeModel>("likes");
+            _comments = database.GetCollection<CommentModel>("comments");
         }
+public async Task<AppUser> GetUserByIdAsync(string userId)
+{
+    return await _users.Find(u => u.Id == userId).FirstOrDefaultAsync();
+}
 
         /* ================================
            Likes
@@ -58,16 +62,39 @@ namespace Backend.Services
         ================================== */
 
         // Add a comment to a post
-        public async Task AddCommentAsync(CommentModel comment)
-        {
-            await _comments.InsertOneAsync(comment);
-        }
+      public async Task<CommentModel> AddCommentAsync(CommentModel comment)
+{
+    var user = await _users.Find(u => u.Id == comment.UserId).FirstOrDefaultAsync();
+    comment.Username = user?.Username ?? "Anonymous";
+    comment.UserImage = user?.ProfileImageUrl;
+
+    await _comments.InsertOneAsync(comment);
+    return comment;
+}
+
 
         // Get all comments for a given post
-        public async Task<List<CommentModel>> GetCommentsByPostIdAsync(string postId)
+      public async Task<List<CommentModel>> GetCommentsByPostIdAsync(string postId)
+{
+    var comments = await _comments.Find(c => c.PostId == postId).ToListAsync();
+
+    foreach (var comment in comments)
+    {
+        if (!string.IsNullOrEmpty(comment.UserId))
         {
-            return await _comments.Find(c => c.PostId == postId).ToListAsync();
+            var user = await _users.Find(u => u.Id == comment.UserId).FirstOrDefaultAsync();
+            if (user != null)
+            {
+                comment.Username = user.Username ?? "Anonymous";
+                comment.UserImage = user.ProfileImageUrl; // ✅ Add this if your AppUser has ImageUrl
+            }
         }
+    }
+
+    return comments;
+}
+
+    
 
         /* ================================
            Events
