@@ -6,17 +6,21 @@ import {
   createNativeStackNavigator,
   NativeStackNavigationProp,
 } from "@react-navigation/native-stack";
+import { createStackNavigator } from "@react-navigation/stack";
 import Toast from "react-native-toast-message";
 
-// Screens
 import Test from "./screens/test";
 import OrgSettings from "./screens/OrgSettings";
+import { AuthProvider, useAuth } from "./utils/AuthContext";
+
+// Updated imports for new auth screens
 import LoginScreen from "./screens/auth/LoginScreen";
 import SignupScreen from "./screens/auth/SignupScreen";
 import VerifyCodeScreen from "./screens/auth/VerifyCodeScreen";
 import ClassifyAccount from "./screens/auth/ClassifyAccountScreen";
 import ForgotPasswordScreen from "./screens/auth/ForgotPasswordScreen";
 import ResetPasswordScreen from "./screens/auth/ResetPasswordScreen";
+
 import Home from "./screens/Home";
 import LandingPage from "./screens/LandingPage";
 import InputPage from "./screens/input";
@@ -24,8 +28,8 @@ import Chat from "./screens/Chat";
 import InboxScreen from "./screens/InboxScreen";
 import Profile from "./screens/Profile";
 import ViewProfile from "./screens/ViewProfile";
-import ProfileSetup from "./screens/ProfileSetup";
 import EditProfile from "./screens/EditProfile";
+import ProfileSetup from "./screens/ProfileSetup";
 import OrgProfile from "./screens/OrgProfile";
 import PostDetail from "./screens/PostDetail";
 import { EventItem } from "./services/eventService";
@@ -38,17 +42,13 @@ export type RootStackParamList = {
   Auth: undefined;
   Home: undefined;
   LandingPage: undefined;
+  Test: undefined;
   Profile: undefined;
   OrgSettings: undefined;
   InputPage: undefined;
   InboxScreen: { currentUserId: string };
-  Chat: {
-    currentUserId: string;
-    otherUserId: string;
-    currentUsername: string;
-    otherUsername: string;
-  };
-  ViewProfile: undefined;
+  Chat: { currentUserId: string; otherUserId: string; currentUsername: string; otherUsername: string };
+  ViewProfile: { username: string };
   EditProfile: undefined;
   ProfileSetup: undefined;
   OrgProfile: undefined;

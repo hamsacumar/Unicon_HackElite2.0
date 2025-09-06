@@ -98,7 +98,12 @@ export default function Home() {
                 }}
                 style={styles.avatar}
               />
-              <Text style={styles.username}>{item.username}</Text>
+              <TouchableOpacity onPress={() => navigation.navigate("ViewProfile", { username: item.username })}>
+                <Text style={styles.username}>
+                  {item.username}
+                </Text>
+              </TouchableOpacity>
+
             </View>
 
             {/* Post image (clickable) */}

@@ -1,12 +1,16 @@
 import * as SecureStore from "expo-secure-store";
 import Constants from "expo-constants";
 import axios from "axios";
+import { Alert } from "react-native";
+import { NavigationProp } from "@react-navigation/native";
 
 // Define the type for test data items
 export interface TestDataItem {
   id: string;
   value: string;
 }
+
+
 
 // Ensure BASE_URL has no trailing slash
 const BASE_URL = Constants.expoConfig?.extra?.apiUrl || 'http://10.10.8.24:5179';
@@ -471,11 +475,11 @@ export const classifyAccount = async (
   role: 'Student' | 'Organizer' | 'Admin'
 ) => {
   try {
-    console.log('Sending classify account request for user:', userId);
+    
     
     // Get the token from secure storage
     const token = await SecureStore.getItemAsync("accessToken");
-    console.log('Token for classify request:', token ? 'Present' : 'Missing');
+    
     
     if (!token) {
       throw new Error('Authentication token not found. Please log in again.');
@@ -498,7 +502,7 @@ export const classifyAccount = async (
     });
     
     const responseText = await response.text();
-    console.log('Raw classify response:', responseText);
+    
     
     if (!response.ok) {
       throw new Error(`Request failed with status ${response.status}`);
@@ -525,9 +529,7 @@ export const login = async (usernameOrEmail: string, password: string) => {
     const loginData = isEmail(usernameOrEmail)
       ? { email: usernameOrEmail, password }
       : { username: usernameOrEmail, password };
-    
-    console.log("Sending login request with data:", loginData);
-    
+        
     // Call the login endpoint
     const response = await fetch(`${API_BASE}/auth/login`, {
       method: "POST",
@@ -671,3 +673,22 @@ export async function getTestData(): Promise<TestDataItem[]> {
     return [];
   }
 }
+
+export const logout = async (navigation?: NavigationProp<any>) => {
+  try {
+    await SecureStore.deleteItemAsync("accessToken");
+    console.log("Token removed from secure storage");
+
+    Alert.alert("Logged out", "You have been successfully logged out.");
+
+    if (navigation) {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "LandingPage" }],
+      });
+    }
+  } catch (error) {
+    console.error("Logout error:", error);
+    Alert.alert("Logout failed", "An error occurred during logout.");
+  }
+};

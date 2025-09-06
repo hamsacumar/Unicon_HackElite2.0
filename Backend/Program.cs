@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
@@ -13,7 +14,7 @@ using Backend.Filters;
 var builder = WebApplication.CreateBuilder(args);
 
 //
-// ✅ Load settings from appsettings.json (MongoDB, JWT, Email, GoogleAuth)
+//  Load settings from appsettings.json (MongoDB, JWT, Email, GoogleAuth)
 //
 builder.Services.Configure<MongoDbSettings>(builder.Configuration.GetSection("MongoDbSettings"));
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
@@ -21,7 +22,7 @@ builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Emai
 builder.Services.Configure<GoogleAuthSettings>(builder.Configuration.GetSection("GoogleAuth"));
 
 //
-// ✅ MongoDB Client registration (Singleton)
+//  MongoDB Client registration (Singleton)
 //
 builder.Services.AddSingleton<IMongoClient>(s =>
 {
@@ -30,14 +31,14 @@ builder.Services.AddSingleton<IMongoClient>(s =>
 });
 
 //
-// ✅ Load strongly typed settings (optional use later)
+//  Load strongly typed settings (optional use later)
 //
 var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>()!;
 var emailSettings = builder.Configuration.GetSection("EmailSettings").Get<EmailSettings>()!;
 var googleAuthSettings = builder.Configuration.GetSection("GoogleAuth").Get<GoogleAuthSettings>()!;
 
 //
-// ✅ Authentication: JWT + Google
+//  Authentication: JWT + Google
 //
 builder.Services.AddAuthentication("Bearer")
     .AddJwtBearer(options =>
@@ -52,8 +53,13 @@ builder.Services.AddAuthentication("Bearer")
             ValidIssuer = jwt?.Issuer,
             ValidAudience = jwt?.Audience,
             IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(
-                System.Text.Encoding.UTF8.GetBytes(jwt?.Key ?? ""))
+                System.Text.Encoding.UTF8.GetBytes(jwt?.Key ?? "")),
+            NameClaimType = "name",
+            RoleClaimType = "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"
         };
+        
+        //  Map JWT claims to standard claim types
+        options.MapInboundClaims = true;
     })
     .AddGoogle(options =>
     {
@@ -69,6 +75,12 @@ builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("OrganizationOnly", policy =>
         policy.RequireRole("Organizer"));
+    
+    // Add a default policy that will be used by [Authorize] attribute
+    options.DefaultPolicy = new AuthorizationPolicyBuilder()
+        .AddAuthenticationSchemes("Bearer")
+        .RequireAuthenticatedUser()
+        .Build();
 });
 
 // ----------------------------
@@ -86,7 +98,7 @@ builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "Backend API", Version = "v1" });
 
-    // 🔑 JWT Authentication in Swagger
+    //  JWT Authentication in Swagger
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -108,13 +120,13 @@ builder.Services.AddSwaggerGen(c =>
         }
     });
 
-    // ✅ Enable file uploads in Swagger if needed
+    //  Enable file uploads in Swagger if needed
     c.OperationFilter<FileUploadOperationFilter>();
     c.OperationFilter<SwaggerFileOperationFilter>();
 });
 
 //
-// ✅ Dependency Injection (Services)
+//  Dependency Injection (Services)
 //
 builder.Services.AddScoped<ITestService, TestService>();
 builder.Services.AddScoped<IUserService, UserService>(); // use Scoped (preferred for DB ops)
@@ -128,7 +140,7 @@ builder.Services.AddScoped<IPostService, PostService>();
 builder.Services.AddScoped<ProfileDetailService>();
 
 //
-// ✅ CORS Policy (Allow All)
+//  CORS Policy (Allow All)
 //
 builder.Services.AddCors(options =>
 {
@@ -139,12 +151,12 @@ builder.Services.AddCors(options =>
 });
 
 //
-// ✅ Build App
+//  Build App
 //
 var app = builder.Build();
 
 //
-// ✅ Swagger (only in Development)
+//  Swagger (only in Development)
 //
 if (app.Environment.IsDevelopment())
 {
@@ -161,7 +173,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 //
-// ✅ Map API Controllers
+//  Map API Controllers
 //
 app.MapControllers();
 

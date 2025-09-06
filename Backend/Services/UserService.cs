@@ -76,14 +76,43 @@ namespace Backend.Services
         {
             try
             {
+                if (string.IsNullOrEmpty(userId))
+                {
+                    Console.WriteLine("Error: User ID cannot be null or empty");
+                    return false;
+                }
+
                 var filter = Builders<AppUser>.Filter.Eq(u => u.Id, userId);
-                var update = Builders<AppUser>.Update.Set(u => u.ProfileImageUrl, imageUrl);
-                var result = await _users.UpdateOneAsync(filter, update);
-                return result.IsAcknowledged && result.ModifiedCount > 0;
+                var update = Builders<AppUser>.Update
+                    .Set(u => u.ProfileImageUrl, imageUrl)
+                    .Set(u => u.UpdatedAt, DateTime.UtcNow);
+                    
+                var options = new UpdateOptions { IsUpsert = false };
+                var result = await _users.UpdateOneAsync(filter, update, options);
+                
+                if (!result.IsAcknowledged)
+                {
+                    Console.WriteLine("Error: Database operation was not acknowledged");
+                    return false;
+                }
+                
+                if (result.MatchedCount == 0)
+                {
+                    Console.WriteLine($"Error: No user found with ID {userId}");
+                    return false;
+                }
+                
+                Console.WriteLine($"Successfully updated profile image for user {userId}");
+                return true;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error updating profile image: {ex.Message}");
+                Console.WriteLine($"Error updating profile image for user {userId}: {ex.Message}");
+                Console.WriteLine($"Stack Trace: {ex.StackTrace}");
+                if (ex.InnerException != null)
+                {
+                    Console.WriteLine($"Inner Exception: {ex.InnerException.Message}");
+                }
                 return false;
             }
         }

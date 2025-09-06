@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, View } from "react-native";
+import { ActivityIndicator, View, Text, Button } from "react-native";
 import Org_BottomNav from "./org_bottomNav";
 import Stu_BottomNav from "./stu_bottomNav";
 import { getUserRole } from "../services/navService";
+import BottomNav from "./bottomNav";
 
 interface Props {
   navigation: any;
@@ -29,31 +30,39 @@ const RoleBasedBottomNav: React.FC<Props> = ({ navigation }) => {
       </View>
     );
   }
+  
 
+  
   if (role === "Organizer") {
     return (
       <Org_BottomNav
         onPressHome={() => navigation.navigate("Home")}
         onPressFilter={() => console.log("Filter pressed")}
-        onPressAdd={() => console.log("input pressed")}
+        onPressAdd={() => console.log("Add pressed")}
         onPressNotification={() => console.log("Notification pressed")}
         onPressProfile={() => navigation.navigate("Profile")}
       />
     );
   }
-
+  
   if (role === "Student") {
     return (
       <Stu_BottomNav
         onPressHome={() => navigation.navigate("Home")}
         onPressFilter={() => console.log("Filter pressed")}
         onPressNotification={() => console.log("Notification pressed")}
-        onPressProfile={() => navigation.navigate("OrgProfile")}
+        onPressProfile={() => navigation.navigate("Profile")}
       />
     );
   }
-
-  return null;
+  
+  // fallback UI
+  return (
+    <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+      <Text>Unable to determine role. Please login again.</Text>
+      <Button title="Go to Login" onPress={() => navigation.navigate("Login")} />
+    </View>
+  );
 };
 
 export default RoleBasedBottomNav;
