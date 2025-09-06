@@ -11,33 +11,33 @@ using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
+//
 //  Load settings from appsettings.json (MongoDB, JWT, Email, GoogleAuth)
-
+//
 builder.Services.Configure<MongoDbSettings>(builder.Configuration.GetSection("MongoDbSettings"));
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 builder.Services.Configure<GoogleAuthSettings>(builder.Configuration.GetSection("GoogleAuth"));
 
-
+//
 //  MongoDB Client registration (Singleton)
-
+//
 builder.Services.AddSingleton<IMongoClient>(s =>
 {
     var settings = s.GetRequiredService<IOptions<MongoDbSettings>>().Value;
     return new MongoClient(settings.ConnectionString);
 });
 
-
+//
 //  Load strongly typed settings (optional use later)
-
+//
 var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>()!;
 var emailSettings = builder.Configuration.GetSection("EmailSettings").Get<EmailSettings>()!;
 var googleAuthSettings = builder.Configuration.GetSection("GoogleAuth").Get<GoogleAuthSettings>()!;
 
-
+//
 //  Authentication: JWT + Google
-
+//
 builder.Services.AddAuthentication("Bearer")
     .AddJwtBearer(options =>
     {
@@ -56,7 +56,7 @@ builder.Services.AddAuthentication("Bearer")
             RoleClaimType = "role"
         };
         
-        // Map JWT claims to standard claim types
+        //  Map JWT claims to standard claim types
         options.MapInboundClaims = true;
     })
     .AddGoogle(options =>
@@ -112,11 +112,13 @@ builder.Services.AddSwaggerGen(c =>
         }
     });
 
+    //  Enable file uploads in Swagger if needed
     c.OperationFilter<FileUploadOperationFilter>();
 });
 
+//
 //  Dependency Injection (Services)
-
+//
 builder.Services.AddScoped<ITestService, TestService>();
 builder.Services.AddScoped<IUserService, UserService>(); // use Scoped (preferred for DB ops)
 builder.Services.AddSingleton<IEmailService, EmailService>();
@@ -125,9 +127,11 @@ builder.Services.AddSingleton<IGoogleAuthService, GoogleAuthService>();
 builder.Services.AddScoped<ITokenCheckService, TokenCheckService>();
 builder.Services.AddScoped<InputService>();
 builder.Services.AddScoped<IMessageService, MessageService>();
+builder.Services.AddScoped<IPostService, PostService>();
+builder.Services.AddScoped<ProfileDetailService>();
 
 //
-// ✅ CORS Policy (Allow All)
+//  CORS Policy (Allow All)
 //
 builder.Services.AddCors(options =>
 {
@@ -137,14 +141,14 @@ builder.Services.AddCors(options =>
     });
 });
 
-
+//
 //  Build App
-
+//
 var app = builder.Build();
 
-
+//
 //  Swagger (only in Development)
-
+//
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -159,8 +163,9 @@ app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
 
-
-
+//
+//  Map API Controllers
+//
 app.MapControllers();
 
 // ----------------------------

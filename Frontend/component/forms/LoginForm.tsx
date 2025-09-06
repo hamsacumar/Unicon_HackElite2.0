@@ -1,77 +1,85 @@
-import React, { useState, useContext } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import CustomInput from '../ui/CustomInput';
-import PasswordInput from '../ui/PasswordInput';
-import CustomButton from '../ui/CustomButton';
-import ErrorMessage from '../ui/ErrorMessage';
-import { colors, spacing, globalStyles } from '../../styles/globalStyles';
-import { login } from '../../services/api';
-import { AuthContext } from '../../utils/AuthContext';
+import React, { useState, useContext } from "react";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import CustomInput from "../ui/CustomInput";
+import PasswordInput from "../ui/PasswordInput";
+import CustomButton from "../ui/CustomButton";
+import ErrorMessage from "../ui/ErrorMessage";
+import { colors, spacing, globalStyles } from "../../styles/globalStyles";
+import { login } from "../../services/api";
+import { AuthContext } from "../../utils/AuthContext";
 
 interface LoginFormProps {
   onForgotPassword: () => void;
   onSignupNavigation: () => void;
   onVerifyEmail: (email: string, userId: string) => void;
+  onLoginSuccess?: (userId: string, accesstoken: string) => void; // for after login
 }
 
 const LoginForm: React.FC<LoginFormProps> = ({
   onForgotPassword,
   onSignupNavigation,
   onVerifyEmail,
+  onLoginSuccess,
 }) => {
-  const [usernameOrEmail, setUsernameOrEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [usernameOrEmail, setUsernameOrEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const authContext = useContext(AuthContext);
   if (!authContext) {
-    throw new Error('AuthContext is undefined. Make sure you are within an AuthProvider.');
+    throw new Error(
+      "AuthContext is undefined. Make sure you are within an AuthProvider."
+    );
   }
   const { login: authLogin } = authContext;
 
   const handleLogin = async () => {
-    if (!usernameOrEmail || !password) {
-      setError('Please enter both username/email and password');
-      return;
+  const trimmedUsername = usernameOrEmail.trim();
+  const trimmedPassword = password.trim();
+
+  if (!trimmedUsername || !trimmedPassword) {
+    setError("Please enter both username/email and password");
+    return;
+  }
+
+  setIsLoading(true);
+  setError("");
+
+  try {
+    const data = await login(usernameOrEmail, password);
+    await authLogin(data);
+
+    // Directly call onLoginSuccess
+    if (onLoginSuccess) {
+      onLoginSuccess(data.userId, data.accessToken);
+    }
+  } catch (err) {
+    console.error("Login error:", err);
+    let errorMessage = "Failed to log in. Please try again.";
+
+    if (err instanceof Error) {
+      if (err.message.includes("Invalid credentials")) {
+        errorMessage = "Invalid username/email or password";
+      } else if (err.message.includes("Network request failed")) {
+        errorMessage = "Unable to connect to server. Check your internet.";
+      } else {
+        errorMessage = err.message;
+      }
     }
 
-    setIsLoading(true);
-    setError('');
+    setError(errorMessage);
+  } finally {
+    setIsLoading(false);
+  }
+};
 
-    try {
-      const data = await login(usernameOrEmail, password);
-      await authLogin(data);
-      
-      // Check if email is verified
-      if (!data.isEmailVerified) {
-        onVerifyEmail(data.email, data.userId);
-      }
-      // If verified, the AuthContext will handle the navigation
-    } catch (err) {
-      console.error('Login error:', err);
-      let errorMessage = 'Failed to log in. Please try again.';
-      
-      if (err instanceof Error) {
-        if (err.message.includes('Invalid credentials')) {
-          errorMessage = 'Invalid username/email or password';
-        } else if (err.message.includes('Email not verified')) {
-          errorMessage = 'Please verify your email before logging in';
-        } else {
-          errorMessage = err.message;
-        }
-      }
-      
-      setError(errorMessage);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+
 
   return (
     <View style={styles.container}>
       <Text style={globalStyles.title}>Log in</Text>
-      
+
       <View style={styles.formContainer}>
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Email or Phone number</Text>
@@ -97,16 +105,22 @@ const LoginForm: React.FC<LoginFormProps> = ({
         <ErrorMessage message={error} />
 
         <CustomButton
-          title={isLoading ? 'Signing in...' : 'Sign In'}
+          title={isLoading ? "Signing in..." : "Sign In"}
           onPress={handleLogin}
           loading={isLoading}
         />
 
-        <TouchableOpacity onPress={onForgotPassword} style={styles.linkContainer}>
+        <TouchableOpacity
+          onPress={onForgotPassword}
+          style={styles.linkContainer}
+        >
           <Text style={globalStyles.link}>Forgot password</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={onSignupNavigation} style={styles.linkContainer}>
+        <TouchableOpacity
+          onPress={onSignupNavigation}
+          style={styles.linkContainer}
+        >
           <Text style={globalStyles.link}>
             Don't have an account? Create a new account
           </Text>
@@ -119,7 +133,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
     paddingHorizontal: spacing.xl,
     backgroundColor: colors.white,
   },
@@ -131,13 +145,13 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: colors.black,
     marginBottom: 8,
     marginLeft: 4,
   },
   linkContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: spacing.sm,
   },
 });
