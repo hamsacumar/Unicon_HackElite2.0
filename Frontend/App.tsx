@@ -62,7 +62,7 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const AppStack = () => (
   <Stack.Navigator
-    initialRouteName="Test"
+    initialRouteName="LandingPage"
     screenOptions={{
       headerStyle: { backgroundColor: "#FF5722" },
       headerTintColor: "#fff",
@@ -75,25 +75,7 @@ const AppStack = () => (
       name="LandingPage"
       component={LandingPage}
       options={({ navigation }: { navigation: NativeStackNavigationProp<RootStackParamList, "LandingPage"> }) => ({
-        title: "EventTrix",
-        headerLeft: () => (
-          <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginLeft: 15 }}>
-            <Ionicons name="arrow-back" size={24} color="white" />
-          </TouchableOpacity>
-        ),
-      })}
-    />
-
-    <Stack.Screen
-      name="OrgProfile"
-      component={OrgProfile}
-      options={({ navigation }: { navigation: NativeStackNavigationProp<RootStackParamList, "OrgProfile"> }) => ({
-        title: "Organization Profile",
-        headerLeft: () => (
-          <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginLeft: 15 }}>
-            <Ionicons name="arrow-back" size={24} color="white" />
-          </TouchableOpacity>
-        ),
+        title: "EventTrix"
       })}
     />
 
