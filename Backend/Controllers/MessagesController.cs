@@ -52,7 +52,7 @@ namespace Backend.Controllers
                 if (receiver == null)
                     return NotFound(new { success = false, message = "Receiver not found" });
 
-                var senderId = User.FindFirst("id")?.Value;
+                var senderId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
                 var senderUsername = User.Identity?.Name;
                 if (senderId == null || senderUsername == null)
                     return Unauthorized(new { success = false, message = "Invalid sender" });

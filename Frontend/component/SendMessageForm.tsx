@@ -16,7 +16,7 @@ const SendMessageForm: React.FC<Props> = ({ onSent }) => {
     if (!receiverUsername || !text) return;
     setLoading(true);
     try {
-      const res = await api.post("/messages/sendByUsername", {
+      const res = await api.post("/Messages/sendByUsername", {
         receiverUsername,
         text,
       });

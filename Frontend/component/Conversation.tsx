@@ -28,7 +28,7 @@ const Conversation: React.FC<Props> = ({ user1, user2 }) => {
     const fetchMessages = async () => {
       try {
         const res = await api.get<ApiResponse<Message[]>>(
-          `/messages/conversation/${user1}/${user2}`
+          `/Messages/conversation/${user1}/${user2}`
         );
         setMessages(res.data.data);
       } catch (err) {

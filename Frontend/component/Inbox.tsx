@@ -33,7 +33,7 @@ const Inbox: React.FC = () => {
 
     const fetchInbox = async () => {
       try {
-        const res = await api.get<ApiResponse<Message[]>>(`/messages/inbox/${userId}`);
+        const res = await api.get<ApiResponse<Message[]>>(`/Messages/inbox/${userId}`);
         setMessages(res.data.data);
       } catch (err) {
         console.error(err);
