@@ -29,12 +29,11 @@ import InputPage from "./screens/input"; // Input Page
 import Profile from "./screens/Profile";
 import ViewProfile from "./screens/ViewProfile";
 import EditProfile from "./screens/EditProfile";
-import MessagesPage from "./screens/MessagePage";;
+import MessagesPage from "./screens/MessagePage";
 import ProfileSetup from "./screens/ProfileSetup";
 import OrgProfile from "./screens/OrgProfile";
 import PostDetail from "./screens/PostDetail";
 import { EventItem } from "./services/eventService";
-
 
 export type RootStackParamList = {
   Auth: undefined;
@@ -56,6 +55,15 @@ export type RootStackParamList = {
   ForgotPassword: undefined;
   ResetPassword: undefined;
   MessagePage: undefined;
+  InboxScreen: { currentUserId: string };
+  Chat: {
+    currentUserId: string;
+    otherUserId: string;
+    currentUsername: string;
+    otherUsername: string;
+  };
+
+
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -69,50 +77,132 @@ const AppStack = () => (
       headerTitleStyle: { fontWeight: "bold" },
     }}
   >
-    <Stack.Screen name="Home" component={Home} options={{ title: "EventTrix" }} />
+    <Stack.Screen
+      name="Home"
+      component={Home}
+      options={({ navigation }) => ({
+        title: "EventTrix",
+        headerRight: () => (
+          <TouchableOpacity
+            onPress={() => navigation.navigate("MessagePage")}
+            style={{ marginRight: 15 }}
+          >
+            <Ionicons name="mail" size={26} color="white" />
+          </TouchableOpacity>
+        ),
+      })}
+    />
 
     <Stack.Screen
       name="LandingPage"
       component={LandingPage}
-      options={({ navigation }: { navigation: NativeStackNavigationProp<RootStackParamList, "LandingPage"> }) => ({
-        title: "EventTrix"
+      options={({
+        navigation,
+      }: {
+        navigation: NativeStackNavigationProp<
+          RootStackParamList,
+          "LandingPage"
+        >;
+      }) => ({
+        title: "EventTrix",
       })}
     />
 
     <Stack.Screen
       name="Profile"
       component={Profile}
-      options={({ navigation }: { navigation: NativeStackNavigationProp<RootStackParamList, "Profile"> }) => ({
+      options={({
+        navigation,
+      }: {
+        navigation: NativeStackNavigationProp<RootStackParamList, "Profile">;
+      }) => ({
         title: "Profile",
         headerLeft: () => (
-          <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginLeft: 15 }}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={{ marginLeft: 15 }}
+          >
             <Ionicons name="arrow-back" size={24} color="white" />
           </TouchableOpacity>
         ),
         headerRight: () => (
-          <TouchableOpacity onPress={() => navigation.navigate("OrgSettings")} style={{ marginRight: 15 }}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate("OrgSettings")}
+            style={{ marginRight: 15 }}
+          >
             <Ionicons name="menu" size={28} color="white" />
           </TouchableOpacity>
         ),
       })}
     />
 
-    <Stack.Screen name="OrgSettings" component={OrgSettings} options={{ title: "Settings and Activity" }} />
-    <Stack.Screen name="InputPage" component={InputPage} options={{ title: "Create Event" }} />
-    <Stack.Screen name="InboxScreen" component={InboxScreen} options={{ title: "Inbox" }} />
-    <Stack.Screen name="Chat" component={Chat} options={{ title: "Chat" }} />
-    <Stack.Screen name="ViewProfile" component={ViewProfile} options={{ title: "Profile" }} />
-    <Stack.Screen name="EditProfile" component={EditProfile} options={{ title: "Edit Profile" }} />
-    <Stack.Screen name="PostDetail" component={PostDetail} options={{ title: "Post" }} />
+    <Stack.Screen
+      name="OrgSettings"
+      component={OrgSettings}
+      options={{ title: "Settings and Activity" }}
+    />
+    <Stack.Screen
+      name="InputPage"
+      component={InputPage}
+      options={{ title: "Create Event" }}
+    />
+    <Stack.Screen
+      name="ViewProfile"
+      component={ViewProfile}
+      options={{ title: "Profile" }}
+    />
+    <Stack.Screen
+      name="EditProfile"
+      component={EditProfile}
+      options={{ title: "Edit Profile" }}
+    />
+    <Stack.Screen
+      name="PostDetail"
+      component={PostDetail}
+      options={{ title: "Post" }}
+    />
 
     <Stack.Screen name="Test" component={Test} />
-    <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
-    <Stack.Screen name="Signup" component={SignupScreen} options={{ headerShown: false }} />
-    <Stack.Screen name="VerifyCode" component={VerifyCodeScreen} options={{ headerShown: false }} />
-    <Stack.Screen name="ClassifyAccount" component={ClassifyAccount} options={{ headerShown: false }} />
-    <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} options={{ headerShown: false }} />
-    <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} options={{ headerShown: false }} />
-    <Stack.Screen name="ProfileSetup" component={ProfileSetup} options={{ headerShown: false }} />
+    <Stack.Screen
+      name="Login"
+      component={LoginScreen}
+      options={{ headerShown: false }}
+    />
+    <Stack.Screen
+      name="Signup"
+      component={SignupScreen}
+      options={{ headerShown: false }}
+    />
+    <Stack.Screen
+      name="VerifyCode"
+      component={VerifyCodeScreen}
+      options={{ headerShown: false }}
+    />
+    <Stack.Screen
+      name="ClassifyAccount"
+      component={ClassifyAccount}
+      options={{ headerShown: false }}
+    />
+    <Stack.Screen
+      name="ForgotPassword"
+      component={ForgotPasswordScreen}
+      options={{ headerShown: false }}
+    />
+    <Stack.Screen
+      name="ResetPassword"
+      component={ResetPasswordScreen}
+      options={{ headerShown: false }}
+    />
+    <Stack.Screen
+      name="ProfileSetup"
+      component={ProfileSetup}
+      options={{ headerShown: false }}
+    />
+    <Stack.Screen
+      name="MessagePage"
+      component={MessagesPage}
+      options={{ title: "Message" }}
+    />
   </Stack.Navigator>
 );
 

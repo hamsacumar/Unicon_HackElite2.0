@@ -12,13 +12,8 @@ type RootStackParamList = {
   Home: undefined;
   // Add other screens here if needed
   InputPage: undefined;
-  InboxScreen: { currentUserId: string };
-  Chat: {
-    currentUserId: string;
-    otherUserId: string;
-    currentUsername: string;
-    otherUsername: string;
-  };
+  MessagePage: undefined;
+ 
   Login: undefined;
   Signup: undefined;
 };

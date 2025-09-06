@@ -67,12 +67,12 @@ builder.Services.AddAuthentication("Bearer")
         options.CallbackPath = "/signin-google"; // Google OAuth callback
     });
 
-// Add Authorization and policy for "Organization" role
-builder.Services.AddAuthorization(options =>
-{
-    options.AddPolicy("OrganizationOnly", policy =>
-        policy.RequireRole("Organizer"));
-});
+// // Add Authorization and policy for "Organization" role
+// builder.Services.AddAuthorization(options =>
+// {
+//     options.AddPolicy("OrganizationOnly", policy =>
+//         policy.RequireRole("Organizer"));
+// });
 
 // ----------------------------
 // Controllers & Swagger

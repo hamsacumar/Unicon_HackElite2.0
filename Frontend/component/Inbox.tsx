@@ -1,92 +1,203 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, ScrollView, StyleSheet } from "react-native";
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import api from "../services/api/api";
+import { getInbox, getSentMessages, Message } from "../services/messageService";
 
-interface Message {
-  id: string;
-  senderId: string;
-  senderUsername: string;
-  receiverId: string;
-  receiverUsername: string;
-  text: string;
-  status: string;
-  timestamp: string;
+type TabType = 'received' | 'sent';
+
+interface Props {
+  onSelectConversation: (otherUserId: string, otherUsername: string) => void;
 }
 
-interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-}
-
-const Inbox: React.FC = () => {
+const Inbox: React.FC<Props> = ({ onSelectConversation }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<TabType>('received');
+  const [loading, setLoading] = useState(true);
 
-  // Get userId from AsyncStorage
   useEffect(() => {
-    AsyncStorage.getItem("userId").then((id) => setUserId(id));
+    const fetchUserData = async () => {
+      try {
+        const userData = await AsyncStorage.getItem('userData');
+        if (userData) {
+          const { _id } = JSON.parse(userData);
+          setUserId(_id);
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+      }
+    };
+    fetchUserData();
   }, []);
 
   useEffect(() => {
-    if (!userId) return; // Wait until userId is loaded
+    if (!userId) return;
 
-    const fetchInbox = async () => {
+    const fetchMessages = async () => {
+      setLoading(true);
       try {
-        const res = await api.get<ApiResponse<Message[]>>(`/Messages/inbox/${userId}`);
-        setMessages(res.data.data);
+        const data = activeTab === 'received' 
+          ? await getInbox(userId) 
+          : await getSentMessages(userId);
+        setMessages(data);
       } catch (err) {
-        console.error(err);
+        console.error('Error fetching messages:', err);
+      } finally {
+        setLoading(false);
       }
     };
 
-    fetchInbox();
-  }, [userId]);
+    fetchMessages();
+    const interval = setInterval(fetchMessages, 5000);
+    return () => clearInterval(interval);
+  }, [userId, activeTab]);
+
+  const getOtherUserInfo = (message: Message) => {
+    if (!userId) return { id: '', username: '' };
+    return activeTab === 'received'
+      ? { id: message.senderId, username: message.senderUsername }
+      : { id: message.receiverId, username: message.receiverUsername };
+  };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Inbox</Text>
-      {messages.length === 0 ? (
-        <Text>No messages</Text>
+    <View style={styles.container}>
+      <View style={styles.tabContainer}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'received' && styles.activeTab]}
+          onPress={() => setActiveTab('received')}
+        >
+          <Text style={[styles.tabText, activeTab === 'received' && styles.activeTabText]}>
+            Received
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'sent' && styles.activeTab]}
+          onPress={() => setActiveTab('sent')}
+        >
+          <Text style={[styles.tabText, activeTab === 'sent' && styles.activeTabText]}>
+            Sent
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#1E90FF" />
+        </View>
+      ) : messages.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>
+            {activeTab === 'received' ? 'No received messages' : 'No sent messages'}
+          </Text>
+        </View>
       ) : (
-        messages.map((msg) => (
-          <View key={msg.id} style={styles.messageContainer}>
-            <Text>
-              <Text style={styles.sender}>{msg.senderUsername}</Text>: {msg.text}
-            </Text>
-            <Text style={styles.timestamp}>{new Date(msg.timestamp).toLocaleString()}</Text>
-            <Text style={styles.status}>{msg.status}</Text>
-          </View>
-        ))
+        <ScrollView style={styles.messagesContainer}>
+          {messages.map((msg) => {
+            const otherUser = getOtherUserInfo(msg);
+            return (
+              <TouchableOpacity
+                key={msg._id}
+                style={[
+                  styles.messageContainer,
+                  activeTab === 'received' && msg.status === 'unseen' && styles.unseenMessage
+                ]}
+                onPress={() => onSelectConversation(otherUser.id, otherUser.username)}
+              >
+                <Text style={styles.senderText}>
+                  {activeTab === 'sent' ? `To: ${msg.receiverUsername}` : `From: ${msg.senderUsername}`}
+                </Text>
+                <Text 
+                  style={[
+                    styles.messageText,
+                    activeTab === 'received' && msg.status === 'unseen' && styles.unseenText
+                  ]}
+                  numberOfLines={1}
+                >
+                  {msg.text}
+                </Text>
+                <Text style={styles.timestamp}>
+                  {new Date(msg.timestamp).toLocaleString()}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
       )}
-    </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    padding: 16,
+    flex: 1,
+    backgroundColor: '#fff',
   },
-  title: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 12,
+  tabContainer: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+    marginBottom: 10,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 15,
+    alignItems: 'center',
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  activeTab: {
+    borderBottomColor: '#1E90FF',
+  },
+  tabText: {
+    fontSize: 16,
+    color: '#666',
+  },
+  activeTabText: {
+    color: '#1E90FF',
+    fontWeight: '600',
+  },
+  messagesContainer: {
+    flex: 1,
+    paddingHorizontal: 16,
   },
   messageContainer: {
+    paddingVertical: 15,
     borderBottomWidth: 1,
-    borderBottomColor: "#ccc",
-    paddingVertical: 8,
+    borderBottomColor: '#f0f0f0',
   },
-  sender: {
-    fontWeight: "bold",
+  unseenMessage: {
+    backgroundColor: '#f8f9ff',
+  },
+  senderText: {
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 4,
+  },
+  messageText: {
+    color: '#666',
+    marginBottom: 4,
+  },
+  unseenText: {
+    fontWeight: '600',
+    color: '#000',
   },
   timestamp: {
     fontSize: 12,
-    color: "#666",
+    color: '#999',
   },
-  status: {
-    fontSize: 12,
-    marginTop: 2,
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyText: {
+    color: '#999',
+    fontSize: 16,
   },
 });
 
