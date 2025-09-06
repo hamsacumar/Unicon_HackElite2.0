@@ -5,7 +5,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 
 import RoleBasedBottomNav from "../component/rolebasedNav";
-
+import { logout } from '../services/api';
 // Define your stack param list
 type RootStackParamList = {
   OrgSettings: undefined;
@@ -31,8 +31,13 @@ const OrgSettings: React.FC = () => {
             />
       <Button title="Go Back" onPress={() => navigation.goBack()} />
     <RoleBasedBottomNav navigation={navigation} />
-    </View>
+    
+    <Button
+  title="Logout"
+  onPress={() => logout(navigation)}
+/>
 
+    </View>
 
           
 

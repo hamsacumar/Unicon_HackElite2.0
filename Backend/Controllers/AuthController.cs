@@ -351,5 +351,15 @@ namespace Backend.Controllers
             else if (!password.Any(ch => !char.IsLetterOrDigit(ch))) error += "Password must contain a symbol. ";
             return string.IsNullOrEmpty(error);
         }
+
+        [HttpPost("logout")]
+public IActionResult Logout()
+{
+    // For JWT-based auth, logout is typically handled client-side by removing the token.
+    // Optionally, you could implement a server-side token blacklist here.
+
+    return Ok(new { Message = "Logged out successfully." });
+}
+
     }
 }

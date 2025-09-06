@@ -10,7 +10,7 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../App";
-import RoleBasedBottomNav from "../component/rolebasedNav";
+import BottomNav from "../component/bottomNav";
 import { EventItem, getEvents } from "../services/eventService";
 import Constants from "expo-constants";
 import PostActions from "../component/PostActions";
@@ -108,7 +108,10 @@ export default function LandingPage() {
         contentContainerStyle={styles.listContent}
       />
 
-      <RoleBasedBottomNav navigation={navigation} />
+<BottomNav
+        onPressLogin={() => navigation.navigate("Login")}
+        onPressRegister={() => navigation.navigate("Signup")}
+      />
     </View>
   );
 }

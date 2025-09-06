@@ -50,4 +50,9 @@ export const ProfileService = {
   getPosts: async (): Promise<Post[]> => {
     return authGet<Post[]>("/ProfileDetail/my-events");
   },
+
+  getPostCount: async (): Promise<number> => {
+    const posts = await authGet<Post[]>("/ProfileDetail/my-events");
+    return posts.length; // simply return the number of posts
+  },
 };

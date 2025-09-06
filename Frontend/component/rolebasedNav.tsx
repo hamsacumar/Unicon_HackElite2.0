@@ -31,15 +31,7 @@ const RoleBasedBottomNav: React.FC<Props> = ({ navigation }) => {
     );
   }
   
-  // Show login/register nav if role not determined
-  if (!role) {
-    return (
-      <BottomNav
-        onPressLogin={() => navigation.navigate("Login")}
-        onPressRegister={() => navigation.navigate("Signup")}
-      />
-    );
-  }
+
   
   if (role === "Organizer") {
     return (

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -7,88 +7,103 @@ import {
   TouchableOpacity,
   Image,
   SafeAreaView,
-  StatusBar,
-} from 'react-native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useNavigation } from '@react-navigation/native';
+} from "react-native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import RoleBasedBottomNav from "../component/rolebasedNav";
-
 import Ionicons from "react-native-vector-icons/Ionicons";
+
+import { UserProfileService, UserProfile, UserEvent } from "../services/UserProfileService";
 
 // Define your stack param list
 type RootStackParamList = {
-  ViewProfile: undefined;
-  // Add other screens here if needed
+  ViewProfile: { username: string };
 };
 
-// Define the type for navigation prop
-type OrgProfileNavigationProp = NativeStackNavigationProp<
+type ViewProfileNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
-  'ViewProfile'
+  "ViewProfile"
 >;
 
-const ViewProfile: React.FC = () => {
-  const navigation = useNavigation<OrgProfileNavigationProp>();
+type ViewProfileRouteProp = RouteProp<RootStackParamList, "ViewProfile">;
 
-  const posts = [
-    {
-      id: 1,
-      title: "Submissions Are Now Open of",
-      subtitle: "Get ready to apply the scholarship of 2025!!!",
-      description: "Complete your submission here!!! https://scholarsarchive.net/scholarship/ Submission Deadline: https://scholarsarchive.net/ scholarship-deadline/",
-      image: require('../assets/icon.png'), // Replace with your image path
-    },
-    {
-      id: 2,
-      title: "Submissions Are Now Open of",
-      subtitle: "Get ready to apply the scholarship of 2025!!!",
-      description: "Complete your submission here!!! https://scholarsarchive.net/scholarship/ Submission Deadline: https://scholarsarchive.net/ scholarship-deadline/",
-      image: require('../assets/icon.png'), // Replace with your image path
-    },
-    {
-      id: 3,
-      title: "It's a Time to Get Hands-On!",
-      subtitle: "Workshop of Interview with Behavior 2024 is here!",
-      description: "Get ready for Interview! Ace Soft- Skills Interview Workshop on Improve Your Chances! Successfully Landing Your Next Job! Registration Link: https://behavioralinterviewworkshop.com/ Contact us at 14 July 2024 3:00 PM to 4:00 PM",
-      image: require('../assets/icon.png'), // Replace with your image path
-    },
-  ];
+const ViewProfile: React.FC = () => {
+  const navigation = useNavigation<ViewProfileNavigationProp>();
+  const route = useRoute<ViewProfileRouteProp>();
+  const { username } = route.params;
+
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [posts, setPosts] = useState<UserEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const profileData = await UserProfileService.getProfileByUsername(username);
+        setProfile(profileData);
+
+        const postsData = await UserProfileService.getEventsByUsername(username);
+        setPosts(postsData);
+
+        const postCount = await UserProfileService.getPostCountByUsername(username);
+        setProfile(prev => prev ? { ...prev, postCount } : null);
+      } catch (error) {
+        console.error("Error fetching user profile/events:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [username]);
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <Text style={{ textAlign: "center", marginTop: 50 }}>Loading...</Text>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
-
-      {/* Fixed Profile Section */}
+      {/* Profile Section */}
       <View style={styles.profileSection}>
         <View style={styles.profileHeader}>
           <View style={styles.profileBorder}>
             <View style={styles.profileImage}>
               <Image
-                source={require("../assets/icon.png")}
+                source={{
+                  uri: profile?.userImage
+                    ? profile.userImage
+                    : "https://cdn-icons-png.flaticon.com/512/3135/3135715.png", // fallback
+                }}
                 style={styles.image}
               />
             </View>
           </View>
 
           <View style={styles.profileInfo}>
-            <Text style={styles.profileName}>WSO2</Text>
+            <Text style={styles.profileName}>{profile?.username}</Text>
             <View style={styles.statsContainer}>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>24</Text>
-                <Text style={styles.statLabel}>posts</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>52</Text>
-                <Text style={styles.statLabel}>subscribers</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>20</Text>
-                <Text style={styles.statLabel}>subscribed</Text>
-              </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>{profile?.postCount}</Text>
+              <Text style={styles.statLabel}>posts</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>52</Text>
+              <Text style={styles.statLabel}>subscribers</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>20</Text>
+              <Text style={styles.statLabel}>subscribed</Text>
             </View>
           </View>
+          </View>
+
         </View>
 
-        <Text style={styles.trustText}>Trusted by the World's best Enterprises</Text>
+        <Text style={styles.trustText}>{profile?.description}</Text>
 
         <View style={styles.buttonContainer}>
           <TouchableOpacity style={styles.editButton}>
@@ -108,41 +123,45 @@ const ViewProfile: React.FC = () => {
             <Ionicons name="play-outline" size={24} color="#666666" />
           </TouchableOpacity>
         </View>
-
       </View>
 
-      {/* Scrollable Posts Section */}
+
+      {/* Events Section */}
       <ScrollView style={styles.postsContainer} showsVerticalScrollIndicator={false}>
         {posts.map((post) => (
           <View key={post.id} style={styles.postCard}>
             <View style={styles.postContent}>
               <View style={styles.postTextContainer}>
                 <Text style={styles.postTitle}>{post.title}</Text>
-                <Text style={styles.postSubtitle}>{post.subtitle}</Text>
+                <Text style={styles.postSubtitle}>{post.category}</Text>
                 <Text style={styles.postDescription} numberOfLines={4}>
                   {post.description}
                 </Text>
               </View>
               <View style={styles.postImageContainer}>
-                <Image
-                  source={post.image} // <-- use the post.image here
-                  style={styles.postImage} // ensure proper width/height
-                  resizeMode="cover"     // or 'contain' as needed
-                />
+                {post.imageUrl ? (
+                  <Image
+                    source={{ uri: post.imageUrl }}
+                    style={styles.postImage}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <View style={styles.postImage}>
+                    <Text style={styles.postImagePlaceholder}>No Image</Text>
+                  </View>
+                )}
               </View>
             </View>
-          </View>
 
+          </View>
         ))}
       </ScrollView>
 
-
-
       <RoleBasedBottomNav navigation={navigation} />
-
     </SafeAreaView>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: {

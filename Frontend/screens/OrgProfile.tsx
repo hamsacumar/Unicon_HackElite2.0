@@ -34,8 +34,9 @@ const OrgProfile: React.FC = () => {
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
+  const [postCount, setPostCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
-
+  
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -43,6 +44,10 @@ const OrgProfile: React.FC = () => {
         const postsData = await ProfileService.getPosts();
         setProfile(profileData);
         setPosts(postsData);
+
+        const count = await ProfileService.getPostCount();
+      setPostCount(count);
+      
       } catch (error) {
         console.error("Error fetching profile or posts:", error);
       } finally {
@@ -80,7 +85,7 @@ const OrgProfile: React.FC = () => {
             <Text style={styles.profileName}>{profile?.username}</Text>
             <View style={styles.statsContainer}>
               <View style={styles.statItem}>
-                <Text style={styles.statNumber}>24</Text>
+          <Text style={styles.statNumber}>{postCount}</Text>
                 <Text style={styles.statLabel}>posts</Text>
               </View>
               <View style={styles.statItem}>

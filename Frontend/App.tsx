@@ -45,7 +45,7 @@ export type RootStackParamList = {
   InputPage: undefined;
   InboxScreen: { currentUserId: string };
   Chat: { currentUserId: string; otherUserId: string; currentUsername: string; otherUsername: string };
-  ViewProfile: undefined;
+  ViewProfile: { username: string };
   EditProfile: undefined;
   ProfileSetup: undefined;
   OrgProfile: undefined;
