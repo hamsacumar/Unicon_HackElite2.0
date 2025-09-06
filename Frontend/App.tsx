@@ -11,7 +11,6 @@ import Toast from "react-native-toast-message";
 
 import Test from "./screens/test";
 import OrgSettings from "./screens/OrgSettings";
-import { AuthProvider, useAuth } from "./utils/AuthContext";
 
 // Updated imports for new auth screens
 import LoginScreen from "./screens/auth/LoginScreen";
@@ -42,7 +41,6 @@ export type RootStackParamList = {
   Auth: undefined;
   Home: undefined;
   LandingPage: undefined;
-  Test: undefined;
   Profile: undefined;
   OrgSettings: undefined;
   InputPage: undefined;
