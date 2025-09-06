@@ -2,6 +2,7 @@ import React from "react";
 import { TouchableOpacity, View, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { NavigationContainer } from "@react-navigation/native";
+import { useAuth } from "./utils/AuthContext";
 import {
   createNativeStackNavigator,
   NativeStackNavigationProp,
