@@ -54,28 +54,28 @@ export default function Home() {
                 style={styles.avatar}
               />
               <Text style={styles.username}>
-  {item.username}
-</Text>
+                {item.username}
+              </Text>
             </View>
 
             {/* Post image */}
-                       {item.imageUrl ? (
-                         <Image
-                         source={{
-                           uri: item.imageUrl 
-                             ? item.imageUrl.startsWith('http') 
-                               ? item.imageUrl 
-                               : `${API_URL}${item.imageUrl.startsWith('/') ? '' : '/'}${item.imageUrl}`
-                             : 'https://via.placeholder.com/300x200' // fallback image
-                         }}
-                         style={styles.postImage}
-                       />
-                       ) : (
-                         <View style={styles.noImage}>
-                           <Text style={styles.noImageText}>No Image</Text>
-                         </View>
-                       )}
-           
+            {item.imageUrl ? (
+              <Image
+                source={{
+                  uri: item.imageUrl
+                    ? item.imageUrl.startsWith('http')
+                      ? item.imageUrl
+                      : `${API_URL}${item.imageUrl.startsWith('/') ? '' : '/'}${item.imageUrl}`
+                    : 'https://via.placeholder.com/300x200' // fallback image
+                }}
+                style={styles.postImage}
+              />
+            ) : (
+              <View style={styles.noImage}>
+                <Text style={styles.noImageText}>No Image</Text>
+              </View>
+            )}
+
 
             {/* Post category and content */}
             <Text style={styles.category}>{item.category}</Text>
@@ -96,9 +96,9 @@ export default function Home() {
         contentContainerStyle={styles.listContent}
       />
 
-      
+
       <RoleBasedBottomNav navigation={navigation} />
-      </View>
+    </View>
   );
 }
 

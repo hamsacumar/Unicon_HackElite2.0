@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
@@ -54,7 +55,7 @@ builder.Services.AddAuthentication("Bearer")
             IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(
                 System.Text.Encoding.UTF8.GetBytes(jwt?.Key ?? "")),
             NameClaimType = "name",
-            RoleClaimType = "role"
+            RoleClaimType = "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"
         };
         
         //  Map JWT claims to standard claim types
@@ -74,6 +75,12 @@ builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("OrganizationOnly", policy =>
         policy.RequireRole("Organizer"));
+    
+    // Add a default policy that will be used by [Authorize] attribute
+    options.DefaultPolicy = new AuthorizationPolicyBuilder()
+        .AddAuthenticationSchemes("Bearer")
+        .RequireAuthenticatedUser()
+        .Build();
 });
 
 // ----------------------------
