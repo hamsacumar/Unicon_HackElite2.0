@@ -10,9 +10,9 @@ namespace Backend.Services
 {
     public class PostService : IPostService
     {
-        private readonly IMongoCollection<EventModel> _events;   
-        private readonly IMongoCollection<AppUser> _users;       
-        private readonly IMongoCollection<LikeModel> _likes;     
+        private readonly IMongoCollection<EventModel> _events;
+        private readonly IMongoCollection<AppUser> _users;
+        private readonly IMongoCollection<LikeModel> _likes;
         private readonly IMongoCollection<CommentModel> _comments;
 
         public PostService(IMongoClient mongoClient, IOptions<MongoDbSettings> settings)
@@ -90,33 +90,33 @@ namespace Backend.Services
         {
             var pipeline = new[]
             {
-                new BsonDocument("$lookup", new BsonDocument
+        new BsonDocument("$lookup", new BsonDocument
+        {
+            { "from", "Users" },
+            { "let", new BsonDocument("userId", new BsonDocument("$toObjectId", "$userId")) },
+            { "pipeline", new BsonArray
                 {
-                    { "from", "Users" },
-                    { "let", new BsonDocument("userId", new BsonDocument("$toObjectId", "$userId")) },
-                    { "pipeline", new BsonArray
-                        {
-                            new BsonDocument("$match", new BsonDocument(
-                                "$expr", new BsonDocument(
-                                    "$eq", new BsonArray { "$_id", "$$userId" }
-                                )
-                            ))
-                        }
-                    },
-                    { "as", "user" }
-                }),
-                new BsonDocument("$unwind", "$user"),
-                new BsonDocument("$project", new BsonDocument
-                {
-                    { "id", "$_id" },
-                    { "title", "$title" },
-                    { "description", "$description" },
-                    { "category", "$category" },
-                    { "imageUrl", "$imageUrl" },
-                    { "userId", "$user._id" },
-                    { "username", "$user.Username" }
-                })
-            };
+                    new BsonDocument("$match", new BsonDocument(
+                        "$expr", new BsonDocument(
+                            "$eq", new BsonArray { "$_id", "$$userId" }
+                        )
+                    ))
+                }
+            },
+            { "as", "user" }
+        }),
+        new BsonDocument("$unwind", "$user"),
+        new BsonDocument("$project", new BsonDocument
+        {
+            { "_id", 1 },                 // Keep _id to match [BsonId] in EventDto
+            { "title", "$title" },
+            { "description", "$description" },
+            { "category", "$category" },
+            { "imageUrl", "$imageUrl" },
+            { "userId", "$user._id" },
+            { "username", "$user.Username" }
+        })
+    };
 
             return await _events.Aggregate<EventDto>(pipeline).ToListAsync();
         }

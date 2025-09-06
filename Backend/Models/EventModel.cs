@@ -5,34 +5,35 @@ using System;
 namespace Backend.Models
 {
     public class EventModel
-    {
-        [BsonId]
-        [BsonRepresentation(BsonType.ObjectId)]
-        public string? Id { get; set; }
+{
+    [BsonId]
+    [BsonRepresentation(BsonType.ObjectId)]
+    public string? Id { get; set; }
 
-        [BsonElement("title")]
-        public string Title { get; set; } = null!;
+    [BsonElement("title")]
+    public string Title { get; set; } = null!;
 
-        [BsonElement("description")]
-        public string Description { get; set; } = null!;
+    [BsonElement("description")]
+    public string Description { get; set; } = null!;
 
-        [BsonElement("category")]
-        public string Category { get; set; } = null!;
+    [BsonElement("category")]
+    public string Category { get; set; } = null!;
 
-        [BsonElement("startDate")]
-        public DateTime StartDate { get; set; }
+    [BsonElement("startDate")]
+    public DateTime StartDate { get; set; }
 
-        [BsonElement("endDate")]
-        public DateTime EndDate { get; set; }
+    [BsonElement("endDate")]
+    public DateTime EndDate { get; set; }
 
-        [BsonElement("imageUrl")]
-        public string? ImageUrl { get; set; }
+    [BsonElement("imageUrl")]
+    public string? ImageUrl { get; set; }
 
-        [BsonElement("userId")]
-        [BsonRepresentation(BsonType.ObjectId)]  // <-- Fix applied
-        public string UserId { get; set; } = null!;
+    [BsonElement("userId")]
+    [BsonRepresentation(BsonType.ObjectId)]
+    public string UserId { get; set; } = null!;
 
-        [BsonElement("createdAt")]
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    }
+    [BsonElement("createdAt")]
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+}
+
 }

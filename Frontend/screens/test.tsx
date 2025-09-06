@@ -12,11 +12,16 @@ type RootStackParamList = {
   Home: undefined;
   // Add other screens here if needed
   InputPage: undefined;
-  MessagePage:undefined;
-
+  InboxScreen: { currentUserId: string };
+  Chat: {
+    currentUserId: string;
+    otherUserId: string;
+    currentUsername: string;
+    otherUsername: string;
+  };
+  Login: undefined;
+  Signup: undefined;
 };
-
-
 
 // Type for navigation prop
 type TestNavigationProp = NativeStackNavigationProp<RootStackParamList, "Test">;
@@ -51,6 +56,14 @@ const Test: React.FC = () => {
             ID: {item.id} | Value: {item.value}
           </Text>
         )}
+      />
+      <Button
+        title="Login"
+        onPress={() => navigation.navigate("Login")}
+      />
+      <Button
+        title="Signup"
+        onPress={() => navigation.navigate("Signup")}
       />
       <Button
         title="OrgProfile"

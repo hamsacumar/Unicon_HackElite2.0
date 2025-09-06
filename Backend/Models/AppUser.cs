@@ -1,5 +1,6 @@
 // Backend/Models/AppUser.cs
 using System;
+using System;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
@@ -22,8 +23,9 @@ namespace Backend.Models
         public bool IsEmailVerified { get; set; } = false;
         public string? GoogleId { get; set; }
         public string? ProfileImageUrl { get; set; }
-        
         [BsonDateTimeOptions(Kind = DateTimeKind.Utc)]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        [BsonDateTimeOptions(Kind = DateTimeKind.Utc)]
+        public DateTime? UpdatedAt { get; set; }
     }
 }
