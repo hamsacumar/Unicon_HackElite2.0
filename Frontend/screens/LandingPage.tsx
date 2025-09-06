@@ -108,7 +108,10 @@ export default function LandingPage() {
         contentContainerStyle={styles.listContent}
       />
 
-      <BottomNav />
+      <BottomNav
+        onPressLogin={() => navigation.navigate("Login")}
+        onPressRegister={() => navigation.navigate("Signup")}
+      />
     </View>
   );
 }

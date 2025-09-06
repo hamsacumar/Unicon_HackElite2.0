@@ -1,4 +1,4 @@
-/*
+
 import Constants from "expo-constants";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -8,7 +8,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 // ---------------------------
 export interface User { id: string; username: string; imageUrl?: string; }
 export interface Comment { id: string; postId: string; userId: string; username: string; userImage?: string; text: string; createdAt: Date | string; }
-export interface EventItem { id: string; title: string; description: string; category: string; imageUrl?: string; userId: string; username: string; userImage?: string; likeCount?: number; commentCount?: number; isLiked?: boolean; }
+export interface EventItem { id: string; title: string; description: string; category: string; imageUrl?: string; userId: string; username: string; userImage?: string; likeCount?: number; commentCount?: number; isLiked?: boolean; date?: string; }
 export interface LikeResponse { success: boolean; likeCount: number; }
 export interface CommentResponse { success: boolean; comment: Comment; }
 
@@ -75,8 +75,8 @@ export async function likePost(postId: string) {
     return res.data;
   } catch { return null; }
 }
-*/
 
+/*
 import Constants from "expo-constants";
 import axios from "axios";
 
@@ -226,3 +226,4 @@ export async function likePost(postId: string) {
     return null;
   }
 }
+*/

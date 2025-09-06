@@ -23,8 +23,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 type HomeNavigationProp = NativeStackNavigationProp<RootStackParamList, "Home">;
 
 // Base API URL
-const API_URL = Constants.expoConfig?.extra?.apiUrl?.replace("/api", "");
-const TEMP_USER_ID = "niro1234"; // any unique string
+ const API_URL = Constants.expoConfig?.extra?.apiUrl?.replace("/api", "");
+// const TEMP_USER_ID = "niro1234"; // any unique string
 export default function Home() {
   const navigation = useNavigation<HomeNavigationProp>();
   const [events, setEvents] = useState<EventItem[]>([]);
@@ -32,7 +32,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
 
   // Fetch logged-in user ID
-  /*useEffect(() => {
+  useEffect(() => {
     async function fetchUser() {
       try {
         const id = await AsyncStorage.getItem("userId"); // adjust key if needed
@@ -43,8 +43,8 @@ export default function Home() {
     }
     fetchUser();
   }, []);
-*/
-  useEffect(() => {
+
+  /*useEffect(() => {
   async function fetchUser() {
     try {
       let id = await AsyncStorage.getItem("userId"); // try to get stored ID
@@ -61,7 +61,7 @@ export default function Home() {
   fetchUser();
 }, []);
 
-  
+  */
   // Fetch events
   useEffect(() => {
     async function fetchData() {
@@ -140,7 +140,7 @@ export default function Home() {
             {/* Post actions: Like + Comment */}
             <PostActions
               postId={item.id}
-              userId={TEMP_USER_ID} // ✅ logged-in user temporary
+              userId={userId} // ✅ logged-in user temporary
               initialLikeCount={item.likeCount || 0}
               initialCommentCount={item.commentCount || 0}
               onCommentPress={() => handlePostPress(item)} // navigate to PostDetail for commenting

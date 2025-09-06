@@ -7,10 +7,10 @@ namespace Backend.Models
     public class EventDto
     {
         // MongoDB _id stored as ObjectId, represented as string in C#
-        [BsonId]
+        [BsonElement("id")] 
         [BsonRepresentation(BsonType.ObjectId)]
         [JsonPropertyName("id")]
-        public string? Id { get; set; }
+        public string Id { get; set; } = null!;   // guaranteed string from $toString
 
         [BsonElement("title")]
         [JsonPropertyName("title")]
@@ -32,7 +32,7 @@ namespace Backend.Models
         [BsonElement("userId")]
         [BsonRepresentation(BsonType.ObjectId)]
         [JsonPropertyName("userId")]
-        public string UserId { get; set; } = null!;
+        public string UserId { get; set; } = null!;  // guaranteed string from $toString
 
         [BsonElement("username")]
         [JsonPropertyName("username")]

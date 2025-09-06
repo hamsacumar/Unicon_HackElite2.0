@@ -69,7 +69,11 @@ namespace Backend.Controllers
 
             await _emailService.SendEmail(user.Email, "Verify Your Email", $"Your verification code is {code}. It expires in 2 minutes.");
 
-            return Ok(new { Message = "User registered. Verify email with code." });
+            return Ok(new { 
+                Message = "User registered. Verify email with code.",
+                UserId = user.Id,
+                Email = user.Email
+            });
         }
 
         [HttpPost("verify-email")]
@@ -98,7 +102,19 @@ namespace Backend.Controllers
             user.IsEmailVerified = true;
             await _userService.Update(user);
 
-            return Ok(new { Message = "Email verified. Proceed to classify account." });
+            // Generate JWT token for the user
+            var token = _jwtService.GenerateToken(user);
+            
+            var response = new 
+            {
+                Message = "Email verified. Proceed to classify account.",
+                Token = token,
+                UserId = user.Id,
+                Email = user.Email,
+                Username = user.Username
+            };
+            
+            return Ok(response);
         }
 
         [HttpPost("resend-verification")]
@@ -135,20 +151,48 @@ namespace Backend.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDto dto)
         {
-            if (string.IsNullOrEmpty(dto.Username) || string.IsNullOrEmpty(dto.Password))
+            Console.WriteLine($"Login attempt - Username: {dto.Username}, Email: {dto.Email}");
+            
+            if (!dto.IsValid())
             {
-                return BadRequest("Username and password are required.");
+                Console.WriteLine("Login failed: Username/Email and password are required.");
+                return BadRequest("Username/Email and password are required.");
             }
 
-            var user = await _userService.GetByUsername(dto.Username);
-            if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
+            // Try to find user by username or email
+            AppUser? user = null;
+            if (!string.IsNullOrEmpty(dto.Username))
             {
+                Console.WriteLine($"Looking up user by username: {dto.Username}");
+                user = await _userService.GetByUsername(dto.Username);
+            }
+            else if (!string.IsNullOrEmpty(dto.Email))
+            {
+                Console.WriteLine($"Looking up user by email: {dto.Email}");
+                user = await _userService.GetByEmail(dto.Email);
+            }
+
+            if (user == null)
+            {
+                Console.WriteLine("Login failed: User not found");
+                return BadRequest("Invalid credentials.");
+            }
+
+            Console.WriteLine($"User found - ID: {user.Id}, Username: {user.Username}, Email: {user.Email}");
+            
+            // Check if password is correct
+            bool isPasswordValid = BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash);
+            Console.WriteLine($"Password verification result: {isPasswordValid}");
+            
+            if (!isPasswordValid)
+            {
+                Console.WriteLine("Login failed: Invalid password");
                 return BadRequest("Invalid credentials.");
             }
 
             if (!user.IsEmailVerified)
             {
-                return BadRequest("Email not verified.");
+                return BadRequest("Email not verified. Please check your email for the verification code.");
             }
 
             var token = _jwtService.GenerateToken(user);

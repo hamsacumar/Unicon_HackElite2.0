@@ -196,7 +196,10 @@ export default function PostDetail({ route, navigation }: Props) {
           onCommentAdd={handleCommentAdd}
         />
       </ScrollView>
-      <BottomNav />
+      <BottomNav
+      onPressLogin={() => navigation.navigate("Login")}
+  onPressRegister={() => navigation.navigate("Signup")}
+      />
     </View>
   );
 }

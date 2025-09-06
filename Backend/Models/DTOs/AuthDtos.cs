@@ -10,8 +10,15 @@ namespace Backend.Models.DTOs
 
     public class LoginDto
     {
-        public required string Username { get; set; }
+        public string? Username { get; set; }
+        public string? Email { get; set; }
         public required string Password { get; set; }
+
+        public bool IsValid()
+        {
+            return (!string.IsNullOrEmpty(Username) || !string.IsNullOrEmpty(Email)) && 
+                   !string.IsNullOrEmpty(Password);
+        }
     }
 
     public class VerifyEmailDto
