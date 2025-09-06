@@ -22,6 +22,7 @@ interface User {
 interface AuthContextType {
   token: string | null;
   user: User | null;
+  isLoading: boolean;
   login: (data: {
     accessToken: string;
     username: string;
@@ -38,9 +39,11 @@ export const AuthContext = createContext<AuthContextType | undefined>(
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const loadAuth = async () => {
+      setIsLoading(true);
       const savedToken = await SecureStore.getItemAsync("accessToken");
       if (savedToken) {
         try {
@@ -69,7 +72,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         } catch (error) {
           console.error('Error loading auth:', error);
           await logout();
+        } finally {
+          setIsLoading(false);
         }
+      } else {
+        setIsLoading(false);
       }
     };
     loadAuth();
@@ -102,7 +109,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ token, user, login, logout }}>
+    <AuthContext.Provider value={{ token, user, isLoading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

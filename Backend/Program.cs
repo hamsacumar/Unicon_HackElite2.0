@@ -8,7 +8,7 @@ using Backend.Models;
 using Backend.Services;
 using Microsoft.OpenApi.Models;
 using Backend.Filters;
-
+using Hackelite2._0.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -56,42 +56,42 @@ builder.Services.AddAuthentication("Bearer")
             NameClaimType = "name",
             RoleClaimType = "role"
         };
-        
-        //  Map JWT claims to standard claim types
         options.MapInboundClaims = true;
     })
     .AddGoogle(options =>
     {
         options.ClientId = googleAuthSettings.ClientId;
         options.ClientSecret = googleAuthSettings.ClientSecret;
-        options.CallbackPath = "/signin-google"; // Google OAuth callback
+        options.CallbackPath = "/signin-google";
     });
 
-// ----------------------------
-// Authorization Policies
-// ----------------------------
+//
+//  Authorization Policies
+//
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("OrganizationOnly", policy =>
         policy.RequireRole("Organizer"));
 });
 
-// ----------------------------
-// Controllers & Swagger
-// ----------------------------
+//
+//  Controllers & JSON Options
+//
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
     });
 
+//
+//  Swagger
+//
 builder.Services.AddEndpointsApiExplorer();
-
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "Backend API", Version = "v1" });
 
-    //  JWT Authentication in Swagger
+    // JWT in Swagger
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -99,7 +99,7 @@ builder.Services.AddSwaggerGen(c =>
         Scheme = "Bearer",
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
-        Description = "Enter 'Bearer' [space] + token. Example: `Bearer eyJhbGciOi...`"
+        Description = "Enter 'Bearer' [space] + token"
     });
 
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -113,7 +113,6 @@ builder.Services.AddSwaggerGen(c =>
         }
     });
 
-    //  Enable file uploads in Swagger if needed
     c.OperationFilter<FileUploadOperationFilter>();
     c.OperationFilter<SwaggerFileOperationFilter>();
 });
@@ -122,7 +121,7 @@ builder.Services.AddSwaggerGen(c =>
 //  Dependency Injection (Services)
 //
 builder.Services.AddScoped<ITestService, TestService>();
-builder.Services.AddScoped<IUserService, UserService>(); // use Scoped (preferred for DB ops)
+builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddSingleton<IEmailService, EmailService>();
 builder.Services.AddSingleton<IJwtService, JwtService>();
 builder.Services.AddSingleton<IGoogleAuthService, GoogleAuthService>();
@@ -131,15 +130,21 @@ builder.Services.AddScoped<InputService>();
 builder.Services.AddScoped<IMessageService, MessageService>();
 builder.Services.AddScoped<IPostService, PostService>();
 builder.Services.AddScoped<ProfileDetailService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
 
 //
-//  CORS Policy (Allow All)
+//  SignalR
+//
+builder.Services.AddSignalR();
+
+//
+//  CORS Policy
 //
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
-        policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
+        policy.AllowAnyHeader().AllowAnyMethod().AllowCredentials().SetIsOriginAllowed(_ => true);
     });
 });
 
@@ -149,7 +154,7 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 //
-//  Swagger (only in Development)
+//  Swagger (Dev Only)
 //
 if (app.Environment.IsDevelopment())
 {
@@ -157,20 +162,21 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-// Static files (images)
+// Static files
 app.UseStaticFiles();
 
-// Enable CORS, Authentication & Authorization
+// CORS, Auth
 app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
 
 //
-//  Map API Controllers
+//  Map API Controllers & SignalR Hubs
 //
 app.MapControllers();
+app.MapHub<NotificationHub>("/notificationHub");
 
-// ----------------------------
-// Run the application
-// ----------------------------
+//
+//  Run
+//
 app.Run();

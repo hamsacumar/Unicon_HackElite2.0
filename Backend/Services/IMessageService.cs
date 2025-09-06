@@ -1,4 +1,6 @@
 using Backend.Models;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Backend.Services
 {
@@ -11,8 +13,6 @@ namespace Backend.Services
         Task<List<Message>> GetConversationAsync(string user1, string user2);
         Task<bool> MarkSeenAsync(string messageId);
         Task DeleteAsync(string id);
+        Task<List<Message>> GetInboxAsync(string userId);
     }
 }
-
-
-

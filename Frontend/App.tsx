@@ -1,5 +1,5 @@
 import React from "react";
-import { TouchableOpacity } from "react-native";
+import { TouchableOpacity, View, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { NavigationContainer } from "@react-navigation/native";
 import {
@@ -32,6 +32,7 @@ import EditProfile from "./screens/EditProfile";
 import ProfileSetup from "./screens/ProfileSetup";
 import OrgProfile from "./screens/OrgProfile";
 import PostDetail from "./screens/PostDetail";
+import NotificationScreen from "./screens/NotificationScreen";
 import { EventItem } from "./services/eventService";
 
 
@@ -56,6 +57,7 @@ export type RootStackParamList = {
   ClassifyAccount: undefined;
   ForgotPassword: undefined;
   ResetPassword: undefined;
+  NotificationScreen: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -122,6 +124,19 @@ const AppStack = () => (
     <Stack.Screen name="ViewProfile" component={ViewProfile} options={{ title: "Profile" }} />
     <Stack.Screen name="EditProfile" component={EditProfile} options={{ title: "Edit Profile" }} />
     <Stack.Screen name="PostDetail" component={PostDetail} options={{ title: "Post" }} />
+    
+    <Stack.Screen 
+      name="NotificationScreen" 
+      component={NotificationScreen} 
+      options={({ navigation }: { navigation: NativeStackNavigationProp<RootStackParamList, "NotificationScreen"> }) => ({
+        title: "Notifications",
+        headerLeft: () => (
+          <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginLeft: 15 }}>
+            <Ionicons name="arrow-back" size={24} color="white" />
+          </TouchableOpacity>
+        )
+      })} 
+    />
 
     <Stack.Screen name="Test" component={Test} />
     <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
@@ -134,13 +149,43 @@ const AppStack = () => (
   </Stack.Navigator>
 );
 
+// Add a new AuthStack component for unauthenticated users
+const AuthStack = () => (
+  <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Screen name="Login" component={LoginScreen} />
+    <Stack.Screen name="Signup" component={SignupScreen} />
+    <Stack.Screen name="VerifyCode" component={VerifyCodeScreen} />
+    <Stack.Screen name="ClassifyAccount" component={ClassifyAccount} />
+    <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+    <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
+  </Stack.Navigator>
+);
+
+// Main App component with authentication check
+const MainApp = () => {
+  const { token, isLoading } = useAuth();
+  
+  // Show loading indicator while checking auth state
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#0000ff" />
+      </View>
+    );
+  }
+  
+  return (
+    <NavigationContainer>
+      {token ? <AppStack /> : <AuthStack />}
+      <Toast />
+    </NavigationContainer>
+  );
+};
+
 export default function App() {
   return (
     <AuthProvider>
-      <NavigationContainer>
-        <AppStack />
-        <Toast />
-      </NavigationContainer>
+      <MainApp />
     </AuthProvider>
   );
 }

@@ -29,6 +29,7 @@ namespace Backend.Models
         public DateTime Timestamp { get; set; } = DateTime.UtcNow;
 
         [BsonElement("replyToId")]
-        public string? ReplyToId { get; set; } = null; 
+        public string? ReplyToId { get; set; } = null;
+        public object? Content { get; internal set; }
     }
 }

@@ -2,6 +2,8 @@ using Backend.Models;
 using Backend.Settings;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Backend.Services
 {
@@ -56,12 +58,11 @@ namespace Backend.Services
         }
 
         public async Task<List<Message>> GetInboxAsync(string userId)
-    {
-        var filter = Builders<Message>.Filter.Eq(m => m.ReceiverId, userId);
-        return await _messages.Find(filter)
-                          .SortByDescending(m => m.Timestamp)
-                          .ToListAsync();
-    }
-    
+        {
+            var filter = Builders<Message>.Filter.Eq(m => m.ReceiverId, userId);
+            return await _messages.Find(filter)
+                                  .SortByDescending(m => m.Timestamp)
+                                  .ToListAsync();
+        }
     }
 }
