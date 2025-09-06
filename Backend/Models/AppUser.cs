@@ -22,7 +22,6 @@ namespace Backend.Models
         public bool IsEmailVerified { get; set; } = false;
         public string? GoogleId { get; set; }
         public string? ProfileImageUrl { get; set; }
-        public DateTime? UpdatedAt { get; set; }
 
         [BsonDateTimeOptions(Kind = DateTimeKind.Utc)]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
