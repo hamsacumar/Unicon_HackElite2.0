@@ -35,10 +35,11 @@ namespace Backend.Services
             return await _eventCollection.Find(e => e.UserId == user.Id).ToListAsync();
         }
 
-        public async Task<string?> GetDescriptionByUsernameAsync(string username)
+        public async Task<(string? Description, string? ProfileImageUrl)> GetDescriptionByUsernameAsync(string username)
         {
             var user = await _userCollection.Find(u => u.Username == username).FirstOrDefaultAsync();
-            return user?.Description;
+            if (user == null) return (null, null);
+            return (user.Description, user.ProfileImageUrl);
         }
 
         public async Task<int> GetPostCountByUsernameAsync(string username)

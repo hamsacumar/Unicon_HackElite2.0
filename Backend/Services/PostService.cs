@@ -25,10 +25,142 @@ namespace Backend.Services
             _likes = database.GetCollection<LikeModel>("likes");
             _comments = database.GetCollection<CommentModel>("comments");
         }
-public async Task<AppUser> GetUserByIdAsync(string userId)
-{
-    return await _users.Find(u => u.Id == userId).FirstOrDefaultAsync();
-}
+
+        public async Task<AppUser> GetUserByIdAsync(string userId)
+        {
+            return await _users.Find(u => u.Id == userId).FirstOrDefaultAsync();
+        }
+
+        public async Task<List<EventDto>> FilterEventsAsync(string? category, DateTime? startDate, DateTime? endDate)
+        {
+            try
+            {
+                Console.WriteLine($"[FilterEventsAsync] Starting filter - Category: {category}, StartDate: {startDate}, EndDate: {endDate}");
+                
+                // Verify database connection
+                try 
+                {
+                    await _events.Database.ListCollectionsAsync();
+                    Console.WriteLine("[FilterEventsAsync] Successfully connected to MongoDB");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[FilterEventsAsync] MongoDB connection error: {ex.Message}");
+                    throw new Exception("Failed to connect to the database. Please check your connection settings.", ex);
+                }
+                
+                var filterBuilder = Builders<EventModel>.Filter;
+                var filter = filterBuilder.Empty;
+
+                // Apply category filter if provided
+                if (!string.IsNullOrEmpty(category))
+                {
+                    Console.WriteLine($"[FilterEventsAsync] Applying category filter: {category}");
+                    filter = filter & filterBuilder.Eq("category", category);
+                }
+
+                // Apply date range filter if provided
+                if (startDate.HasValue)
+                {
+                    Console.WriteLine($"[FilterEventsAsync] Applying start date filter: {startDate}");
+                    filter = filter & filterBuilder.Gte("startDate", startDate.Value);
+                }
+
+                if (endDate.HasValue)
+                {
+                    // Include the entire end date by setting the time to end of day
+                    var endOfDay = endDate.Value.Date.AddDays(1).AddTicks(-1);
+                    Console.WriteLine($"[FilterEventsAsync] Applying end date filter: {endDate} (end of day: {endOfDay})");
+                    filter = filter & filterBuilder.Lte("startDate", endOfDay);
+                }
+
+                // Log filter details instead of trying to render BSON document
+                Console.WriteLine($"[FilterEventsAsync] Final filter - Category: {category}, StartDate: {startDate}, EndDate: {endDate}");
+
+                List<EventModel> events;
+                try 
+                {
+                    Console.WriteLine($"[FilterEventsAsync] Executing MongoDB query...");
+                    var cursor = await _events.FindAsync(filter);
+                    events = await cursor.ToListAsync();
+                    Console.WriteLine($"[FilterEventsAsync] Successfully retrieved {events.Count} events");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[FilterEventsAsync] Error executing MongoDB query: {ex.Message}");
+                    Console.WriteLine($"[FilterEventsAsync] Stack Trace: {ex.StackTrace}");
+                    if (ex.InnerException != null)
+                    {
+                        Console.WriteLine($"[FilterEventsAsync] Inner Exception: {ex.InnerException.Message}");
+                    }
+                    throw new Exception("Error retrieving events from database. Please try again later.", ex);
+                }
+
+                var eventDtos = new List<EventDto>();
+
+                foreach (var ev in events)
+                {
+                    try
+                    {
+                        Console.WriteLine($"[FilterEventsAsync] Processing event: {ev.Id} - {ev.Title}");
+                        AppUser user = null;
+                        string username = "Unknown";
+                        string userImage = null;
+                        
+                        try 
+                        {
+                            Console.WriteLine($"[FilterEventsAsync] Retrieving user with ID: {ev.UserId}");
+                            user = await GetUserByIdAsync(ev.UserId);
+                            if (user != null)
+                            {
+                                username = user.Username ?? "Unknown";
+                                userImage = user.ProfileImageUrl;
+                                Console.WriteLine($"[FilterEventsAsync] Found user: {username}");
+                            }
+                            else
+                            {
+                                Console.WriteLine($"[FilterEventsAsync] User not found for ID: {ev.UserId}");
+                            }
+                        }
+                        catch (Exception userEx)
+                        {
+                            Console.WriteLine($"[FilterEventsAsync] Error retrieving user {ev.UserId}: {userEx.Message}");
+                            // Continue with default values
+                        }
+                        
+                        var eventDto = new EventDto
+                        {
+                            Id = ev.Id,
+                            Title = ev.Title,
+                            Description = ev.Description,
+                            Category = ev.Category,
+                            ImageUrl = ev.ImageUrl,
+                            UserId = ev.UserId,
+                            Username = username,
+                            UserImage = userImage
+                        };
+                        
+                        Console.WriteLine($"[FilterEventsAsync] Created DTO for event {ev.Id}");
+                        eventDtos.Add(eventDto);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[FilterEventsAsync] Error processing event {ev.Id}: {ex.Message}");
+                        Console.WriteLine(ex.StackTrace);
+                        // Continue with next event
+                    }
+                }
+
+                Console.WriteLine($"[FilterEventsAsync] Returning {eventDtos.Count} filtered events");
+                return eventDtos;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[FilterEventsAsync] Error: {ex.Message}");
+                Console.WriteLine(ex.StackTrace);
+                throw; // Re-throw to be handled by the controller
+            }
+        }
 
         /* ================================
            Likes

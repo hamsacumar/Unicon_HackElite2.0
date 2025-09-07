@@ -2,6 +2,7 @@ import React from "react";
 import { TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { NavigationContainer } from "@react-navigation/native";
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import {
   createNativeStackNavigator,
   NativeStackNavigationProp,
@@ -20,6 +21,7 @@ import ClassifyAccount from "./screens/auth/ClassifyAccountScreen";
 import ForgotPasswordScreen from "./screens/auth/ForgotPasswordScreen";
 import ResetPasswordScreen from "./screens/auth/ResetPasswordScreen";
 
+import Filter from "./screens/filter";
 import Home from "./screens/Home";
 import LandingPage from "./screens/LandingPage";
 import InputPage from "./screens/input";
@@ -59,6 +61,7 @@ export type RootStackParamList = {
   ClassifyAccount: undefined;
   ForgotPassword: undefined;
   ResetPassword: undefined;
+  Filter: { userId: string };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -177,6 +180,12 @@ const AppStack = () => (
       options={{ title: "Settings and Activity" }}
     />
     <Stack.Screen
+      name="Filter"
+      component={Filter}
+      options={{ title: "Filter" }}
+      initialParams={{ userId: "" }} // This will be populated with the actual userId when navigating
+    />
+    <Stack.Screen
       name="InputPage"
       component={InputPage}
       options={{ title: "Create Event" }}
@@ -244,11 +253,13 @@ const AppStack = () => (
 
 export default function App() {
   return (
-    <AuthProvider>
-      <NavigationContainer>
-        <AppStack />
-        <Toast />
-      </NavigationContainer>
-    </AuthProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <AuthProvider>
+        <NavigationContainer>
+          <AppStack />
+          <Toast />
+        </NavigationContainer>
+      </AuthProvider>
+    </GestureHandlerRootView>
   );
 }

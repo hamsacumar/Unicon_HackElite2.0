@@ -9,6 +9,7 @@ import {
   SafeAreaView,
   StatusBar,
 } from 'react-native';
+import Constants from "expo-constants";
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import RoleBasedBottomNav from "../component/rolebasedNav";
@@ -16,6 +17,9 @@ import RoleBasedBottomNav from "../component/rolebasedNav";
 import Ionicons from "react-native-vector-icons/Ionicons";
 
 import { ProfileService, Profile, Post } from '../services/ProfileService';
+
+
+const API_URL = Constants.expoConfig?.extra?.apiUrl?.replace("/api", "");
 
 // Define your stack param list
 type RootStackParamList = {
@@ -72,14 +76,25 @@ const OrgProfile: React.FC = () => {
       {/* Fixed Profile Section */}
       <View style={styles.profileSection}>
         <View style={styles.profileHeader}>
-          <View style={styles.profileBorder}>
-            <View style={styles.profileImage}>
-              <Image
-                source={require("../assets/icon.png")}
-                style={styles.image}
-              />
-            </View>
-          </View>
+        <View style={styles.profileBorder}>
+  <View style={styles.profileImage}>
+    <Image
+      source={{
+        uri: profile?.profileImageUrl
+          ? (profile.profileImageUrl.startsWith("http")
+              ? profile.profileImageUrl
+              : `${API_URL}${profile.profileImageUrl.startsWith("/") ? "" : "/"}${profile.profileImageUrl}`)
+          : Image.resolveAssetSource(require("../assets/icon.png")).uri, // ✅ fallback
+      }}
+      style={styles.image}
+      resizeMode="cover"
+      onError={(e) =>
+        console.log("Error loading profile image:", e.nativeEvent.error)
+      }
+    />
+  </View>
+</View>
+
 
           <View style={styles.profileInfo}>
             <Text style={styles.profileName}>{profile?.username}</Text>
@@ -140,18 +155,22 @@ const OrgProfile: React.FC = () => {
               </Text>
             </View>
             <View style={styles.postImageContainer}>
-              {post.imageUrl ? (
-                <Image
-                  source={{ uri: post.imageUrl }}
-                  style={styles.postImage}
-                  resizeMode="cover"
-                />
-              ) : (
-                <View style={[styles.postImage, { justifyContent: 'center', alignItems: 'center' }]}>
-                  <Text style={styles.postImagePlaceholder}>No Image</Text>
-                </View>
-              )}
-            </View>
+  <Image
+    source={{
+      uri: post.imageUrl
+        ? post.imageUrl.startsWith("http")
+          ? post.imageUrl
+          : `${API_URL}${post.imageUrl.startsWith("/") ? "" : "/"}${post.imageUrl}`
+        : "https://via.placeholder.com/300x200", // fallback
+    }}
+    style={styles.postImage}
+    resizeMode="cover"
+    onError={(e) =>
+      console.log("Error loading post image:", e.nativeEvent.error)
+    }
+  />
+</View>
+
           </View>
         </View>
 
