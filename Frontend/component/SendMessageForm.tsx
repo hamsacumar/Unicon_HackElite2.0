@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { View, TextInput, TouchableOpacity, Text, StyleSheet, ActivityIndicator, Alert } from "react-native";
+import { View, TextInput, TouchableOpacity, Text, StyleSheet, ActivityIndicator, Alert, Platform } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { sendMessage } from "../services/api/api";
 
 const SendMessageForm: React.FC<{ onSent?: () => void }> = ({ onSent }) => {
@@ -10,6 +11,7 @@ const SendMessageForm: React.FC<{ onSent?: () => void }> = ({ onSent }) => {
   const handleSend = async () => {
     const receiver = receiverUsername.trim();
     const message = text.trim();
+
     if (!receiver || !message) {
       Alert.alert("Error", "Please fill all fields.");
       return;
@@ -20,11 +22,11 @@ const SendMessageForm: React.FC<{ onSent?: () => void }> = ({ onSent }) => {
       await sendMessage(receiver, message);
       setText("");
       setReceiverUsername("");
-      Alert.alert("Success", "Message sent!");
-      onSent?.(); // callback to refresh inbox if needed
+      Alert.alert("Success", `Message sent to @${receiver}!`);
+      onSent?.();
     } catch (err: any) {
-      console.error(err.response?.data || err.message);
-      Alert.alert("Error", "Failed to send message. Try again.");
+      console.error("Send message error:", err);
+      Alert.alert("Error", err.message || "Failed to send message");
     } finally {
       setLoading(false);
     }
@@ -32,34 +34,53 @@ const SendMessageForm: React.FC<{ onSent?: () => void }> = ({ onSent }) => {
 
   return (
     <View style={styles.container}>
-      <TextInput
-        placeholder="Receiver Username"
-        value={receiverUsername}
-        onChangeText={setReceiverUsername}
-        style={styles.input}
-        editable={!loading}
-      />
-      <TextInput
-        placeholder="Type a message"
-        value={text}
-        onChangeText={setText}
-        style={[styles.input, styles.textarea]}
-        multiline
-        editable={!loading}
-      />
-      <TouchableOpacity onPress={handleSend} style={styles.button} disabled={loading}>
-        {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Send</Text>}
-      </TouchableOpacity>
+      <View style={styles.inputContainer}>
+        <View style={styles.usernameInputContainer}>
+          <Ionicons name="at" size={20} color="#8E8E93" style={styles.icon} />
+          <TextInput
+            placeholder="Username"
+            placeholderTextColor="#8E8E93"
+            value={receiverUsername}
+            onChangeText={setReceiverUsername}
+            style={styles.usernameInput}
+            editable={!loading}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+        </View>
+        <View style={styles.messageInputContainer}>
+          <TextInput
+            placeholder="Type a message..."
+            placeholderTextColor="#8E8E93"
+            value={text}
+            onChangeText={setText}
+            style={styles.messageInput}
+            multiline
+            editable={!loading}
+          />
+          <TouchableOpacity
+            onPress={handleSend}
+            style={[styles.sendButton, (!text.trim() || !receiverUsername.trim() || loading) && styles.sendButtonDisabled]}
+            disabled={!text.trim() || !receiverUsername.trim() || loading}
+          >
+            {loading ? <ActivityIndicator color="#fff" size="small" /> : <Ionicons name="send" size={20} color="#fff" />}
+          </TouchableOpacity>
+        </View>
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { gap: 10, marginBottom: 16 },
-  input: { borderWidth: 1, borderColor: "#ccc", padding: 10, borderRadius: 6 },
-  textarea: { height: 80, textAlignVertical: "top" },
-  button: { backgroundColor: "#1E90FF", padding: 12, borderRadius: 6, alignItems: "center" },
-  buttonText: { color: "#fff", fontWeight: "bold" },
+  container: { padding: 16, backgroundColor: "#fff", borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#e0e0e0" },
+  inputContainer: { gap: 12 },
+  usernameInputContainer: { flexDirection: "row", alignItems: "center", backgroundColor: "#F2F2F7", borderRadius: 10, paddingHorizontal: 12, height: 44 },
+  icon: { marginRight: 8 },
+  usernameInput: { flex: 1, fontSize: 16, color: "#000", padding: 0, paddingVertical: 12 },
+  messageInputContainer: { flexDirection: "row", alignItems: "flex-end", gap: 8 },
+  messageInput: { flex: 1, backgroundColor: "#F2F2F7", borderRadius: 20, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12, maxHeight: 120, fontSize: 16, textAlignVertical: "top", ...Platform.select({ ios: { paddingTop: 12 }, android: { textAlignVertical: "center" } }) },
+  sendButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#007AFF", justifyContent: "center", alignItems: "center", marginBottom: 4 },
+  sendButtonDisabled: { backgroundColor: "#C7C7CC" },
 });
 
 export default SendMessageForm;
