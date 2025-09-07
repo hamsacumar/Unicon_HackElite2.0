@@ -35,7 +35,8 @@ namespace Backend.Controllers
             return Ok(new
             {
                 user.Username,
-                user.Description
+                user.Description,
+                ProfileImageUrl = user.ProfileImageUrl
             });
         }
 
@@ -64,32 +65,38 @@ public async Task<IActionResult> GetEventsByUsername(string username)
 
     var events = await _profileService.GetEventsByUsernameAsync(username);
 
-    if (events == null || !events.Any())
-        return NotFound($"No events found for user '{username}'.");
+            if (events == null || !events.Any())
+                return NotFound($"No events found for user '{username}'.");
 
-    return Ok(events);
-}
+            return Ok(events);
+        }
 
-[HttpGet("description/{username}")]
-[AllowAnonymous] // or [Authorize] if you want only logged-in users
-public async Task<IActionResult> GetDescriptionByUsername(string username)
-{
-    if (string.IsNullOrWhiteSpace(username))
-        return BadRequest("Username is required.");
+        [HttpGet("description/{username}")]
+        [AllowAnonymous] // or [Authorize] if you want only logged-in users
+        public async Task<IActionResult> GetDescriptionByUsername(string username)
+        {
+            if (string.IsNullOrWhiteSpace(username))
+                return BadRequest("Username is required.");
 
-    var description = await _profileService.GetDescriptionByUsernameAsync(username);
+            var (description, profileImageUrl) = await _profileService.GetDescriptionByUsernameAsync(username);
 
-    if (description == null)
-        return NotFound($"No description found for user '{username}'.");
+            if (description == null && profileImageUrl == null)
+                return NotFound($"User '{username}' not found.");
 
-    return Ok(new { Username = username, Description = description });
-}
+            return Ok(new 
+            { 
+                Username = username, 
+                Description = description,
+                ProfileImageUrl = profileImageUrl 
+            });
+        }
 
-[HttpGet("posts/count/{username}")]
-[AllowAnonymous] // or [Authorize]
-public async Task<IActionResult> GetPostCountByUsername(string username)
-{
-    if (string.IsNullOrWhiteSpace(username))
+        [HttpGet("posts/count/{username}")]
+        [AllowAnonymous] // or [Authorize]
+        public async Task<IActionResult> GetPostCountByUsername(string username)
+        {
+            if (string.IsNullOrWhiteSpace(username))
+                return BadRequest("Username is required.");
         return BadRequest("Username is required.");
 
     var count = await _profileService.GetPostCountByUsernameAsync(username);

@@ -7,13 +7,20 @@ import {
   TouchableOpacity,
   Image,
   SafeAreaView,
+  ViewStyle,
+  TextStyle,
+  ActivityIndicator,
+  FlatList
 } from "react-native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import RoleBasedBottomNav from "../component/rolebasedNav";
 import Ionicons from "react-native-vector-icons/Ionicons";
+import Constants from 'expo-constants';
 
 import { UserProfileService, UserProfile, UserEvent } from "../services/UserProfileService";
+
+const API_URL = Constants.expoConfig?.extra?.apiUrl?.replace("/api", "");
 
 // Define your stack param list
 type RootStackParamList = {
@@ -31,6 +38,7 @@ const ViewProfile: React.FC = () => {
   const navigation = useNavigation<ViewProfileNavigationProp>();
   const route = useRoute<ViewProfileRouteProp>();
   const { username } = route.params;
+  const [isSubscribed, setIsSubscribed] = useState(false);
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [posts, setPosts] = useState<UserEvent[]>([]);
@@ -71,34 +79,38 @@ const ViewProfile: React.FC = () => {
       <View style={styles.profileSection}>
         <View style={styles.profileHeader}>
           <View style={styles.profileBorder}>
-            <View style={styles.profileImage}>
-              <Image
-                source={{
-                  uri: profile?.userImage
-                    ? profile.userImage
-                    : "https://cdn-icons-png.flaticon.com/512/3135/3135715.png", // fallback
-                }}
-                style={styles.image}
-              />
-            </View>
+          <View style={styles.profileImage}>
+  <Image
+    source={{
+      uri: profile?.profileImageUrl
+        ? profile.profileImageUrl.startsWith("http")
+          ? profile.profileImageUrl
+          : `${API_URL}${profile.profileImageUrl.startsWith("/") ? "" : "/"}${profile.profileImageUrl}`
+        : "https://cdn-icons-png.flaticon.com/512/3135/3135715.png", // fallback
+    }}
+    style={styles.image}
+    onError={(e) => console.log("Error loading profile image:", e.nativeEvent.error)}
+  />
+</View>
+
           </View>
 
           <View style={styles.profileInfo}>
             <Text style={styles.profileName}>{profile?.username}</Text>
             <View style={styles.statsContainer}>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{profile?.postCount}</Text>
-              <Text style={styles.statLabel}>posts</Text>
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>{profile?.postCount}</Text>
+                <Text style={styles.statLabel}>posts</Text>
+              </View>
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>52</Text>
+                <Text style={styles.statLabel}>subscribers</Text>
+              </View>
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>20</Text>
+                <Text style={styles.statLabel}>subscribed</Text>
+              </View>
             </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>52</Text>
-              <Text style={styles.statLabel}>subscribers</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>20</Text>
-              <Text style={styles.statLabel}>subscribed</Text>
-            </View>
-          </View>
           </View>
 
         </View>
@@ -106,11 +118,23 @@ const ViewProfile: React.FC = () => {
         <Text style={styles.trustText}>{profile?.description}</Text>
 
         <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.editButton}>
-            <Text style={styles.buttonText}>Subscribe</Text>
+          <TouchableOpacity
+            style={[
+              styles.editButton,
+              isSubscribed && styles.editButtonPressed
+            ]}
+            activeOpacity={0.7}
+            onPress={() => setIsSubscribed(!isSubscribed)}
+          >
+            <Text style={[
+              styles.buttonText,
+              isSubscribed && styles.buttonTextPressed
+            ]}>
+              {isSubscribed ? 'Subscribed' : 'Subscribe'}
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.shareButton}>
-            <Text style={styles.buttonText}>Mail</Text>
+            <Text style={styles.shareButtonText}>Mail</Text>
           </TouchableOpacity>
         </View>
 
@@ -139,17 +163,18 @@ const ViewProfile: React.FC = () => {
                 </Text>
               </View>
               <View style={styles.postImageContainer}>
-                {post.imageUrl ? (
-                  <Image
-                    source={{ uri: post.imageUrl }}
-                    style={styles.postImage}
-                    resizeMode="cover"
-                  />
-                ) : (
-                  <View style={styles.postImage}>
-                    <Text style={styles.postImagePlaceholder}>No Image</Text>
-                  </View>
-                )}
+                <Image
+                  source={{
+                    uri: post.imageUrl
+                      ? post.imageUrl.startsWith("http")
+                        ? post.imageUrl
+                        : `${API_URL}${post.imageUrl.startsWith("/") ? "" : "/"}${post.imageUrl}`
+                      : "https://via.placeholder.com/300x200",
+                  }}
+                  style={styles.postImage}
+                  resizeMode="cover"
+                  onError={(e) => console.log("Error loading post image:", e.nativeEvent.error)}
+                />
               </View>
             </View>
 
@@ -264,13 +289,19 @@ const styles = StyleSheet.create({
   },
   editButton: {
     flex: 1,
-    backgroundColor: '#FF5722',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#FF5722',
     paddingVertical: 12,
     borderRadius: 6,
     marginRight: 8,
     alignItems: 'center',
   },
+  editButtonPressed: {
+    backgroundColor: '#FF5722',
+  },
   shareButton: {
+    color: '#FFFFFF',
     flex: 1,
     backgroundColor: '#FF5722',
     paddingVertical: 12,
@@ -279,6 +310,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   buttonText: {
+    color: '#FF5722',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  buttonTextPressed: {
+    color: '#FFFFFF',
+  },
+  shareButtonText: {
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '500',

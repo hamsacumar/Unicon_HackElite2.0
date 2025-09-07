@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Backend.Models;
 using Backend.Services;
@@ -42,6 +42,48 @@ namespace Backend.Controllers
         }
 
         // -------------------- GET SINGLE POST --------------------
+        [AllowAnonymous]
+        [HttpGet("filter")]
+        public async Task<ActionResult<List<EventDto>>> GetFilteredEvents(
+            [FromQuery] string? category,
+            [FromQuery] string? startDate,
+            [FromQuery] string? endDate)
+        {
+            try
+            {
+                _logger.LogInformation($"[GetFilteredEvents] Filtering events - Category: {category}, StartDate: {startDate}, EndDate: {endDate}");
+                
+                // Parse dates if provided
+                DateTime? parsedStartDate = null;
+                DateTime? parsedEndDate = null;
+                
+                if (!string.IsNullOrEmpty(startDate) && DateTime.TryParse(startDate, out var start))
+                {
+                    parsedStartDate = start;
+                }
+                
+                if (!string.IsNullOrEmpty(endDate) && DateTime.TryParse(endDate, out var end))
+                {
+                    // Set to end of day
+                    parsedEndDate = end.Date.AddDays(1).AddTicks(-1);
+                }
+                
+                var filteredEvents = await _postService.FilterEventsAsync(category, parsedStartDate, parsedEndDate);
+                _logger.LogInformation($"[GetFilteredEvents] Found {filteredEvents?.Count ?? 0} events matching the filter");
+                
+                return Ok(filteredEvents);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Failed to filter events. Category: {category}, StartDate: {startDate}, EndDate: {endDate}");
+                return StatusCode(500, new { 
+                    success = false, 
+                    message = "Unable to filter events. " + ex.Message,
+                    details = ex.StackTrace
+                });
+            }
+        }
+
         [AllowAnonymous]
         [HttpGet("{id}")]
         public async Task<ActionResult<EventDto>> GetPostById(string id)
