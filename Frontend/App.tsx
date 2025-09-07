@@ -194,36 +194,11 @@ const AppStack = () => (
       options={{ title: "Filter" }}
       initialParams={{ userId: "" }} // This will be populated with the actual userId when navigating
     />
-    <Stack.Screen
-      name="InputPage"
-      component={InputPage}
-      options={{ title: "Create Event" }}
-    />
-    <Stack.Screen
-      name="InboxScreen"
-      component={InboxScreen}
-      options={{ title: "Inbox" }}
-    />
-    <Stack.Screen name="Chat" component={Chat} options={{ title: "Chat" }} />
-    <Stack.Screen
-      name="ViewProfile"
-      component={ViewProfile}
-      options={{ title: "Profile" }}
-    />
-    <Stack.Screen
-      name="EditProfile"
-      component={EditProfile}
-      options={{ title: "Edit Profile" }}
-    />
+
     <Stack.Screen
       name="PostDetail"
       component={PostDetail}
       options={{ title: "Post" }}
-    />
-    <Stack.Screen
-      name="OrgSettings"
-      component={OrgSettings}
-      options={{ title: "Settings and Activity" }}
     />
     <Stack.Screen
       name="InputPage"
@@ -247,41 +222,6 @@ const AppStack = () => (
     />
 
     <Stack.Screen name="Test" component={Test} />
-    <Stack.Screen
-      name="Login"
-      component={LoginScreen}
-      options={{ headerShown: false }}
-    />
-    <Stack.Screen
-      name="Signup"
-      component={SignupScreen}
-      options={{ headerShown: false }}
-    />
-    <Stack.Screen
-      name="VerifyCode"
-      component={VerifyCodeScreen}
-      options={{ headerShown: false }}
-    />
-    <Stack.Screen
-      name="ClassifyAccount"
-      component={ClassifyAccount}
-      options={{ headerShown: false }}
-    />
-    <Stack.Screen
-      name="ForgotPassword"
-      component={ForgotPasswordScreen}
-      options={{ headerShown: false }}
-    />
-    <Stack.Screen
-      name="ResetPassword"
-      component={ResetPasswordScreen}
-      options={{ headerShown: false }}
-    />
-    <Stack.Screen
-      name="ProfileSetup"
-      component={ProfileSetup}
-      options={{ headerShown: false }}
-    />
     <Stack.Screen
       name="Login"
       component={LoginScreen}
