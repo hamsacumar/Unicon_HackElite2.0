@@ -1,6 +1,7 @@
 using Backend.Models;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using MongoDB.Bson;
 
 namespace Backend.Services
 {
@@ -21,11 +22,16 @@ namespace Backend.Services
         // Comments
         Task<CommentModel> AddCommentAsync(CommentModel comment);
         Task<List<CommentModel>> GetCommentsByPostIdAsync(string postId);
-
-        // <<< Add this line >>>
         Task<long> GetCommentCountAsync(string postId);
 
         // Users
         Task<AppUser> GetUserByIdAsync(string userId);
+
+        // ✅ Bookmarks
+        Task<bool> IsBookmarkedAsync(string postId, string userId);
+        Task AddBookmarkAsync(string postId, string userId);
+        Task RemoveBookmarkAsync(string postId, string userId);
+        Task<List<BsonDocument>> GetBookmarksByUserAsync(string userId);
+
     }
 }

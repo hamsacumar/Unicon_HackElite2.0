@@ -34,18 +34,36 @@ export default function CommentSection({
   initialCommentCount = 0,
   visible = false,
 }: Props) {
-  const [comments, setComments] = useState<Comment[]>(initialComments);
+  const [comments, setComments] = useState<Comment[]>([]);
   const [text, setText] = useState("");
-  const [isLoading, setIsLoading] = useState(!initialComments.length);
+  const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [commentCount, setCommentCount] = useState(initialCommentCount);
+  const [commentCount, setCommentCount] = useState(0);
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const inputRef = useRef<TextInput>(null);
 
+  // Load comments when component mounts or postId changes
   useEffect(() => {
-    if (visible) loadComments();
+    if (visible) {
+      loadComments();
+      // Focus the input when comment section becomes visible
+      setTimeout(() => inputRef.current?.focus(), 100);
+    }
   }, [visible, postId]);
 
+  // Initialize with initial props if provided
+  useEffect(() => {
+    if (initialComments?.length) {
+      setComments(initialComments);
+    }
+    if (initialCommentCount) {
+      setCommentCount(initialCommentCount);
+    }
+  }, [initialComments, initialCommentCount]);
+
   const loadComments = async () => {
+    if (isLoading) return;
+    
     setIsLoading(true);
     try {
       const [fetched, count] = await Promise.all([
@@ -54,6 +72,7 @@ export default function CommentSection({
       ]);
       setComments(fetched);
       setCommentCount(count);
+      onCommentAdd?.(count);
     } catch (error) {
       console.error("Error loading comments:", error);
     } finally {
@@ -62,23 +81,26 @@ export default function CommentSection({
   };
 
   const handleAddComment = async () => {
-    if (!text.trim() || isSubmitting) return;
+    if (!text.trim() || isSubmitting || !userId) return;
 
+    const tempId = `temp-${Date.now()}`;
     const tempComment: Comment = {
-      id: `temp-${Date.now()}`,
+      id: tempId,
       postId,
-      userId: userId || "guest",
-      username: userId ? "You" : "Guest",
+      userId,
+      username: 'You', // Will be updated with actual username from server
       text,
       createdAt: new Date().toISOString(),
     };
 
-    setComments([tempComment, ...comments]);
+    // Optimistic update
+    setComments(prev => [tempComment, ...prev]);
     const updatedCount = commentCount + 1;
     setCommentCount(updatedCount);
     setText("");
     onCommentAdd?.(updatedCount);
 
+    // Animate the new comment
     fadeAnim.setValue(0);
     Animated.timing(fadeAnim, {
       toValue: 1,
@@ -86,25 +108,26 @@ export default function CommentSection({
       useNativeDriver: true,
     }).start();
 
-    if (!userId) return;
-
     try {
       setIsSubmitting(true);
-      const res = (await addComment(postId, { text })) as {
-        success: boolean;
-        comment: Comment;
-      };
-
+      const res = await addComment(postId, { text });
+      
       if (res?.success && res.comment) {
-        setComments((prev) => [
+        // Replace temp comment with server response
+        setComments(prev => [
           res.comment,
-          ...prev.filter((c) => c.id !== tempComment.id),
+          ...prev.filter(c => c.id !== tempId)
         ]);
-      } else throw new Error("Failed to add comment");
+      } else {
+        throw new Error("Failed to add comment");
+      }
     } catch (error) {
       console.error("Error adding comment:", error);
-      setComments((prev) => prev.filter((c) => c.id !== tempComment.id));
-      setCommentCount((prev) => prev - 1);
+      // Revert optimistic update on error
+      setComments(prev => prev.filter(c => c.id !== tempId));
+      setCommentCount(prev => prev - 1);
+      // Restore the comment text if there was an error
+      setText(text);
     } finally {
       setIsSubmitting(false);
     }
@@ -136,7 +159,7 @@ export default function CommentSection({
               )}
               <View style={styles.commentContent}>
                 <Text style={styles.commentAuthor}>
-                  {item.username || "Anonymous"}
+                  {item.username || (item.userId === userId ? 'You' : 'Anonymous')}
                 </Text>
                 <Text style={styles.commentText}>{item.text}</Text>
                 <Text style={styles.commentTime}>
@@ -161,6 +184,7 @@ export default function CommentSection({
       {/* Input field */}
       <View style={styles.inputContainer}>
         <TextInput
+          ref={inputRef}
           style={[styles.input, !userId && styles.disabledInput]}
           value={text}
           onChangeText={setText}
@@ -173,6 +197,7 @@ export default function CommentSection({
           blurOnSubmit={false}
           editable={!!userId}
           pointerEvents={userId ? "auto" : "none"}
+          autoFocus={visible}
         />
         <TouchableOpacity
           style={[

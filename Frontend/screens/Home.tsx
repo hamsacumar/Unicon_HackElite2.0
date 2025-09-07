@@ -1,5 +1,4 @@
 // screens/Home.tsx
-
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -13,20 +12,29 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../App";
-import { EventItem, getEvents } from "../services/eventService";
+import {
+  EventItem,
+  getEvents,
+  getComments,
+  getCommentCount,
+  Comment,
+  isBookmarked,
+} from "../services/eventService";
 import Constants from "expo-constants";
 import PostActions from "../component/PostActions";
 import RoleBasedBottomNav from "./Profile";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import CommentSection from "../component/CommentSection"; // ✅ import
+import CommentSection from "../component/CommentSection";
 
-// Type for navigation props
 type HomeNavigationProp = NativeStackNavigationProp<RootStackParamList, "Home">;
 
-// Extend EventItem with UI-only field
-type EventWithUI = EventItem & { showComments?: boolean };
+type EventWithUI = Omit<EventItem, 'comments' | 'commentCount'> & { 
+  showComments?: boolean;
+  comments?: Comment[];
+  commentCount?: number;
+  isBookmarked?: boolean;
+};
 
-// Base API URL
 const API_URL = Constants.expoConfig?.extra?.apiUrl?.replace("/api", "");
 
 export default function Home() {
@@ -35,7 +43,7 @@ export default function Home() {
   const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Fetch logged-in user ID
+  // Fetch userId from AsyncStorage
   useEffect(() => {
     async function fetchUser() {
       try {
@@ -48,25 +56,41 @@ export default function Home() {
     fetchUser();
   }, []);
 
-  // Fetch events
+  // Fetch events, comments, and bookmark status
   useEffect(() => {
     async function fetchData() {
       try {
+        setLoading(true);
         const data = await getEvents();
-        // Add UI field (showComments: false)
-        const dataWithUI: EventWithUI[] = data.map((ev) => ({
-          ...ev,
-          showComments: false,
-        }));
-        setEvents(dataWithUI);
+
+        const postsWithUI = await Promise.all(
+          data.map(async (post) => {
+            const [comments, commentCount, bookmarked] = await Promise.all([
+              getComments(post.id),
+              getCommentCount(post.id),
+              userId ? isBookmarked(post.id) : Promise.resolve(false),
+            ]);
+
+            return {
+              ...post,
+              showComments: false,
+              comments,
+              commentCount: commentCount || 0,
+              isBookmarked: bookmarked,
+            };
+          })
+        );
+
+        setEvents(postsWithUI);
       } catch (error) {
         console.error("Error fetching events:", error);
       } finally {
         setLoading(false);
       }
     }
+
     fetchData();
-  }, []);
+  }, [userId]);
 
   const handlePostPress = (item: EventWithUI) => {
     navigation.navigate("PostDetail", { post: item, userId });
@@ -88,38 +112,40 @@ export default function Home() {
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
           <View style={styles.postCard}>
-            {/* Profile section */}
+            {/* Profile Row */}
             <View style={styles.userRow}>
-            <Image
-  source={{
-    uri: item.userImage
-      ? (item.userImage.startsWith("http")
-          ? item.userImage
-          : `${API_URL}${item.userImage}`)
-      : "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
-  }}
+              <Image
+                source={{
+                  uri: item.userImage
+                    ? (item.userImage.startsWith("http")
+                        ? item.userImage
+                        : `${API_URL}${item.userImage}`)
+                    : "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
+                }}
                 style={styles.avatar}
               />
-              <TouchableOpacity onPress={() => navigation.navigate("ViewProfile", { username: item.username })}>
-                <Text style={styles.username}>
-                  {item.username}
-                </Text>
+              <TouchableOpacity
+                onPress={() =>
+                  navigation.navigate("ViewProfile", { username: item.username })
+                }
+              >
+                <Text style={styles.username}>{item.username}</Text>
               </TouchableOpacity>
 
+            
             </View>
 
-            {/* Post image (clickable) */}
+            {/* Post Image - full width and aspect ratio preserved */}
             {item.imageUrl ? (
               <TouchableOpacity onPress={() => handlePostPress(item)}>
-               <Image
-  source={{
-    uri: item.imageUrl
-      ? item.imageUrl.startsWith('http')
-        ? item.imageUrl
-        : `${API_URL}${item.imageUrl.startsWith('/') ? '' : '/'}${item.imageUrl}`
-      : 'https://via.placeholder.com/300x200', // fallback
-  }}
+                <Image
+                  source={{
+                    uri: item.imageUrl.startsWith('http')
+                      ? item.imageUrl
+                      : `${API_URL}${item.imageUrl.startsWith('/') ? '' : '/'}${item.imageUrl}`,
+                  }}
                   style={styles.postImage}
+                  resizeMode="contain" // <-- ensures entire image fits
                 />
               </TouchableOpacity>
             ) : (
@@ -130,45 +156,51 @@ export default function Home() {
               </TouchableOpacity>
             )}
 
-            {/* Post category, title, and description */}
+            {/* Category, title, description */}
             <TouchableOpacity onPress={() => handlePostPress(item)}>
               <Text style={styles.category}>{item.category}</Text>
               <Text style={styles.title}>{item.title}</Text>
               <Text style={styles.description}>{item.description}</Text>
             </TouchableOpacity>
 
-            {/* Post actions: Like + Comment */}
+            {/* Post actions: Like + Comment + Bookmark */}
             <PostActions
               postId={item.id}
               userId={userId}
               initialLikeCount={item.likeCount || 0}
               initialCommentCount={item.commentCount || 0}
+              initialIsBookmarked={item.isBookmarked}
               onCommentPress={() => {
                 setEvents((prev) =>
                   prev.map((ev) =>
-                    ev.id === item.id
-                      ? { ...ev, showComments: !ev.showComments }
-                      : ev
+                    ev.id === item.id ? { ...ev, showComments: !ev.showComments } : ev
+                  )
+                );
+              }}
+              onBookmarkToggle={(isBookmarked) => {
+                setEvents((prev) =>
+                  prev.map((ev) =>
+                    ev.id === item.id ? { ...ev, isBookmarked } : ev
                   )
                 );
               }}
             />
 
             {/* Inline Comment Section */}
-            {item.showComments && (
-              <CommentSection
-                postId={item.id}
-                userId={userId}
-                visible={item.showComments}
-                onCommentAdd={(newCount) => {
-                  setEvents((prev) =>
-                    prev.map((ev) =>
-                      ev.id === item.id ? { ...ev, commentCount: newCount } : ev
-                    )
-                  );
-                }}
-              />
-            )}
+            <CommentSection
+              postId={item.id}
+              userId={userId}
+              visible={!!item.showComments}
+              initialComments={item.comments || []}
+              initialCommentCount={item.commentCount || 0}
+              onCommentAdd={(newCount) => {
+                setEvents((prev) =>
+                  prev.map((ev) =>
+                    ev.id === item.id ? { ...ev, commentCount: newCount } : ev
+                  )
+                );
+              }}
+            />
           </View>
         )}
         contentContainerStyle={styles.listContent}
@@ -179,7 +211,9 @@ export default function Home() {
   );
 }
 
+// ====================
 // Styles
+// ====================
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff" },
   listContent: { padding: 10, paddingBottom: 100 },
@@ -196,27 +230,43 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
 
-  userRow: { flexDirection: "row", alignItems: "center", marginBottom: 8 },
+  userRow: { 
+    flexDirection: "row", 
+    alignItems: "center", 
+    marginBottom: 8,
+    justifyContent: "flex-start" // <-- avatar + username stay close
+  },
+  
   avatar: { width: 40, height: 40, borderRadius: 20, marginRight: 10 },
   username: { fontWeight: "600", fontSize: 14, color: "#333" },
 
-  postImage: { width: "100%", height: 150, borderRadius: 8 },
+  configButton: {
+    padding: 5,
+    marginLeft: "auto",
+  },
+  configButtonText: {
+    fontSize: 20,
+    color: "#555",
+  },
+
+  postImage: { 
+    width: "100%", 
+    height: 200, // increased to accommodate full image
+    borderRadius: 8, 
+    marginVertical: 5
+  },
   noImage: {
     width: "100%",
-    height: 150,
+    height: 200,
     borderRadius: 8,
     backgroundColor: "#ddd",
     justifyContent: "center",
     alignItems: "center",
+    marginVertical: 5
   },
   noImageText: { color: "#555" },
 
-  category: {
-    fontWeight: "bold",
-    marginTop: 8,
-    fontSize: 14,
-    color: "#E64A0D",
-  },
+  category: { fontWeight: "bold", marginTop: 8, fontSize: 14, color: "#E64A0D" },
   title: { fontSize: 16, marginTop: 4, fontWeight: "600", color: "#333" },
   description: { fontSize: 13, marginTop: 4, color: "#666" },
 });

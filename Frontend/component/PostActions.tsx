@@ -1,16 +1,24 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { likePost, getLikeCount, checkIfLiked, getCommentCount } from "../services/eventService";
+import {
+  likePost,
+  getLikeCount,
+  checkIfLiked,
+  getCommentCount,
+  toggleBookmark,
+} from "../services/eventService";
 
 type Props = {
   postId: string;
-  userId?: string | null; // null = logged-out
+  userId?: string | null;
   initialLikeCount?: number;
   initialCommentCount?: number;
   initialIsLiked?: boolean;
+  initialIsBookmarked?: boolean;
   onCommentPress?: () => void;
   onLikeUpdate?: (likeCount: number, isLiked: boolean) => void;
+  onBookmarkToggle?: (bookmarked: boolean) => void;
 };
 
 export default function PostActions({
@@ -19,14 +27,18 @@ export default function PostActions({
   initialLikeCount = 0,
   initialCommentCount = 0,
   initialIsLiked = false,
+  initialIsBookmarked = false,
   onCommentPress,
   onLikeUpdate,
+  onBookmarkToggle,
 }: Props) {
   const [likeCount, setLikeCount] = useState(initialLikeCount);
   const [commentCount, setCommentCount] = useState(initialCommentCount);
   const [isLiked, setIsLiked] = useState(initialIsLiked);
+  const [isBookmarked, setIsBookmarked] = useState(initialIsBookmarked);
   const [isLoading, setIsLoading] = useState(true);
   const [isLiking, setIsLiking] = useState(false);
+  const [isBookmarking, setIsBookmarking] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -52,8 +64,6 @@ export default function PostActions({
 
   const handleLike = async () => {
     if (!userId || isLiking) return;
-
-    // Optimistic UI update
     const newIsLiked = !isLiked;
     const newLikeCount = newIsLiked ? likeCount + 1 : Math.max(0, likeCount - 1);
     setIsLiked(newIsLiked);
@@ -62,15 +72,30 @@ export default function PostActions({
 
     try {
       setIsLiking(true);
-      await likePost(postId); // token-ready inside service
+      await likePost(postId);
     } catch (error) {
       console.error("Error liking post:", error);
-      // Rollback
       setIsLiked(isLiked);
       setLikeCount(likeCount);
       onLikeUpdate?.(likeCount, isLiked);
     } finally {
       setIsLiking(false);
+    }
+  };
+
+  const handleBookmark = async () => {
+    if (!userId || isBookmarking) return;
+    try {
+      setIsBookmarking(true);
+      const res = await toggleBookmark(postId);
+      if (res?.success) {
+        setIsBookmarked(res.isBookmarked);
+        onBookmarkToggle?.(res.isBookmarked);
+      }
+    } catch (error) {
+      console.error("Error toggling bookmark:", error);
+    } finally {
+      setIsBookmarking(false);
     }
   };
 
@@ -81,6 +106,7 @@ export default function PostActions({
   return (
     <View style={styles.container}>
       <View style={styles.actionContainer}>
+        {/* Like */}
         <TouchableOpacity
           style={[styles.actionButton, !isAuthenticated && styles.disabledButton]}
           onPress={isAuthenticated ? handleLike : undefined}
@@ -102,6 +128,7 @@ export default function PostActions({
           </Text>
         </TouchableOpacity>
 
+        {/* Comment */}
         <TouchableOpacity
           style={[styles.actionButton, !isAuthenticated && styles.disabledButton]}
           onPress={isAuthenticated ? onCommentPress : undefined}
@@ -116,6 +143,28 @@ export default function PostActions({
             {commentCount}
           </Text>
         </TouchableOpacity>
+
+        {/* Bookmark */}
+        <TouchableOpacity
+          style={[styles.actionButton, !isAuthenticated && styles.disabledButton]}
+          onPress={isAuthenticated ? handleBookmark : undefined}
+          disabled={!isAuthenticated || isBookmarking}
+        >
+          <Ionicons
+            name={isBookmarked ? "bookmark" : "bookmark-outline"}
+            size={22}
+            color={isBookmarked ? "#f39c12" : "#999"}
+          />
+        </TouchableOpacity>
+
+        {/* configure Button */}
+<TouchableOpacity
+  style={styles.actionButton}
+  onPress={() => Alert.alert("configure enabled")}
+>
+  <Ionicons name="settings-outline" size={22} color="#333" />
+</TouchableOpacity>
+
       </View>
     </View>
   );

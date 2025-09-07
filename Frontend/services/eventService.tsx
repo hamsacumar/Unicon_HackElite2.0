@@ -11,6 +11,10 @@ export interface Comment { id: string; postId: string; userId: string; username:
 export interface EventItem { id: string; title: string; description: string; category: string; imageUrl?: string; userId: string; username: string; userImage?: string; likeCount?: number; commentCount?: number; isLiked?: boolean; date?: string; }
 export interface LikeResponse { success: boolean; likeCount: number; }
 export interface CommentResponse { success: boolean; comment: Comment; }
+export  interface BookmarkResponse {
+  success: boolean;
+  isBookmarked: boolean;
+}
 
 // ---------------------------
 // Axios API
@@ -39,16 +43,8 @@ export async function getEventById(postId: string): Promise<EventItem | null> {
 
 export async function getComments(postId: string): Promise<Comment[]> {
   try {
-    const res = await api.get<any[]>(`/Posts/${postId}/comments`);
-    return res.data.map(c => ({
-      id: c.id || c._id,
-      postId: c.postId,
-      userId: c.userId,
-      username: c.username || "Anonymous",
-      userImage: c.userImage || null,
-      text: c.text || c.content || "",   // ✅ support both "text" or "content"
-      createdAt: c.createdAt,
-    }));
+    const res = await api.get<Comment[]>(`/Posts/${postId}/comments`);
+    return res.data;
   } catch (err) {
     console.error("Error fetching comments:", err);
     return [];
@@ -106,3 +102,38 @@ export async function likePost(postId: string) {
   } catch { return null; }
 }
 
+
+// ---------------------------
+// Bookmarks
+// ---------------------------
+export async function toggleBookmark(postId: string): Promise<BookmarkResponse | null> {
+  try {
+    const token = await getToken();
+    if (!token) throw new Error("Not authenticated");
+
+    const res = await api.post<BookmarkResponse>(
+      `/Posts/${postId}/bookmark`,
+      {},
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    return res.data; // ✅ now TS knows it has success + isBookmarked
+  } catch (error) {
+    console.error("Error toggling bookmark:", error);
+    return null;
+  }
+}
+export async function isBookmarked(postId: string): Promise<boolean> {
+  try {
+    const token = await getToken();
+    if (!token) return false;
+
+    const res = await api.get<{ isBookmarked: boolean }>(
+      `/Posts/${postId}/isBookmarked`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    return res.data.isBookmarked;
+  } catch {
+    return false;
+  }
+}

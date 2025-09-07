@@ -104,85 +104,151 @@ namespace Backend.Controllers
         }
 
         // -------------------- ADD COMMENT --------------------
-        [HttpPost("{id}/comment")]
-        public async Task<IActionResult> CommentPost(string id, [FromBody] CommentModel comment)
+[HttpPost("{id}/comment")]
+public async Task<IActionResult> CommentPost(string id, [FromBody] CommentModel comment)
+{
+    var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+    if (string.IsNullOrEmpty(userId))
+        return Unauthorized(new { success = false, message = "User not logged in." });
+
+    // Fetch user details
+    var user = await _postService.GetUserByIdAsync(userId);
+
+    // Fill comment details
+    comment.PostId = id;
+    comment.UserId = userId;
+    comment.Username = user?.Username ?? "Anonymous";
+    comment.UserImage = user?.ProfileImageUrl;  // include user image
+    comment.CreatedAt = DateTime.UtcNow;
+
+    // Add comment via service
+    var savedComment = await _postService.AddCommentAsync(comment);
+
+    var commentWithUser = new
+    {
+        savedComment.Id,
+        savedComment.PostId,
+        savedComment.UserId,
+        savedComment.Username,
+        savedComment.UserImage,
+        text = savedComment.Text,
+        savedComment.CreatedAt
+    };
+
+    return Ok(new { success = true, comment = commentWithUser });
+}
+
+
+        [HttpPost("{id}/bookmark")]
+public async Task<IActionResult> ToggleBookmark(string id)
+{
+    var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+    if (string.IsNullOrEmpty(userId))
+        return Unauthorized(new { success = false, message = "User not logged in." });
+
+    var isBookmarked = await _postService.IsBookmarkedAsync(id, userId);
+    if (isBookmarked)
+        await _postService.RemoveBookmarkAsync(id, userId);
+    else
+        await _postService.AddBookmarkAsync(id, userId);
+
+    return Ok(new { success = true, isBookmarked = !isBookmarked });
+}
+
+[HttpGet("{id}/isBookmarked")]
+public async Task<IActionResult> IsBookmarked(string id)
+{
+    var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+    if (string.IsNullOrEmpty(userId))
+        return Unauthorized(new { success = false, message = "User not logged in." });
+
+    var existing = await _postService.IsBookmarkedAsync(id, userId);
+    return Ok(new { isBookmarked = existing });
+}
+
+[HttpGet("bookmarks")]
+public async Task<IActionResult> GetUserBookmarks()
+{
+    var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+    if (string.IsNullOrEmpty(userId))
+        return Unauthorized(new { success = false, message = "User not logged in." });
+
+    var bookmarks = await _postService.GetBookmarksByUserAsync(userId);
+    return Ok(new { success = true, bookmarks });
+}
+
+
+// -------------------- GET COMMENTS --------------------
+[AllowAnonymous]
+[HttpGet("{id}/comments")]
+public async Task<ActionResult<List<object>>> GetComments(string id)
+{
+    _logger.LogInformation($"Fetching comments for post: {id}");
+    
+    if (string.IsNullOrEmpty(id))
+    {
+        _logger.LogWarning("Post ID is null or empty");
+        return BadRequest(new { success = false, message = "Post ID is required" });
+    }
+
+    try
+    {
+        _logger.LogDebug($"Calling GetCommentsByPostIdAsync for post: {id}");
+        var comments = await _postService.GetCommentsByPostIdAsync(id);
+        _logger.LogDebug($"Retrieved {comments?.Count ?? 0} comments for post: {id}");
+
+        if (comments == null)
         {
-            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId))
-                return Unauthorized(new { success = false, message = "User not logged in." });
-
-            // Fetch user details
-            var user = await _postService.GetUserByIdAsync(userId);
-
-            // Fill comment details
-            comment.PostId = id;
-            comment.UserId = userId;
-            comment.Username = user?.Username ?? "Anonymous";
-            comment.UserImage = user?.ProfileImageUrl;  // include user image
-            comment.CreatedAt = DateTime.UtcNow;
-
-            // Add comment via service
-            var savedComment = await _postService.AddCommentAsync(comment);
-
-            var commentWithUser = new
-            {
-                savedComment.Id,
-                savedComment.PostId,
-                savedComment.UserId,
-                savedComment.Username,
-                savedComment.UserImage,
-                text = savedComment.Text,
-                savedComment.CreatedAt
-            };
-
-            return Ok(new { success = true, comment = commentWithUser });
+            _logger.LogWarning($"No comments found for post: {id}");
+            return Ok(new List<object>());
         }
 
-        // -------------------- GET COMMENTS --------------------
-        [AllowAnonymous]
-        [HttpGet("{id}/comments")]
-        public async Task<ActionResult<List<CommentModel>>> GetComments(string id)
+        // Directly use stored username and userImage from the comment
+        var response = comments.Select(c => new
         {
-            try
-            {
-                var comments = await _postService.GetCommentsByPostIdAsync(id);
+            id = c?.Id ?? string.Empty,
+            postId = c?.PostId ?? string.Empty,
+            userId = c?.UserId ?? string.Empty,
+            username = c?.Username ?? "Anonymous",
+            userImage = c?.UserImage ?? string.Empty,
+            text = c?.Text ?? string.Empty,
+            createdAt = c?.CreatedAt ?? DateTime.UtcNow
+        }).ToList();
 
-                // Return only safe properties
-                var response = comments.Select(c => new
-                {
-                    id = c.Id,
-                    postId = c.PostId,
-                    userId = c.UserId,
-                    username = c.Username,
-                    userImage = c.UserImage,
-                    text = c.Text,
-                    createdAt = c.CreatedAt
-                }).ToList();
+        _logger.LogInformation($"Successfully processed {response.Count} comments for post: {id}");
+        return Ok(response);
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, $"Failed to fetch comments for post {id}");
+        return StatusCode(500, new { 
+            success = false, 
+            message = "Unable to fetch comments.",
+            error = ex.Message,
+            stackTrace = ex.StackTrace
+        });
+    }
+}
 
-                return Ok(response);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"Failed to fetch comments for post {id}");
-                return StatusCode(500, new { success = false, message = "Unable to fetch comments." });
-            }
-        }
+// -------------------- GET COMMENT COUNT --------------------
 
-        // -------------------- GET COMMENT COUNT --------------------
-        [AllowAnonymous]
-        [HttpGet("{id}/comments/count")]
-        public async Task<IActionResult> GetCommentCount(string id)
-        {
-            try
-            {
-                var count = await _postService.GetCommentCountAsync(id);
-                return Ok(new { count });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"Failed to fetch comment count for post {id}");
-                return StatusCode(500, new { success = false, message = "Unable to fetch comment count." });
-            }
-        }
-    } // End of PostsController class
-} // End of namespace
+[AllowAnonymous]
+[HttpGet("{id}/comments/count")]
+public async Task<IActionResult> GetCommentCount(string id)
+{
+    try
+    {
+        var count = await _postService.GetCommentCountAsync(id);
+        return Ok(new { count });
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, $"Failed to fetch comment count for post {id}");
+        return StatusCode(500, new { success = false, message = "Unable to fetch comment count." });
+    }
+} // end of GetCommentCount
+
+} // end of PostsController class
+} // end of namespace Backend.Controllers
+
+    
