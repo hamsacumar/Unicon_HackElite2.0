@@ -4,11 +4,8 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  ScrollView,
   StyleSheet,
   ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
   Animated,
   Image,
 } from "react-native";
@@ -26,6 +23,7 @@ type Props = {
   onCommentAdd?: (count: number) => void;
   initialComments?: Comment[];
   initialCommentCount?: number;
+  visible?: boolean;
 };
 
 export default function CommentSection({
@@ -34,6 +32,7 @@ export default function CommentSection({
   onCommentAdd,
   initialComments = [],
   initialCommentCount = 0,
+  visible = false,
 }: Props) {
   const [comments, setComments] = useState<Comment[]>(initialComments);
   const [text, setText] = useState("");
@@ -43,8 +42,8 @@ export default function CommentSection({
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    if (!initialComments.length) loadComments();
-  }, [postId]);
+    if (visible) loadComments();
+  }, [visible, postId]);
 
   const loadComments = async () => {
     setIsLoading(true);
@@ -69,7 +68,7 @@ export default function CommentSection({
       id: `temp-${Date.now()}`,
       postId,
       userId: userId || "guest",
-      username: userId ? "You" : "Guest", // temporary placeholder
+      username: userId ? "You" : "Guest",
       text,
       createdAt: new Date().toISOString(),
     };
@@ -91,21 +90,19 @@ export default function CommentSection({
 
     try {
       setIsSubmitting(true);
-      // Call backend API which returns { success, comment }
-      const res = (await addComment(postId, { text })) as { success: boolean; comment: Comment };
+      const res = (await addComment(postId, { text })) as {
+        success: boolean;
+        comment: Comment;
+      };
 
       if (res?.success && res.comment) {
-        // Replace temp comment with real comment from backend
         setComments((prev) => [
           res.comment,
           ...prev.filter((c) => c.id !== tempComment.id),
         ]);
-      } else {
-        throw new Error("Failed to add comment");
-      }
+      } else throw new Error("Failed to add comment");
     } catch (error) {
       console.error("Error adding comment:", error);
-      // Remove temp comment on failure
       setComments((prev) => prev.filter((c) => c.id !== tempComment.id));
       setCommentCount((prev) => prev - 1);
     } finally {
@@ -114,69 +111,54 @@ export default function CommentSection({
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={{ flex: 1 }}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
-    >
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: 100 }}
-      >
-        {isLoading ? (
-          <ActivityIndicator size="large" color="#e74c3c" />
-        ) : comments.length ? (
-          comments.map((item, index) => (
-            <Animated.View
-          key={item.id || `comment-${index}`}
-              style={{
-                opacity: fadeAnim,
-                marginBottom: 16,
-                ...styles.commentContainer,
-              }}
-            >
-              <View style={styles.commentHeader}>
-                {item.userImage ? (
-                  <Image
-                    source={{ uri: item.userImage }}
-                    style={styles.avatar}
-                  />
-                ) : (
-                  <View style={[styles.avatar, styles.avatarPlaceholder]}>
-                    <Text style={styles.avatarText}>
-                      {item.username?.charAt(0)?.toUpperCase() || "U"}
-                    </Text>
-                  </View>
-                )}
-                <View style={styles.commentContent}>
-                  <Text style={styles.commentAuthor}>
-                    {item.username || "Anonymous"}
-                  </Text>
-                  <Text style={styles.commentText}>{item.text}</Text>
-                  <Text style={styles.commentTime}>
-                    {item.createdAt
-                      ? new Date(item.createdAt).toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })
-                      : "Just now"}
+    <View style={{ paddingVertical: 10 }}>
+      {isLoading ? (
+        <ActivityIndicator size="large" color="#e74c3c" />
+      ) : comments.length ? (
+        comments.map((item, index) => (
+          <Animated.View
+            key={item.id || `comment-${index}`}
+            style={{
+              opacity: fadeAnim,
+              marginBottom: 16,
+              ...styles.commentContainer,
+            }}
+          >
+            <View style={styles.commentHeader}>
+              {item.userImage ? (
+                <Image source={{ uri: item.userImage }} style={styles.avatar} />
+              ) : (
+                <View style={[styles.avatar, styles.avatarPlaceholder]}>
+                  <Text style={styles.avatarText}>
+                    {item.username?.charAt(0)?.toUpperCase() || "U"}
                   </Text>
                 </View>
+              )}
+              <View style={styles.commentContent}>
+                <Text style={styles.commentAuthor}>
+                  {item.username || "Anonymous"}
+                </Text>
+                <Text style={styles.commentText}>{item.text}</Text>
+                <Text style={styles.commentTime}>
+                  {item.createdAt
+                    ? new Date(item.createdAt).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
+                    : "Just now"}
+                </Text>
               </View>
-            </Animated.View>
-          ))
-        ) : (
-          <View style={styles.emptyState}>
-            <Ionicons
-              name="chatbubble-ellipses-outline"
-              size={48}
-              color="#ccc"
-            />
-            <Text style={styles.emptyText}>No comments yet</Text>
-          </View>
-        )}
-      </ScrollView>
+            </View>
+          </Animated.View>
+        ))
+      ) : (
+        <View style={styles.emptyState}>
+          <Ionicons name="chatbubble-ellipses-outline" size={48} color="#ccc" />
+          <Text style={styles.emptyText}>No comments yet</Text>
+        </View>
+      )}
 
+      {/* Input field */}
       <View style={styles.inputContainer}>
         <TextInput
           style={[styles.input, !userId && styles.disabledInput]}
@@ -208,7 +190,7 @@ export default function CommentSection({
           )}
         </TouchableOpacity>
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
@@ -231,12 +213,7 @@ const styles = StyleSheet.create({
   avatarPlaceholder: { backgroundColor: "#e74c3c" },
   avatarText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
   commentContent: { flex: 1 },
-  commentAuthor: {
-    fontWeight: "600",
-    fontSize: 14,
-    color: "#333",
-    marginBottom: 4,
-  },
+  commentAuthor: { fontWeight: "600", fontSize: 14, color: "#333", marginBottom: 4 },
   commentText: { fontSize: 14, color: "#333", lineHeight: 20 },
   commentTime: { fontSize: 12, color: "#999", marginTop: 4 },
   inputContainer: {
@@ -247,10 +224,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
     backgroundColor: "#fff",
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
+    marginTop: 10,
   },
   input: {
     flex: 1,
@@ -273,6 +247,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   sendButtonDisabled: { backgroundColor: "#ccc" },
-  emptyState: { justifyContent: "center", alignItems: "center", marginTop: 32 },
+  emptyState: { justifyContent: "center", alignItems: "center", marginTop: 16 },
   emptyText: { fontSize: 14, color: "#999", marginTop: 8 },
 });

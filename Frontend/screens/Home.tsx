@@ -90,12 +90,14 @@ export default function Home() {
           <View style={styles.postCard}>
             {/* Profile section */}
             <View style={styles.userRow}>
-              <Image
-                source={{
-                  uri: item.userImage
-                    ? item.userImage
-                    : "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
-                }}
+            <Image
+  source={{
+    uri: item.userImage
+      ? (item.userImage.startsWith("http")
+          ? item.userImage
+          : `${API_URL}${item.userImage}`)
+      : "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
+  }}
                 style={styles.avatar}
               />
               <TouchableOpacity onPress={() => navigation.navigate("ViewProfile", { username: item.username })}>
@@ -157,6 +159,7 @@ export default function Home() {
               <CommentSection
                 postId={item.id}
                 userId={userId}
+                visible={item.showComments}
                 onCommentAdd={(newCount) => {
                   setEvents((prev) =>
                     prev.map((ev) =>

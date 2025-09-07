@@ -74,27 +74,52 @@ public async Task<AppUser> GetUserByIdAsync(string userId)
 
 
         // Get all comments for a given post
-      public async Task<List<CommentModel>> GetCommentsByPostIdAsync(string postId)
+    public async Task<List<CommentModel>> GetCommentsByPostIdAsync(string postId)
 {
-    var comments = await _comments.Find(c => c.PostId == postId).ToListAsync();
-
-    foreach (var comment in comments)
+    try
     {
-        if (!string.IsNullOrEmpty(comment.UserId))
+        var pipeline = new[]
         {
-            var user = await _users.Find(u => u.Id == comment.UserId).FirstOrDefaultAsync();
-            if (user != null)
+            new BsonDocument("$match", new BsonDocument("postId", postId)),
+            new BsonDocument("$lookup", new BsonDocument
             {
-                comment.Username = user.Username ?? "Anonymous";
-                comment.UserImage = user.ProfileImageUrl; // ✅ Add this if your AppUser has ImageUrl
-            }
-        }
-    }
+                { "from", "Users" },
+                { "localField", "userId" },
+                { "foreignField", "_id" },
+                { "as", "user" }
+            }),
+            new BsonDocument("$unwind", new BsonDocument
+            {
+                { "path", "$user" },
+                { "preserveNullAndEmptyArrays", true } // keep comments even if user not found
+            }),
+            new BsonDocument("$project", new BsonDocument
+            {
+                { "_id", 1 },
+                { "postId", 1 },
+                { "userId", 1 },
+                { "text", 1 },
+                { "createdAt", 1 },
+                { "username", new BsonDocument("$ifNull", new BsonArray { "$user.Username", "Anonymous" }) },
+                { "userImage", "$user.ProfileImageUrl" }
+            })
+        };
 
-    return comments;
+        return await _comments.Aggregate<CommentModel>(pipeline).ToListAsync();
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Error in GetCommentsByPostIdAsync: {ex.Message}");
+        throw;
+    }
 }
 
-    
+
+    public async Task<long> GetCommentCountAsync(string postId)
+{
+    return await _comments.CountDocumentsAsync(c => c.PostId == postId);
+}
+
 
         /* ================================
            Events
@@ -141,7 +166,8 @@ public async Task<AppUser> GetUserByIdAsync(string userId)
             { "category", "$category" },
             { "imageUrl", "$imageUrl" },
             { "userId", "$user._id" },
-            { "username", "$user.Username" }
+            { "username", "$user.Username" },
+             { "userImage", "$user.ProfileImageUrl" }
         })
     };
 
