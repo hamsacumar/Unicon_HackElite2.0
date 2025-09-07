@@ -32,6 +32,8 @@ namespace Backend.Services
         Task AddBookmarkAsync(string postId, string userId);
         Task RemoveBookmarkAsync(string postId, string userId);
         Task<List<BsonDocument>> GetBookmarksByUserAsync(string userId);
+                Task<List<EventDto>> FilterEventsAsync(string? category, DateTime? startDate, DateTime? endDate);
+
 
     }
 }
