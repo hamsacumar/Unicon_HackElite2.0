@@ -4,23 +4,26 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  FlatList,
   StyleSheet,
   ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
   Animated,
   Image,
 } from "react-native";
-import { addComment, getComments, Comment, getCommentCount } from "../services/eventService";
 import { Ionicons } from "@expo/vector-icons";
+import {
+  addComment,
+  getComments,
+  getCommentCount,
+  Comment,
+} from "../services/eventService";
 
 type Props = {
-  postId: string;                     // ID of the post to fetch comments for
-  userId?: string | null;             // ID of the currently logged-in user (null for unauthenticated)
-  onCommentAdd?: (count: number) => void; // Callback after adding a comment
-  initialComments?: Comment[];        // Optional initial comments
-  initialCommentCount?: number;       // Optional initial comment count
+  postId: string;
+  userId?: string | null;
+  onCommentAdd?: (count: number) => void;
+  initialComments?: Comment[];
+  initialCommentCount?: number;
+  visible?: boolean;
 };
 
 export default function CommentSection({
@@ -29,133 +32,156 @@ export default function CommentSection({
   onCommentAdd,
   initialComments = [],
   initialCommentCount = 0,
+  visible = false,
 }: Props) {
-  // State for comments, text input, loading states, and comment count
-  const [comments, setComments] = useState<Comment[]>(initialComments);
+  const [comments, setComments] = useState<Comment[]>([]);
   const [text, setText] = useState("");
-  const [isLoading, setIsLoading] = useState(!initialComments.length);
+  const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [commentCount, setCommentCount] = useState(initialCommentCount);
-
+  const [commentCount, setCommentCount] = useState(0);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
   const inputRef = useRef<TextInput>(null);
-  const fadeAnim = useRef(new Animated.Value(0)).current; // Animation for new comment
 
-  // Fetch comments if not provided initially
+  // Load comments when component mounts or postId changes
   useEffect(() => {
-    const loadComments = async () => {
-      if (initialComments.length === 0) {
-        try {
-          setIsLoading(true);
-          const [fetchedComments, count] = await Promise.all([
-            getComments(postId),       // Fetch comments
-            getCommentCount(postId),   // Fetch total comment count
-          ]);
-          setComments(fetchedComments);
-          setCommentCount(count);
-        } catch (error) {
-          console.error("Error loading comments:", error);
-        } finally {
-          setIsLoading(false);
-        }
-      }
+    if (visible) {
+      loadComments();
+      // Focus the input when comment section becomes visible
+      setTimeout(() => inputRef.current?.focus(), 100);
+    }
+  }, [visible, postId]);
+
+  // Initialize with initial props if provided
+  useEffect(() => {
+    if (initialComments?.length) {
+      setComments(initialComments);
+    }
+    if (initialCommentCount) {
+      setCommentCount(initialCommentCount);
+    }
+  }, [initialComments, initialCommentCount]);
+
+  const loadComments = async () => {
+    if (isLoading) return;
+    
+    setIsLoading(true);
+    try {
+      const [fetched, count] = await Promise.all([
+        getComments(postId),
+        getCommentCount(postId),
+      ]);
+      setComments(fetched);
+      setCommentCount(count);
+      onCommentAdd?.(count);
+    } catch (error) {
+      console.error("Error loading comments:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAddComment = async () => {
+    if (!text.trim() || isSubmitting || !userId) return;
+
+    const tempId = `temp-${Date.now()}`;
+    const tempComment: Comment = {
+      id: tempId,
+      postId,
+      userId,
+      username: 'You', // Will be updated with actual username from server
+      text,
+      createdAt: new Date().toISOString(),
     };
 
-    loadComments();
-  }, [postId]);
+    // Optimistic update
+    setComments(prev => [tempComment, ...prev]);
+    const updatedCount = commentCount + 1;
+    setCommentCount(updatedCount);
+    setText("");
+    onCommentAdd?.(updatedCount);
 
-  // Handle adding a new comment
-  const handleAddComment = async () => {
-    if (!text.trim() || isSubmitting || !userId) {
-      console.log("Please log in to comment");
-      return;
-    }
+    // Animate the new comment
+    fadeAnim.setValue(0);
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
 
     try {
       setIsSubmitting(true);
-      const newComment = await addComment(postId, { userId, text });
-
-      if (newComment) {
-        const updatedComments = [newComment, ...comments];
-        const updatedCount = commentCount + 1;
-
-        setComments(updatedComments);
-        setCommentCount(updatedCount);
-        setText("");
-        onCommentAdd?.(updatedCount);
-
-        // Animate the new comment fade-in
-        fadeAnim.setValue(0);
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }).start();
+      const res = await addComment(postId, { text });
+      
+      if (res?.success && res.comment) {
+        // Replace temp comment with server response
+        setComments(prev => [
+          res.comment,
+          ...prev.filter(c => c.id !== tempId)
+        ]);
+      } else {
+        throw new Error("Failed to add comment");
       }
     } catch (error) {
       console.error("Error adding comment:", error);
+      // Revert optimistic update on error
+      setComments(prev => prev.filter(c => c.id !== tempId));
+      setCommentCount(prev => prev - 1);
+      // Restore the comment text if there was an error
+      setText(text);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Render each comment
-  const renderComment = ({ item }: { item: Comment }) => (
-    <Animated.View style={[styles.commentContainer, { opacity: fadeAnim }]}>
-      <View style={styles.commentHeader}>
-        {item.userImage ? (
-          <Image source={{ uri: item.userImage }} style={styles.avatar} />
-        ) : (
-          <View style={[styles.avatar, styles.avatarPlaceholder]}>
-            <Text style={styles.avatarText}>
-              {item.username?.charAt(0)?.toUpperCase() || 'U'}
-            </Text>
-          </View>
-        )}
-        <View style={styles.commentContent}>
-          <Text style={styles.commentAuthor}>{item.username || 'Anonymous'}</Text>
-          <Text style={styles.commentText}>{item.text}</Text>
-          <Text style={styles.commentTime}>
-            {item.createdAt
-              ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-              : 'Just now'}
-          </Text>
-        </View>
-      </View>
-    </Animated.View>
-  );
-
-  // Empty state if no comments
-  const renderEmptyState = () => (
-    <View style={styles.emptyState}>
-      <Ionicons name="chatbubble-ellipses-outline" size={48} color="#ccc" />
-      <Text style={styles.emptyStateText}>No comments yet</Text>
-      <Text style={styles.emptyStateSubtext}>Be the first to comment!</Text>
-    </View>
-  );
-
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={styles.container}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
-    >
-      {/* Comments list */}
-      <View style={styles.commentsContainer}>
-        {isLoading ? (
-          <ActivityIndicator size="large" color="#e74c3c" style={styles.loader} />
-        ) : (
-          <FlatList
-            data={comments}
-            keyExtractor={(item, index) => `${item.id || index}-${item.createdAt || ''}`}
-            renderItem={renderComment}
-            ListEmptyComponent={renderEmptyState}
-            contentContainerStyle={styles.commentsList}
-            keyboardShouldPersistTaps="handled"
-          />
-        )}
-      </View>
+    <View style={{ paddingVertical: 10 }}>
+      {isLoading ? (
+        <ActivityIndicator size="large" color="#e74c3c" />
+      ) : comments.length ? (
+        comments.map((item, index) => (
+          <Animated.View
+            key={item.id || `comment-${index}`}
+            style={{
+              opacity: fadeAnim,
+              marginBottom: 16,
+              ...styles.commentContainer,
+            }}
+          >
+            <View style={styles.commentHeader}>
+              {item.userImage ? (
+                <Image source={{ uri: item.userImage }} style={styles.avatar} />
+              ) : (
+                <View style={[styles.avatar, styles.avatarPlaceholder]}>
+                  <Text style={styles.avatarText}>
+                    {item.username?.charAt(0)?.toUpperCase() || "U"}
+                  </Text>
+                </View>
+              )}
+              <View style={styles.commentContent}>
+                <Text style={styles.commentAuthor}>
+                  {item.username || (item.userId === userId ? 'You' : 'Anonymous')}
+                </Text>
+                <Text style={styles.commentText}>{item.text}</Text>
+                <Text style={styles.commentTime}>
+                  {item.createdAt
+                    ? new Date(item.createdAt).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
+                    : "Just now"}
+                </Text>
+              </View>
+            </View>
+          </Animated.View>
+        ))
+      ) : (
+        <View style={styles.emptyState}>
+          <Ionicons name="chatbubble-ellipses-outline" size={48} color="#ccc" />
+          <Text style={styles.emptyText}>No comments yet</Text>
+        </View>
+      )}
 
-      {/* Comment input with login prompt for unauthenticated users */}
+      {/* Input field */}
       <View style={styles.inputContainer}>
         <TextInput
           ref={inputRef}
@@ -170,12 +196,14 @@ export default function CommentSection({
           returnKeyType="send"
           blurOnSubmit={false}
           editable={!!userId}
-          pointerEvents={userId ? 'auto' : 'none'}
+          pointerEvents={userId ? "auto" : "none"}
+          autoFocus={visible}
         />
         <TouchableOpacity
           style={[
-            styles.sendButton, 
-            (!text.trim() || isSubmitting || !userId) && styles.sendButtonDisabled
+            styles.sendButton,
+            (!text.trim() || isSubmitting || !userId) &&
+              styles.sendButtonDisabled,
           ]}
           onPress={handleAddComment}
           disabled={!text.trim() || isSubmitting || !userId}
@@ -187,82 +215,63 @@ export default function CommentSection({
           )}
         </TouchableOpacity>
       </View>
-      {!userId && (
-        <View style={styles.loginPrompt}>
-          <Text style={styles.loginText}>
-            <Text>Please </Text>
-            <Text 
-              style={styles.loginLink}
-              onPress={() => console.log("Navigate to login")}
-            >
-              log in
-            </Text>
-            <Text> to add a comment</Text>
-          </Text>
-        </View>
-      )}
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
-// Styles for CommentSection
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  commentsContainer: { flex: 1, paddingHorizontal: 16 },
-  commentsList: { paddingBottom: 16 },
-  loader: { marginTop: 24 },
-  emptyState: { alignItems: 'center', justifyContent: 'center', paddingVertical: 40 },
-  emptyStateText: { fontSize: 16, fontWeight: '600', color: '#666', marginTop: 12 },
-  emptyStateSubtext: { fontSize: 14, color: '#999', marginTop: 4 },
-  commentContainer: { marginBottom: 16, backgroundColor: '#f8f9fa', borderRadius: 12, padding: 12 },
-  commentHeader: { flexDirection: 'row', alignItems: 'flex-start' },
-  avatar: { width: 36, height: 36, borderRadius: 18, marginRight: 12, backgroundColor: '#e0e0e0', justifyContent: 'center', alignItems: 'center' },
-  avatarPlaceholder: { backgroundColor: '#e74c3c' },
-  avatarText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+  commentContainer: {
+    backgroundColor: "#f8f9fa",
+    borderRadius: 12,
+    padding: 12,
+  },
+  commentHeader: { flexDirection: "row", alignItems: "flex-start" },
+  avatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    marginRight: 12,
+    backgroundColor: "#e0e0e0",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  avatarPlaceholder: { backgroundColor: "#e74c3c" },
+  avatarText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
   commentContent: { flex: 1 },
-  commentAuthor: { fontWeight: '600', fontSize: 14, color: '#333', marginBottom: 4 },
-  commentText: { fontSize: 14, color: '#333', lineHeight: 20 },
-  commentTime: { fontSize: 12, color: '#999', marginTop: 4 },
-  inputContainer: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    borderTopWidth: 1, 
-    borderTopColor: '#eee',
+  commentAuthor: { fontWeight: "600", fontSize: 14, color: "#333", marginBottom: 4 },
+  commentText: { fontSize: 14, color: "#333", lineHeight: 20 },
+  commentTime: { fontSize: 12, color: "#999", marginTop: 4 },
+  inputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderTopWidth: 1,
+    borderTopColor: "#eee",
     paddingVertical: 8,
     paddingHorizontal: 12,
-    backgroundColor: '#fff'
+    backgroundColor: "#fff",
+    marginTop: 10,
   },
-  loginPrompt: {
-    padding: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  loginText: {
-    color: '#666',
+  input: {
+    flex: 1,
+    backgroundColor: "#f5f5f5",
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     fontSize: 14,
-  },
-  loginLink: {
-    color: '#e74c3c',
-    fontWeight: '600',
-  },
-  input: { 
-    flex: 1, 
-    backgroundColor: '#f5f5f5', 
-    borderRadius: 20, 
-    paddingHorizontal: 16, 
-    paddingVertical: 10, 
-    fontSize: 14, 
-    color: '#333', 
-    maxHeight: 120, 
+    color: "#333",
+    maxHeight: 120,
     marginRight: 8,
   },
-  disabledInput: {
-    backgroundColor: '#f9f9f9',
-    color: '#999',
+  disabledInput: { backgroundColor: "#f9f9f9", color: "#999" },
+  sendButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#e74c3c",
+    justifyContent: "center",
+    alignItems: "center",
   },
-  sendButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#e74c3c', justifyContent: 'center', alignItems: 'center' },
-  sendButtonDisabled: { opacity: 0.5 },
+  sendButtonDisabled: { backgroundColor: "#ccc" },
+  emptyState: { justifyContent: "center", alignItems: "center", marginTop: 16 },
+  emptyText: { fontSize: 14, color: "#999", marginTop: 8 },
 });

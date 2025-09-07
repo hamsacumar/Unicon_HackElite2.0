@@ -31,21 +31,13 @@ const RoleBasedBottomNav: React.FC<Props> = ({ navigation }) => {
     );
   }
   
-  // Show login/register nav if role not determined
-  if (!role) {
-    return (
-      <BottomNav
-        onPressLogin={() => navigation.navigate("Login")}
-        onPressRegister={() => navigation.navigate("Signup")}
-      />
-    );
-  }
+
   
   if (role === "Organizer") {
     return (
       <Org_BottomNav
         onPressHome={() => navigation.navigate("Home")}
-        onPressFilter={() => console.log("Filter pressed")}
+        onPressFilter={() => navigation.navigate("Filter")}
         onPressAdd={() => navigation.navigate("InputPage")}
         onPressNotification={() => console.log("Notification pressed")}
         onPressProfile={() => navigation.navigate("Profile")}
@@ -57,7 +49,7 @@ const RoleBasedBottomNav: React.FC<Props> = ({ navigation }) => {
     return (
       <Stu_BottomNav
         onPressHome={() => navigation.navigate("Home")}
-        onPressFilter={() => console.log("Filter pressed")}
+        onPressFilter={() => navigation.navigate("Filter")}
         onPressNotification={() => console.log("Notification pressed")}
         onPressProfile={() => navigation.navigate("Profile")}
       />

@@ -4,6 +4,7 @@ import React from "react";
 import { TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { NavigationContainer } from "@react-navigation/native";
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import {
   createNativeStackNavigator,
   NativeStackNavigationProp,
@@ -13,7 +14,6 @@ import Toast from "react-native-toast-message";
 
 import Test from "./screens/test";
 import OrgSettings from "./screens/OrgSettings";
-import { AuthProvider, useAuth } from "./utils/AuthContext";
 
 // Updated imports for new auth screens
 import LoginScreen from "./screens/auth/LoginScreen";
@@ -23,6 +23,7 @@ import ClassifyAccount from "./screens/auth/ClassifyAccountScreen";
 import ForgotPasswordScreen from "./screens/auth/ForgotPasswordScreen";
 import ResetPasswordScreen from "./screens/auth/ResetPasswordScreen";
 
+import Filter from "./screens/filter";
 import Home from "./screens/Home";
 import LandingPage from "./screens/LandingPage";
 import InputPage from "./screens/input"; // Input Page
@@ -34,26 +35,32 @@ import ProfileSetup from "./screens/ProfileSetup";
 import OrgProfile from "./screens/OrgProfile";
 import PostDetail from "./screens/PostDetail";
 import { EventItem } from "./services/eventService";
+import SplashScreen from "./screens/SplashScreen"; 
+// Context
+import { AuthProvider } from "./utils/AuthContext";
 
 export type RootStackParamList = {
+  SplashScreen: undefined;
   Auth: undefined;
   Home: undefined;
   LandingPage: undefined;
-  Test: undefined;
   Profile: undefined;
   OrgSettings: undefined;
   InputPage: undefined;
-  ViewProfile: undefined;
+  ViewProfile: { username: string };
   EditProfile: undefined;
   ProfileSetup: undefined;
   OrgProfile: undefined;
-  PostDetail: { post: EventItem };
+  PostDetail: { post: EventItem; userId?: string | null };
+
+  Test: undefined;
   Login: undefined;
   Signup: undefined;
   VerifyCode: undefined;
   ClassifyAccount: undefined;
   ForgotPassword: undefined;
   ResetPassword: undefined;
+  Filter: { userId: string };
   MessagePage: undefined;
   InboxScreen: { currentUserId: string };
   Chat: {
@@ -69,29 +76,41 @@ export type RootStackParamList = {
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const AppStack = () => (
+
   <Stack.Navigator
-    initialRouteName="LandingPage"
+    initialRouteName="SplashScreen" // intial start screen is SplashScreen
     screenOptions={{
       headerStyle: { backgroundColor: "#FF5722" },
       headerTintColor: "#fff",
       headerTitleStyle: { fontWeight: "bold" },
     }}
   >
+
     <Stack.Screen
-      name="Home"
-      component={Home}
-      options={({ navigation }) => ({
-        title: "EventTrix",
-        headerRight: () => (
-          <TouchableOpacity
-            onPress={() => navigation.navigate("MessagePage")}
-            style={{ marginRight: 15 }}
-          >
-            <Ionicons name="mail" size={26} color="white" />
-          </TouchableOpacity>
-        ),
-      })}
+      name="SplashScreen"
+      component={SplashScreen}
+      options={{ headerShown: false }}
     />
+    <Stack.Screen
+  name="Home"
+  component={Home}
+  options={({
+    navigation,
+  }: {
+    navigation: NativeStackNavigationProp<RootStackParamList, "Home">;
+  }) => ({
+    title: "EventTrix",
+    headerRight: () => (
+      <TouchableOpacity
+        onPress={() => navigation.navigate("InboxScreen", { currentUserId: "123" })} 
+        style={{ marginRight: 15 }}
+      >
+        <Ionicons name="chatbubble-ellipses-outline" size={26} color="white" />
+      </TouchableOpacity>
+    ),
+  })}
+/>
+
 
     <Stack.Screen
       name="LandingPage"
@@ -105,6 +124,34 @@ const AppStack = () => (
         >;
       }) => ({
         title: "EventTrix",
+        headerLeft: () => (
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={{ marginLeft: 15 }}
+          >
+            <Ionicons name="arrow-back" size={24} color="white" />
+          </TouchableOpacity>
+        ),
+      })}
+    />
+
+    <Stack.Screen
+      name="OrgProfile"
+      component={OrgProfile}
+      options={({
+        navigation,
+      }: {
+        navigation: NativeStackNavigationProp<RootStackParamList, "OrgProfile">;
+      }) => ({
+        title: "Organization Profile",
+        headerLeft: () => (
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={{ marginLeft: 15 }}
+          >
+            <Ionicons name="arrow-back" size={24} color="white" />
+          </TouchableOpacity>
+        ),
       })}
     />
 
@@ -136,6 +183,43 @@ const AppStack = () => (
       })}
     />
 
+    <Stack.Screen
+      name="OrgSettings"
+      component={OrgSettings}
+      options={{ title: "Settings and Activity" }}
+    />
+    <Stack.Screen
+      name="Filter"
+      component={Filter}
+      options={{ title: "Filter" }}
+      initialParams={{ userId: "" }} // This will be populated with the actual userId when navigating
+    />
+    <Stack.Screen
+      name="InputPage"
+      component={InputPage}
+      options={{ title: "Create Event" }}
+    />
+    <Stack.Screen
+      name="InboxScreen"
+      component={InboxScreen}
+      options={{ title: "Inbox" }}
+    />
+    <Stack.Screen name="Chat" component={Chat} options={{ title: "Chat" }} />
+    <Stack.Screen
+      name="ViewProfile"
+      component={ViewProfile}
+      options={{ title: "Profile" }}
+    />
+    <Stack.Screen
+      name="EditProfile"
+      component={EditProfile}
+      options={{ title: "Edit Profile" }}
+    />
+    <Stack.Screen
+      name="PostDetail"
+      component={PostDetail}
+      options={{ title: "Post" }}
+    />
     <Stack.Screen
       name="OrgSettings"
       component={OrgSettings}
@@ -199,6 +283,41 @@ const AppStack = () => (
       options={{ headerShown: false }}
     />
     <Stack.Screen
+      name="Login"
+      component={LoginScreen}
+      options={{ headerShown: false }}
+    />
+    <Stack.Screen
+      name="Signup"
+      component={SignupScreen}
+      options={{ headerShown: false }}
+    />
+    <Stack.Screen
+      name="VerifyCode"
+      component={VerifyCodeScreen}
+      options={{ headerShown: false }}
+    />
+    <Stack.Screen
+      name="ClassifyAccount"
+      component={ClassifyAccount}
+      options={{ headerShown: false }}
+    />
+    <Stack.Screen
+      name="ForgotPassword"
+      component={ForgotPasswordScreen}
+      options={{ headerShown: false }}
+    />
+    <Stack.Screen
+      name="ResetPassword"
+      component={ResetPasswordScreen}
+      options={{ headerShown: false }}
+    />
+    <Stack.Screen
+      name="ProfileSetup"
+      component={ProfileSetup}
+      options={{ headerShown: false }}
+    />
+    <Stack.Screen
       name="MessagePage"
       component={MessagesPage}
       options={{ title: "Message" }}
@@ -208,11 +327,13 @@ const AppStack = () => (
 
 export default function App() {
   return (
-    <AuthProvider>
-      <NavigationContainer>
-        <AppStack />
-        <Toast />
-      </NavigationContainer>
-    </AuthProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <AuthProvider>
+        <NavigationContainer>
+          <AppStack />
+          <Toast />
+        </NavigationContainer>
+      </AuthProvider>
+    </GestureHandlerRootView>
   );
 }

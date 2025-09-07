@@ -1,13 +1,16 @@
 import * as SecureStore from "expo-secure-store";
 import Constants from "expo-constants";
 import axios from "axios";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Alert } from "react-native";
+import { NavigationProp } from "@react-navigation/native";
 
 // Define the type for test data items
 export interface TestDataItem {
   id: string;
   value: string;
 }
+
+
 
 // Ensure BASE_URL has no trailing slash
 const BASE_URL = Constants.expoConfig?.extra?.apiUrl || 'http://10.10.10.198:5179';
@@ -670,3 +673,22 @@ export async function getTestData(): Promise<TestDataItem[]> {
     return [];
   }
 }
+
+export const logout = async (navigation?: NavigationProp<any>) => {
+  try {
+    await SecureStore.deleteItemAsync("accessToken");
+    console.log("Token removed from secure storage");
+
+    Alert.alert("Logged out", "You have been successfully logged out.");
+
+    if (navigation) {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "LandingPage" }],
+      });
+    }
+  } catch (error) {
+    console.error("Logout error:", error);
+    Alert.alert("Logout failed", "An error occurred during logout.");
+  }
+};

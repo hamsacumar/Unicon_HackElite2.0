@@ -1,6 +1,7 @@
 using Backend.Models;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using MongoDB.Bson;
 
 namespace Backend.Services
 {
@@ -13,12 +14,24 @@ namespace Backend.Services
         // Mandatory: fetch events with user info
         Task<List<EventDto>> GetEventsWithUsersAsync();
 
-        // New methods for likes & comments
+        // Likes
         Task AddLikeAsync(string postId, string userId);
         Task<int> GetLikeCountAsync(string postId);
-
-        Task AddCommentAsync(CommentModel comment);
-        Task<List<CommentModel>> GetCommentsByPostIdAsync(string postId);
         Task<bool> CheckIfLikedAsync(string postId, string userId);
+
+        // Comments
+        Task<CommentModel> AddCommentAsync(CommentModel comment);
+        Task<List<CommentModel>> GetCommentsByPostIdAsync(string postId);
+        Task<long> GetCommentCountAsync(string postId);
+
+        // Users
+        Task<AppUser> GetUserByIdAsync(string userId);
+
+        // ✅ Bookmarks
+        Task<bool> IsBookmarkedAsync(string postId, string userId);
+        Task AddBookmarkAsync(string postId, string userId);
+        Task RemoveBookmarkAsync(string postId, string userId);
+        Task<List<BsonDocument>> GetBookmarksByUserAsync(string userId);
+
     }
 }

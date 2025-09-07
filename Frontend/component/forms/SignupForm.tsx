@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import CustomInput from '../ui/CustomInput';
 import PasswordInput from '../ui/PasswordInput';
 import CustomButton from '../ui/CustomButton';
@@ -105,6 +105,15 @@ const SignupForm: React.FC<SignupFormProps> = ({
   };
 
   return (
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: colors.white }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 0}
+    >
+      <ScrollView
+        contentContainerStyle={{ flexGrow: 1, justifyContent: "center", paddingHorizontal: spacing.xl }}
+        keyboardShouldPersistTaps="handled"
+      >
     <View style={styles.container}>
       <Text style={globalStyles.title}>Create Account</Text>
       
@@ -156,7 +165,9 @@ const SignupForm: React.FC<SignupFormProps> = ({
           </Text>
         </TouchableOpacity>
       </View>
-    </View>
+        </View>
+        </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
 

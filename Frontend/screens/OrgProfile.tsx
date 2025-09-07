@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -9,11 +9,17 @@ import {
   SafeAreaView,
   StatusBar,
 } from 'react-native';
+import Constants from "expo-constants";
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import RoleBasedBottomNav from "../component/rolebasedNav";
 
 import Ionicons from "react-native-vector-icons/Ionicons";
+
+import { ProfileService, Profile, Post } from '../services/ProfileService';
+
+
+const API_URL = Constants.expoConfig?.extra?.apiUrl?.replace("/api", "");
 
 // Define your stack param list
 type RootStackParamList = {
@@ -30,29 +36,39 @@ type OrgProfileNavigationProp = NativeStackNavigationProp<
 const OrgProfile: React.FC = () => {
   const navigation = useNavigation<OrgProfileNavigationProp>();
 
-  const posts = [
-    {
-      id: 1,
-      title: "Submissions Are Now Open of",
-      subtitle: "Get ready to apply the scholarship of 2025!!!",
-      description: "Complete your submission here!!! https://scholarsarchive.net/scholarship/ Submission Deadline: https://scholarsarchive.net/ scholarship-deadline/",
-      image: require('../assets/icon.png'), // Replace with your image path
-    },
-    {
-      id: 2,
-      title: "Submissions Are Now Open of",
-      subtitle: "Get ready to apply the scholarship of 2025!!!",
-      description: "Complete your submission here!!! https://scholarsarchive.net/scholarship/ Submission Deadline: https://scholarsarchive.net/ scholarship-deadline/",
-      image: require('../assets/icon.png'), // Replace with your image path
-    },
-    {
-      id: 3,
-      title: "It's a Time to Get Hands-On!",
-      subtitle: "Workshop of Interview with Behavior 2024 is here!",
-      description: "Get ready for Interview! Ace Soft- Skills Interview Workshop on Improve Your Chances! Successfully Landing Your Next Job! Registration Link: https://behavioralinterviewworkshop.com/ Contact us at 14 July 2024 3:00 PM to 4:00 PM",
-      image: require('../assets/icon.png'), // Replace with your image path
-    },
-  ];
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [postCount, setPostCount] = useState<number>(0);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const profileData = await ProfileService.getProfile();
+        const postsData = await ProfileService.getPosts();
+        setProfile(profileData);
+        setPosts(postsData);
+
+        const count = await ProfileService.getPostCount();
+      setPostCount(count);
+      
+      } catch (error) {
+        console.error("Error fetching profile or posts:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <Text style={{ textAlign: 'center', marginTop: 50 }}>Loading...</Text>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -60,20 +76,31 @@ const OrgProfile: React.FC = () => {
       {/* Fixed Profile Section */}
       <View style={styles.profileSection}>
         <View style={styles.profileHeader}>
-          <View style={styles.profileBorder}>
-            <View style={styles.profileImage}>
-              <Image
-                source={require("../assets/icon.png")}
-                style={styles.image}
-              />
-            </View>
-          </View>
+        <View style={styles.profileBorder}>
+  <View style={styles.profileImage}>
+    <Image
+      source={{
+        uri: profile?.profileImageUrl
+          ? (profile.profileImageUrl.startsWith("http")
+              ? profile.profileImageUrl
+              : `${API_URL}${profile.profileImageUrl.startsWith("/") ? "" : "/"}${profile.profileImageUrl}`)
+          : Image.resolveAssetSource(require("../assets/icon.png")).uri, // ✅ fallback
+      }}
+      style={styles.image}
+      resizeMode="cover"
+      onError={(e) =>
+        console.log("Error loading profile image:", e.nativeEvent.error)
+      }
+    />
+  </View>
+</View>
+
 
           <View style={styles.profileInfo}>
-            <Text style={styles.profileName}>WSO2</Text>
+            <Text style={styles.profileName}>{profile?.username}</Text>
             <View style={styles.statsContainer}>
               <View style={styles.statItem}>
-                <Text style={styles.statNumber}>24</Text>
+          <Text style={styles.statNumber}>{postCount}</Text>
                 <Text style={styles.statLabel}>posts</Text>
               </View>
               <View style={styles.statItem}>
@@ -88,7 +115,7 @@ const OrgProfile: React.FC = () => {
           </View>
         </View>
 
-        <Text style={styles.trustText}>Trusted by the World's best Enterprises</Text>
+        <Text style={styles.trustText}>{profile?.description}</Text>
 
         <View style={styles.buttonContainer}>
           <TouchableOpacity style={styles.editButton}>
@@ -119,23 +146,33 @@ const OrgProfile: React.FC = () => {
       <ScrollView style={styles.postsContainer} showsVerticalScrollIndicator={false}>
         {posts.map((post) => (
           <View key={post.id} style={styles.postCard}>
-            <View style={styles.postContent}>
-              <View style={styles.postTextContainer}>
-                <Text style={styles.postTitle}>{post.title}</Text>
-                <Text style={styles.postSubtitle}>{post.subtitle}</Text>
-                <Text style={styles.postDescription} numberOfLines={4}>
-                  {post.description}
-                </Text>
-              </View>
-              <View style={styles.postImageContainer}>
-                <Image
-                  source={post.image} // <-- use the post.image here
-                  style={styles.postImage} // ensure proper width/height
-                  resizeMode="cover"     // or 'contain' as needed
-                />
-              </View>
+          <View style={styles.postContent}>
+            <View style={styles.postTextContainer}>
+              <Text style={styles.postTitle}>{post.title}</Text>
+              <Text style={styles.postSubtitle}>{post.category}</Text>
+              <Text style={styles.postDescription} numberOfLines={4}>
+                {post.description}
+              </Text>
             </View>
+            <View style={styles.postImageContainer}>
+  <Image
+    source={{
+      uri: post.imageUrl
+        ? post.imageUrl.startsWith("http")
+          ? post.imageUrl
+          : `${API_URL}${post.imageUrl.startsWith("/") ? "" : "/"}${post.imageUrl}`
+        : "https://via.placeholder.com/300x200", // fallback
+    }}
+    style={styles.postImage}
+    resizeMode="cover"
+    onError={(e) =>
+      console.log("Error loading post image:", e.nativeEvent.error)
+    }
+  />
+</View>
+
           </View>
+        </View>
 
         ))}
       </ScrollView>
