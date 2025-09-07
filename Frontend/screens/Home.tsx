@@ -103,7 +103,10 @@ export default function Home() {
                   {item.username}
                 </Text>
               </TouchableOpacity>
-
+              {/* Configuration / Settings Button */}
+              <TouchableOpacity style={styles.configButton}>
+                <Text style={styles.configButtonText}>⚙️</Text>
+              </TouchableOpacity>
             </View>
 
             {/* Post image (clickable) */}
@@ -134,6 +137,7 @@ export default function Home() {
               <Text style={styles.title}>{item.title}</Text>
               <Text style={styles.description}>{item.description}</Text>
             </TouchableOpacity>
+            
 
             {/* Post actions: Like + Comment */}
             <PostActions
@@ -193,9 +197,16 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
 
-  userRow: { flexDirection: "row", alignItems: "center", marginBottom: 8 },
+  userRow: { flexDirection: "row", alignItems: "center", marginBottom: 8, justifyContent: 'space-between' },
   avatar: { width: 40, height: 40, borderRadius: 20, marginRight: 10 },
   username: { fontWeight: "600", fontSize: 14, color: "#333" },
+  configButton: {
+    marginLeft: 'auto',
+    padding: 8,
+  },
+  configButtonText: {
+    fontSize: 18,
+  },
 
   postImage: { width: "100%", height: 150, borderRadius: 8 },
   noImage: {
