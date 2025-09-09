@@ -1,7 +1,7 @@
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 
-const BASE_URL = "http://10.10.10.193:5179/api";
+const BASE_URL = "http://10.10.12.232:5179/api";
 
 // Helper to get storage based on platform
 const secureStorage = {

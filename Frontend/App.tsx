@@ -215,11 +215,7 @@ const AppStack = () => (
       component={EditProfile}
       options={{ title: "Edit Profile" }}
     />
-    <Stack.Screen
-      name="PostDetail"
-      component={PostDetail}
-      options={{ title: "Post" }}
-    />
+   
 
     <Stack.Screen name="Test" component={Test} />
     <Stack.Screen
