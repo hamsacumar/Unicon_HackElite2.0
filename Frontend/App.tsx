@@ -62,7 +62,7 @@ export type RootStackParamList = {
   ResetPassword: undefined;
   Filter: { userId: string };
   MessagePage: undefined;
-  InboxScreen: { currentUserId: string };
+  InboxScreen: undefined;
   Chat: {
     currentUserId: string;
     otherUserId: string;
@@ -102,7 +102,7 @@ const AppStack = () => (
     title: "EventTrix",
     headerRight: () => (
       <TouchableOpacity
-        onPress={() => navigation.navigate("InboxScreen", { currentUserId: "123" })} 
+        onPress={() => navigation.navigate("MessagePage")} 
         style={{ marginRight: 15 }}
       >
         <Ionicons name="chatbubble-ellipses-outline" size={26} color="white" />
