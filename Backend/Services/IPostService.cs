@@ -25,7 +25,7 @@ namespace Backend.Services
         Task<long> GetCommentCountAsync(string postId);
 
         // Users
-        Task<AppUser> GetUserByIdAsync(string userId);
+Task<AppUser?> GetUserByIdAsync(string userId);
 
         // ✅ Bookmarks
         Task<bool> IsBookmarkedAsync(string postId, string userId);

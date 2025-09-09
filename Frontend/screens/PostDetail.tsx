@@ -15,7 +15,7 @@ import { RouteProp } from "@react-navigation/native";
 import { RootStackParamList } from "../App";
 import PostActions from "../component/PostActions";
 import CommentSection from "../component/CommentSection";
-import { getEventById, EventItem, getCommentCount, isBookmarked } from "../services/eventService";
+import { getEventById, EventItem, isBookmarked } from "../services/eventService";
 import { Ionicons } from "@expo/vector-icons";
 import { format } from 'date-fns';
 import Constants from "expo-constants";
@@ -45,10 +45,9 @@ export default function PostDetail({ route, navigation }: Props) {
   const [isLiked, setIsLiked] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [isBookmarkedPost, setIsBookmarkedPost] = useState(false);
+  const [showComments, setShowComments] = useState(false);
 
-  // ------------------------
   // Fetch logged-in user ID
-  // ------------------------
   useEffect(() => {
     const fetchUser = async () => {
       try {
@@ -61,71 +60,61 @@ export default function PostDetail({ route, navigation }: Props) {
     fetchUser();
   }, []);
 
-  // ------------------------
-  // Fetch post details
-  // ------------------------
-  const fetchPost = async () => {
-    try {
-      setIsLoading(true);
-      const postData = await getEventById(postId);
-
-      if (postData) {
-        setPost(postData);
-
-        setLikeCount(postData.likeCount || 0);
-        setCommentCount(postData.commentCount || 0);
-        setIsLiked(postData.isLiked || false);
-
-        if (userId) {
-          const bookmarked = await isBookmarked(postId);
-          setIsBookmarkedPost(bookmarked);
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching post:", error);
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-    }
-  };
-
+  // Fetch post details whenever postId or userId changes
   useEffect(() => {
-    fetchPost();
+    if (!postId) return;
 
-    // Show configuration button only for authenticated users
-    navigation.setOptions({
-      headerRight: () =>
-        userId ? (
-          <TouchableOpacity
-            onPress={() => console.log("Open post settings")}
-            style={{ marginRight: 16 }}
-          >
-            <Ionicons name="settings-outline" size={24} color="#333" />
-          </TouchableOpacity>
-        ) : null,
-    });
+    const fetchPost = async () => {
+      try {
+        setIsLoading(true);
+        const postData = await getEventById(postId);
+        if (postData) {
+          setPost(postData);
+          setLikeCount(postData.likeCount || 0);
+          setCommentCount(postData.commentCount || 0);
+          setIsLiked(postData.isLiked || false);
+
+          if (userId) {
+            const bookmarked = await isBookmarked(postId);
+            setIsBookmarkedPost(bookmarked);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching post:", error);
+      } finally {
+        setIsLoading(false);
+        setIsRefreshing(false);
+      }
+    };
+
+    fetchPost();
   }, [postId, userId]);
 
+  // Refresh handler
   const handleRefresh = () => {
     setIsRefreshing(true);
-    fetchPost();
+    setShowComments(false);
   };
 
-  const handleLikeUpdate = (count: number, liked: boolean) => {
-    setLikeCount(count);
-    setIsLiked(liked);
-  };
-
-  const handleCommentAdd = (count: number) => {
-    setCommentCount(count);
-  };
-
-  const handleBookmarkToggle = (bookmarked: boolean) => {
-    setIsBookmarkedPost(bookmarked);
-  };
+  // Handlers
+// Handlers
+const handleLikeUpdate = (count: number, liked: boolean) => {
+  setLikeCount(count);
+  setIsLiked(liked);
+};
+  const handleCommentAdd = (count: number) => setCommentCount(count);
+  const handleBookmarkToggle = (bookmarked: boolean) => setIsBookmarkedPost(bookmarked);
 
   const handleUserPress = (userId: string) => {
     navigation.navigate("ViewProfile", { userId });
+  };
+
+  const handleCommentPress = () => {
+    if (!userId) {
+      navigation.navigate("Login");
+      return;
+    }
+    setShowComments(true);
   };
 
   if (isLoading) {
@@ -159,9 +148,7 @@ export default function PostDetail({ route, navigation }: Props) {
         }
         contentContainerStyle={{ paddingBottom: 120 }}
       >
-        {/* ------------------------
-            User Profile Row
-            ------------------------ */}
+        {/* User Profile Row */}
         <TouchableOpacity 
           style={styles.userRow} 
           onPress={() => handleUserPress(post.userId)}
@@ -181,14 +168,11 @@ export default function PostDetail({ route, navigation }: Props) {
           </View>
         </TouchableOpacity>
 
-        {/* ------------------------
-            Post Content
-            ------------------------ */}
+        {/* Post Content */}
         <View style={styles.contentContainer}>
           <Text style={styles.category}>{post.category}</Text>
           <Text style={styles.title}>{post.title}</Text>
           <Text style={styles.description}>{post.description}</Text>
-          
           {post.imageUrl && (
             <Image 
               source={{ 
@@ -197,14 +181,12 @@ export default function PostDetail({ route, navigation }: Props) {
                   : `${API_URL}${post.imageUrl.startsWith("/") ? "" : "/"}${post.imageUrl}` 
               }} 
               style={styles.postImage} 
-              resizeMode="contain" // Show full image
+              resizeMode="contain"
             />
           )}
         </View>
 
-        {/* ------------------------
-            Stats: Likes & Comments
-            ------------------------ */}
+        {/* Stats */}
         <View style={styles.statsContainer}>
           <Text style={styles.statsText}>
             {likeCount} {likeCount === 1 ? 'like' : 'likes'}
@@ -214,38 +196,32 @@ export default function PostDetail({ route, navigation }: Props) {
           </Text>
         </View>
 
-        {/* ------------------------
-            Post Actions
-            ------------------------ */}
-        <PostActions 
-          postId={postId} 
-          userId={userId} 
+        {/* Post Actions */}
+        <PostActions
+          postId={postId}
+          userId={userId}
           initialLikeCount={likeCount}
           initialCommentCount={commentCount}
           initialIsLiked={isLiked}
           initialIsBookmarked={isBookmarkedPost}
           onLikeUpdate={handleLikeUpdate}
           onBookmarkToggle={handleBookmarkToggle}
-          onCommentPress={() => {
-            if (!userId) navigation.navigate("Login");
-          }}
+          onCommentPress={handleCommentPress}
+        
+
         />
 
-        {/* ------------------------
-            Comment Section
-            ------------------------ */}
-        {userId && (
-          <CommentSection 
-            postId={postId} 
-            userId={userId} 
+        {/* Comment Section */}
+        {userId && showComments && (
+          <CommentSection
+            postId={postId}
+            userId={userId}
             onCommentAdd={handleCommentAdd}
           />
         )}
       </ScrollView>
 
-      {/* ------------------------
-          BottomNav only for unauthenticated users
-          ------------------------ */}
+      {/* BottomNav only for unauthenticated users */}
       {!userId && (
         <BottomNav
           onPressLogin={() => navigation.navigate("Login")}

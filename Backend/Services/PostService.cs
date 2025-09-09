@@ -33,13 +33,14 @@ namespace Backend.Services
             _logger.LogInformation("PostService initialized");
         }
 
-        public async Task<AppUser> GetUserByIdAsync(string userId)
-        {
-            return await _users.Find(u => u.Id == userId).FirstOrDefaultAsync();
-        }
+       public async Task<AppUser?> GetUserByIdAsync(string userId)
+{
+    return await _users.Find(u => u.Id == userId).FirstOrDefaultAsync();
+}
 
         public async Task<List<EventDto>> FilterEventsAsync(string? category, DateTime? startDate, DateTime? endDate)
         {
+            
             try
             {
                 Console.WriteLine($"[FilterEventsAsync] Starting filter - Category: {category}, StartDate: {startDate}, EndDate: {endDate}");
@@ -110,7 +111,7 @@ namespace Backend.Services
                     try
                     {
                         Console.WriteLine($"[FilterEventsAsync] Processing event: {ev.Id} - {ev.Title}");
-                        AppUser user = null;
+                     AppUser? user = null; 
                         string username = "Unknown";
                         string userImage = null;
                         
@@ -200,7 +201,7 @@ public async Task<CommentModel> AddCommentAsync(CommentModel comment)
     // Ensure correct user info is stored
     var user = await _users.Find(u => u.Id == comment.UserId).FirstOrDefaultAsync();
     comment.Username = user?.Username ?? "Anonymous";
-    comment.UserImage = user?.ProfileImageUrl;
+    comment.UserImage = user?.ProfileImageUrl ?? string.Empty;
     comment.CreatedAt = DateTime.UtcNow;
 
     await _comments.InsertOneAsync(comment);
@@ -285,8 +286,8 @@ public async Task<long> GetCommentCountAsync(string postId)
         public async Task<List<EventModel>> GetAsync() =>
             await _events.Find(_ => true).ToListAsync();
 
-        public async Task<EventModel?> GetByIdAsync(string id) =>
-            await _events.Find(ev => ev.Id == id).FirstOrDefaultAsync();
+      public async Task<EventModel?> GetByIdAsync(string id) =>
+    await _events.Find(ev => ev.Id == id).FirstOrDefaultAsync();
 
         public async Task CreateAsync(EventModel ev) =>
             await _events.InsertOneAsync(ev);
