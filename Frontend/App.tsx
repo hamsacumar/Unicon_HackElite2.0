@@ -194,12 +194,6 @@ const AppStack = () => (
       options={{ title: "Filter" }}
       initialParams={{ userId: "" }} // This will be populated with the actual userId when navigating
     />
-
-    <Stack.Screen
-      name="PostDetail"
-      component={PostDetail}
-      options={{ title: "Post" }}
-    />
     <Stack.Screen
       name="InputPage"
       component={InputPage}
