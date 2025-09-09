@@ -1,7 +1,6 @@
 import axios from "axios";
 import * as SecureStore from "expo-secure-store";
-
-const API_BASE = "http://10.10.10.193:5179/api";
+import Constants from "expo-constants";
 
 // -------------------- Secure Storage Helpers --------------------
 const secureStorage = {
@@ -73,11 +72,12 @@ export const clearAuth = async () => {
   await Promise.all([
     secureStorage.removeItem("accessToken"),
     secureStorage.removeItem("userId"),
-  ]);};
+  ]);
+};
 
 // -------------------- Axios Instance --------------------
 const api = axios.create({
-  baseURL: API_BASE,
+  baseURL: Constants.expoConfig?.extra?.apiUrl, // ✅ dynamic from app config
   headers: { 
     "Content-Type": "application/json",
   },
@@ -97,9 +97,7 @@ api.interceptors.request.use(
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
 // Response interceptor to handle 401
@@ -108,7 +106,6 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
     
-    // If error is 401 and we haven't tried to refresh the token yet
     if (error.response?.status === 401 && !originalRequest._retry) {
       console.warn("401 Unauthorized - clearing auth data");
       await clearAuth();

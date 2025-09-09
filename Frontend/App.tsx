@@ -38,6 +38,9 @@ import { EventItem } from "./services/eventService";
 import SplashScreen from "./screens/SplashScreen"; 
 // Context
 import { AuthProvider } from "./utils/AuthContext";
+import HelpScreen from "./screens/HelpScreen";
+import TermsScreen from "./screens/TermsScreen";
+import AboutScreen from "./screens/AboutScreen";
 
 export type RootStackParamList = {
   SplashScreen: undefined;
@@ -61,14 +64,12 @@ export type RootStackParamList = {
   ForgotPassword: undefined;
   ResetPassword: undefined;
   Filter: { userId: string };
-  MessagePage: undefined;
+  MessagePage: { username: string };
   InboxScreen: { currentUserId: string };
-  Chat: {
-    currentUserId: string;
-    otherUserId: string;
-    currentUsername: string;
-    otherUsername: string;
-  };
+  Help: undefined;
+  Terms: undefined;
+  About: undefined;
+
 
 
 };
@@ -102,7 +103,7 @@ const AppStack = () => (
     title: "EventTrix",
     headerRight: () => (
       <TouchableOpacity
-        onPress={() => navigation.navigate("InboxScreen", { currentUserId: "123" })} 
+        onPress={() => navigation.navigate("MessagePage", { username: "123" })} 
         style={{ marginRight: 15 }}
       >
         <Ionicons name="chatbubble-ellipses-outline" size={26} color="white" />
@@ -124,26 +125,6 @@ const AppStack = () => (
         >;
       }) => ({
         title: "EventTrix",
-        headerLeft: () => (
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={{ marginLeft: 15 }}
-          >
-            <Ionicons name="arrow-back" size={24} color="white" />
-          </TouchableOpacity>
-        ),
-      })}
-    />
-
-    <Stack.Screen
-      name="OrgProfile"
-      component={OrgProfile}
-      options={({
-        navigation,
-      }: {
-        navigation: NativeStackNavigationProp<RootStackParamList, "OrgProfile">;
-      }) => ({
-        title: "Organization Profile",
         headerLeft: () => (
           <TouchableOpacity
             onPress={() => navigation.goBack()}
@@ -193,12 +174,6 @@ const AppStack = () => (
       component={Filter}
       options={{ title: "Filter" }}
       initialParams={{ userId: "" }} // This will be populated with the actual userId when navigating
-    />
-
-    <Stack.Screen
-      name="PostDetail"
-      component={PostDetail}
-      options={{ title: "Post" }}
     />
     <Stack.Screen
       name="InputPage"
@@ -262,6 +237,22 @@ const AppStack = () => (
       component={MessagesPage}
       options={{ title: "Message" }}
     />
+
+<Stack.Screen
+  name="Help"
+  component={HelpScreen}
+  options={{ title: "Help & Support" }}
+/>
+<Stack.Screen
+  name="Terms"
+  component={TermsScreen}
+  options={{ title: "Terms & Policies" }}
+/>
+<Stack.Screen
+  name="About"
+  component={AboutScreen}
+  options={{ title: "About" }}
+/>
   </Stack.Navigator>
 );
 
