@@ -23,7 +23,7 @@ export interface Message {
 }
 
 // -------------------- Constants --------------------
-const API_BASE = "http://10.10.10.158:5179/api";
+const API_BASE = "http://10.10.16.239:5179/api";
 const TOKEN_KEY = "accessToken";
 const USER_ID_CLAIM = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier";
 

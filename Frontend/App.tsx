@@ -64,8 +64,7 @@ export type RootStackParamList = {
   ForgotPassword: undefined;
   ResetPassword: undefined;
   Filter: { userId: string };
-  MessagePage: { username: string };
-  InboxScreen: undefined;
+  MessagePage: undefined;
   Help: undefined;
   Terms: undefined;
   About: undefined;
@@ -174,6 +173,11 @@ const AppStack = () => (
       component={Filter}
       options={{ title: "Filter" }}
       initialParams={{ userId: "" }} // This will be populated with the actual userId when navigating
+    />
+      <Stack.Screen
+      name="PostDetail"
+      component={PostDetail}
+      options={{ title: "Post Details" }}
     />
     <Stack.Screen
       name="InputPage"
