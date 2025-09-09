@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   Animated,
   Image,
   Alert,
+  FlatList,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import {
@@ -17,16 +18,16 @@ import {
   getCommentCount,
   Comment,
 } from "../services/eventService";
-import { fontSize } from "../styles/globalStyles";
 
 // Props expected by the CommentSection component
-type Props = {
-  postId: string; // ID of the post to load comments for
-  userId?: string | null; // ID of logged-in user (optional)
-  onCommentAdd?: (count: number) => void; // Callback to update parent with new comment count
-  initialComments?: Comment[]; // Preloaded comments (optional)
-  initialCommentCount?: number; // Preloaded comment count (optional)
-  visible?: boolean; // Whether the comment section is visible
+type Props<T = any> = {
+  postId: string;
+  userId?: string | null;
+  onCommentAdd?: (count: number) => void;
+  initialComments?: Comment[];
+  initialCommentCount?: number;
+  visible?: boolean;
+  flatListRef?: React.RefObject<FlatList<T> | null>;
 };
 
 export default function CommentSection({
@@ -36,49 +37,34 @@ export default function CommentSection({
   initialComments = [],
   initialCommentCount = 0,
   visible = false,
+  flatListRef,
 }: Props) {
-  // Local states
-  const [comments, setComments] = useState<Comment[]>([]); // Stores all comments
-  const [text, setText] = useState(""); // Stores input text
-  const [isLoading, setIsLoading] = useState(false); // Tracks comment loading
-  const [isSubmitting, setIsSubmitting] = useState(false); // Tracks comment submission
-  const [commentCount, setCommentCount] = useState(0); // Tracks comment count
-  const fadeAnim = useRef(new Animated.Value(0)).current; // For fade-in animation
-  const inputRef = useRef<TextInput>(null); // Reference to input field
+  const [comments, setComments] = useState<Comment[]>(initialComments);
+  const [text, setText] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [commentCount, setCommentCount] = useState(initialCommentCount);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const inputRef = useRef<TextInput>(null);
 
-  // Load comments when section becomes visible or when postId changes
   useEffect(() => {
     if (visible) {
       loadComments();
-      // Auto-focus input after section is visible
       setTimeout(() => inputRef.current?.focus(), 100);
     }
   }, [visible, postId]);
 
-  // Initialize with provided props (if any)
-  useEffect(() => {
-    if (initialComments?.length) {
-      setComments(initialComments);
-    }
-    if (initialCommentCount) {
-      setCommentCount(initialCommentCount);
-    }
-  }, [initialComments, initialCommentCount]);
-
-  // Function to load comments + comment count
   const loadComments = async () => {
-    if (isLoading) return; // Prevent duplicate calls
-    
+    if (isLoading) return;
     setIsLoading(true);
     try {
-      // Fetch comments and count in parallel
       const [fetched, count] = await Promise.all([
         getComments(postId),
         getCommentCount(postId),
       ]);
       setComments(fetched);
       setCommentCount(count);
-      onCommentAdd?.(count); // Update parent component
+      onCommentAdd?.(count);
     } catch (error) {
       console.error("Error loading comments:", error);
     } finally {
@@ -86,34 +72,30 @@ export default function CommentSection({
     }
   };
 
-  // Function to handle adding a new comment
   const handleAddComment = async () => {
-    if (!text.trim() || isSubmitting) return; // Prevent empty or duplicate submissions
+    if (!text.trim() || isSubmitting) return;
     if (!userId) {
       Alert.alert("Login Required", "Please login to add a comment");
       return;
     }
 
-    // Create a temporary comment for optimistic UI update
     const tempId = `temp-${Date.now()}`;
     const tempComment: Comment = {
       id: tempId,
       postId,
       userId,
-      username: 'You', // Placeholder, replaced with server username
+      username: "You",
       text,
       createdAt: new Date().toISOString(),
-      userImage: undefined, // Server will provide image
+      userImage: undefined,
     };
 
-    // Optimistic UI: show new comment immediately
-    setComments(prev => [tempComment, ...prev]);
+    setComments((prev) => [tempComment, ...prev]);
     const updatedCount = commentCount + 1;
     setCommentCount(updatedCount);
-    setText(""); // Clear input
+    setText("");
     onCommentAdd?.(updatedCount);
 
-    // Animate comment fade-in
     fadeAnim.setValue(0);
     Animated.timing(fadeAnim, {
       toValue: 1,
@@ -123,38 +105,30 @@ export default function CommentSection({
 
     try {
       setIsSubmitting(true);
-      // Call API to add comment
       const res = await addComment(postId, { text });
-      
       if (res?.success && res.comment) {
-        // Replace temporary comment with server response
-        setComments(prev => [
+        setComments((prev) => [
           res.comment,
-          ...prev.filter(c => c.id !== tempId)
+          ...prev.filter((c) => c.id !== tempId),
         ]);
       } else {
         throw new Error("Failed to add comment");
       }
     } catch (error) {
       console.error("Error adding comment:", error);
-      // Rollback optimistic update on failure
-      setComments(prev => prev.filter(c => c.id !== tempId));
-      setCommentCount(prev => prev - 1);
-      // Restore text back to input
+      setComments((prev) => prev.filter((c) => c.id !== tempId));
+      setCommentCount((prev) => prev - 1);
       setText(text);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  return (
+  return visible ? (
     <View style={{ paddingVertical: 10 }}>
-      {/* Loading indicator */}
       {isLoading ? (
         <ActivityIndicator size="large" color="#e74c3c" />
-
       ) : comments.length ? (
-        // Render comment list
         comments.map((item, index) => (
           <Animated.View
             key={item.id || `comment-${index}`}
@@ -165,7 +139,6 @@ export default function CommentSection({
             }}
           >
             <View style={styles.commentHeader}>
-              {/* Avatar (image or fallback letter) */}
               {item.userImage ? (
                 <Image source={{ uri: item.userImage }} style={styles.avatar} />
               ) : (
@@ -175,10 +148,10 @@ export default function CommentSection({
                   </Text>
                 </View>
               )}
-              {/* Comment content */}
               <View style={styles.commentContent}>
                 <Text style={styles.commentAuthor}>
-                  {item.username || (item.userId === userId ? 'You' : 'Anonymous')}
+                  {item.username ||
+                    (item.userId === userId ? "You" : "Anonymous")}
                 </Text>
                 <Text style={styles.commentText}>{item.text}</Text>
                 <Text style={styles.commentTime}>
@@ -194,14 +167,12 @@ export default function CommentSection({
           </Animated.View>
         ))
       ) : (
-        // Empty state
         <View style={styles.emptyState}>
           <Ionicons name="chatbubble-ellipses-outline" size={48} color="#ccc" />
           <Text style={styles.emptyText}>No comments yet</Text>
         </View>
       )}
 
-      {/* Comment input field */}
       <View style={styles.inputContainer}>
         <TextInput
           ref={inputRef}
@@ -211,8 +182,8 @@ export default function CommentSection({
           placeholder="Write a comment..."
           editable={!isSubmitting}
           multiline
+          onFocus={() => flatListRef?.current?.scrollToEnd({ animated: true })}
         />
-        {/* Send button */}
         <TouchableOpacity
           style={[styles.sendButton, isSubmitting && styles.sendButtonDisabled]}
           onPress={handleAddComment}
@@ -222,15 +193,10 @@ export default function CommentSection({
         </TouchableOpacity>
       </View>
     </View>
-  );
+  ) : null;
 }
 
-// Styles
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  } as const,
   commentContainer: {
     backgroundColor: "#f8f9fa",
     borderRadius: 12,
@@ -242,14 +208,19 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 18,
     marginRight: 12,
-    backgroundColor: "#e0e0e0",
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "#e0e0e0",
   },
   avatarPlaceholder: { backgroundColor: "#e74c3c" },
   avatarText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
   commentContent: { flex: 1 },
-  commentAuthor: { fontWeight: "600", fontSize: 14, color: "#333", marginBottom: 4 },
+  commentAuthor: {
+    fontWeight: "600",
+    fontSize: 14,
+    color: "#333",
+    marginBottom: 4,
+  },
   commentText: { fontSize: 14, color: "#333", lineHeight: 20 },
   commentTime: { fontSize: 12, color: "#999", marginTop: 4 },
   inputContainer: {

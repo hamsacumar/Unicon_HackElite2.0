@@ -82,18 +82,20 @@ export default function LandingPage() {
             {/* ---------------------
                 Post Image (clickable)
               --------------------- */}
-            {item.imageUrl ? (
-              <TouchableOpacity onPress={() => handlePostPress(item)}>
-                <Image
-                  source={{
-                    uri: item.imageUrl.startsWith("http")
-                      ? item.imageUrl
-                      : `${API_URL}${item.imageUrl.startsWith("/") ? "" : "/"}${item.imageUrl}`,
-                  }}
-                  style={styles.postImage}
-                  resizeMode="cover"
-                />
-              </TouchableOpacity>
+           {item.imageUrl ? (
+  <TouchableOpacity onPress={() => handlePostPress(item)}>
+    <View style={{ marginHorizontal: -12, borderRadius: 10, overflow: 'hidden' }}>
+      <Image
+        source={{
+          uri: item.imageUrl.startsWith("http")
+            ? item.imageUrl
+            : `${API_URL}${item.imageUrl.startsWith("/") ? "" : "/"}${item.imageUrl}`,
+        }}
+        style={{ width: '100%', height: 250 }} // full width, taller if needed
+        resizeMode="cover"
+      />
+    </View>
+  </TouchableOpacity>
             ) : (
               <TouchableOpacity onPress={() => handlePostPress(item)}>
                 <View style={styles.noImage}>
