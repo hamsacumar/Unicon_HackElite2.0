@@ -16,7 +16,6 @@ export async function saveToken(token: string) {
   try {
     inMemoryToken = token;
     await SecureStore.setItemAsync(TOKEN_KEY, token);
-    console.log('[Auth] Token saved successfully');
   } catch (error) {
     console.error('[Auth] Error saving token:', error);
     throw error;
@@ -28,7 +27,7 @@ export async function getToken(): Promise<string | null> {
   try {
     // First check in-memory
     if (inMemoryToken) {
-      console.log('[Auth] Using in-memory token');
+      console.log('[Auth] Using in-memory token:', inMemoryToken);
       return inMemoryToken;
     }
     
@@ -187,9 +186,6 @@ export async function getUserRole(): Promise<string | null> {
       },
       timeout: 10000 // 10 second timeout
     });
-    
-    console.log("[Auth] User role response status:", response.status);
-    console.log("[Auth] Response headers:", JSON.stringify(response.headers));
     
     if (!response.data?.role) {
       console.warn("[Auth] No role found in response");
