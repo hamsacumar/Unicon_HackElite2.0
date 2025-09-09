@@ -1,37 +1,51 @@
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Backend.Models;
 using Backend.Services;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Threading.Tasks;
-using System.Collections.Generic;
-using System.Security.Claims;
+using System.IO;
 
 namespace Backend.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize(Roles = "Organizer")]
     public class EventsController : ControllerBase
     {
         private readonly InputService _inputService;
         private readonly ILogger<EventsController> _logger;
+        private readonly IWebHostEnvironment _env;
 
-        public EventsController(InputService inputService, ILogger<EventsController> logger)
+        public EventsController(InputService inputService, ILogger<EventsController> logger, IWebHostEnvironment env)
         {
             _inputService = inputService;
             _logger = logger;
+            _env = env;
         }
 
         [HttpPost]
-        public async Task<ActionResult> Create([FromBody] EventCreateDto dto)
+        public async Task<ActionResult> Create([FromForm] EventCreateDto dto)
         {
             try
             {
-                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                if (string.IsNullOrEmpty(userId))
-                    return Unauthorized(new { success = false, message = "User not authenticated" });
+                // If UserId is null, auto-generate one
+                var userId = dto.UserId ?? Guid.NewGuid().ToString();
+
+                string? imageUrl = null;
+                if (dto.Image != null)
+                {
+                    var uploadsFolder = Path.Combine(_env.WebRootPath, "uploads");
+                    if (!Directory.Exists(uploadsFolder))
+                        Directory.CreateDirectory(uploadsFolder);
+
+                    var fileName = $"{Guid.NewGuid()}_{dto.Image.FileName}";
+                    var filePath = Path.Combine(uploadsFolder, fileName);
+
+                    using var stream = new FileStream(filePath, FileMode.Create);
+                    await dto.Image.CopyToAsync(stream);
+
+                    imageUrl = $"/uploads/{fileName}";
+                }
 
                 var ev = new EventModel
                 {
@@ -41,12 +55,12 @@ namespace Backend.Controllers
                     StartDate = dto.StartDate,
                     EndDate = dto.EndDate,
                     UserId = userId,
-                    ImageUrl = dto.ImageUrl
+                    ImageUrl = imageUrl
                 };
 
                 await _inputService.CreateAsync(ev);
 
-                return Ok(new { success = true, eventId = ev.Id });
+                return Ok(new { success = true, eventId = ev.Id, userId });
             }
             catch (Exception ex)
             {
@@ -56,7 +70,7 @@ namespace Backend.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<List<EventModel>>> Get()
+        public async Task<ActionResult> Get()
         {
             try
             {
@@ -65,7 +79,7 @@ namespace Backend.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to get events");
+                _logger.LogError(ex, "Get events failed");
                 return StatusCode(500, new { success = false, message = ex.Message });
             }
         }

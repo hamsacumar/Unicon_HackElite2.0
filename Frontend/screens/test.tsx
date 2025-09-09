@@ -12,13 +12,8 @@ type RootStackParamList = {
   Home: undefined;
   // Add other screens here if needed
   InputPage: undefined;
-  InboxScreen: { currentUserId: string };
-  Chat: {
-    currentUserId: string;
-    otherUserId: string;
-    currentUsername: string;
-    otherUsername: string;
-  };
+  MessagePage: undefined;
+ 
   Login: undefined;
   Signup: undefined;
 };
@@ -81,23 +76,14 @@ const Test: React.FC = () => {
       />
 
       {/* Navigate to Chat with required params */}
+   
       <Button
-        title="Chat"
-        onPress={() =>
-          navigation.navigate("Chat", {
-            currentUserId,
-            otherUserId: "user2",
-            currentUsername: "User1",
-            otherUsername: "User2",
-          })
-        }
+        title="Message Page"
+        onPress={() => navigation.navigate("MessagePage")}
       />
+     
 
-      {/* Navigate to InboxScreen with required params */}
-      <Button
-        title="InboxScreen"
-        onPress={() => navigation.navigate("InboxScreen", { currentUserId })}
-      />
+      
     </View>
   );
 };

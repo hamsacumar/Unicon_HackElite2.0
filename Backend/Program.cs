@@ -163,12 +163,13 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
 // Static files (images)
-app.UseStaticFiles();
+app.UseStaticFiles(); 
 
-// Enable CORS, Authentication & Authorization
+
+// ✅ Enable CORS before Authorization
 app.UseCors("AllowAll");
+
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -177,7 +178,4 @@ app.UseAuthorization();
 //
 app.MapControllers();
 
-// ----------------------------
-// Run the application
-// ----------------------------
 app.Run();

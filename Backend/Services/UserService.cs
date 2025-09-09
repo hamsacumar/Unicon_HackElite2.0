@@ -40,7 +40,7 @@ namespace Backend.Services
             return await _users.Find(u => u.Username == username).FirstOrDefaultAsync();
         }
 
-        public async Task<AppUser> GetByEmail(string email)
+         public async Task<AppUser> GetByEmail(string email)
         {
             return await _users.Find(u => u.Email == email).FirstOrDefaultAsync();
         }

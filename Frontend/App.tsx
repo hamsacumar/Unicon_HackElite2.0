@@ -1,3 +1,5 @@
+// App.tsx
+import "react-native-gesture-handler";
 import React from "react";
 import { TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -24,12 +26,11 @@ import ResetPasswordScreen from "./screens/auth/ResetPasswordScreen";
 import Filter from "./screens/filter";
 import Home from "./screens/Home";
 import LandingPage from "./screens/LandingPage";
-import InputPage from "./screens/input";
-import Chat from "./screens/Chat";
-import InboxScreen from "./screens/InboxScreen";
+import InputPage from "./screens/input"; // Input Page
 import Profile from "./screens/Profile";
 import ViewProfile from "./screens/ViewProfile";
 import EditProfile from "./screens/EditProfile";
+import MessagesPage from "./screens/MessagePage";
 import ProfileSetup from "./screens/ProfileSetup";
 import OrgProfile from "./screens/OrgProfile";
 import PostDetail from "./screens/PostDetail";
@@ -46,8 +47,6 @@ export type RootStackParamList = {
   Profile: undefined;
   OrgSettings: undefined;
   InputPage: undefined;
-  InboxScreen: { currentUserId: string };
-  Chat: { currentUserId: string; otherUserId: string; currentUsername: string; otherUsername: string };
   ViewProfile: { username: string };
   EditProfile: undefined;
   ProfileSetup: undefined;
@@ -62,6 +61,16 @@ export type RootStackParamList = {
   ForgotPassword: undefined;
   ResetPassword: undefined;
   Filter: { userId: string };
+  MessagePage: undefined;
+  InboxScreen: { currentUserId: string };
+  Chat: {
+    currentUserId: string;
+    otherUserId: string;
+    currentUsername: string;
+    otherUsername: string;
+  };
+
+
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -185,17 +194,17 @@ const AppStack = () => (
       options={{ title: "Filter" }}
       initialParams={{ userId: "" }} // This will be populated with the actual userId when navigating
     />
+
+    <Stack.Screen
+      name="PostDetail"
+      component={PostDetail}
+      options={{ title: "Post" }}
+    />
     <Stack.Screen
       name="InputPage"
       component={InputPage}
       options={{ title: "Create Event" }}
     />
-    <Stack.Screen
-      name="InboxScreen"
-      component={InboxScreen}
-      options={{ title: "Inbox" }}
-    />
-    <Stack.Screen name="Chat" component={Chat} options={{ title: "Chat" }} />
     <Stack.Screen
       name="ViewProfile"
       component={ViewProfile}
@@ -247,6 +256,11 @@ const AppStack = () => (
       name="ProfileSetup"
       component={ProfileSetup}
       options={{ headerShown: false }}
+    />
+    <Stack.Screen
+      name="MessagePage"
+      component={MessagesPage}
+      options={{ title: "Message" }}
     />
   </Stack.Navigator>
 );

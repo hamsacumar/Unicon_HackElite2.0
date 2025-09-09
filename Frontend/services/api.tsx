@@ -13,7 +13,7 @@ export interface TestDataItem {
 
 
 // Ensure BASE_URL has no trailing slash
-const BASE_URL = Constants.expoConfig?.extra?.apiUrl || 'http://10.10.8.24:5179';
+const BASE_URL = Constants.expoConfig?.extra?.apiUrl || 'http://10.10.10.198:5179';
 const API_BASE = `${BASE_URL.replace(/\/+$/, '')}`;
 
 // Create axios instance with base URL

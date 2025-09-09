@@ -1,36 +1,60 @@
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Backend.Models;
 using Backend.Services;
-using Microsoft.Extensions.Logging;
-using System;
-using System.Threading.Tasks;
-using System.Collections.Generic;
+using MongoDB.Bson;
 
 namespace Backend.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize] // You can restrict by role if needed: [Authorize(Roles = "Student,Organizer,Admin")]
     public class MessagesController : ControllerBase
     {
         private readonly IMessageService _messageService;
+        private readonly IUserService _userService;
         private readonly ILogger<MessagesController> _logger;
 
-        public MessagesController(IMessageService messageService, ILogger<MessagesController> logger)
+        public MessagesController(
+            IMessageService messageService,
+            IUserService userService,
+            ILogger<MessagesController> logger)
         {
             _messageService = messageService;
+            _userService = userService;
             _logger = logger;
         }
 
-        // POST: api/messages/send
+        // ✅ Send message (only need receiver + text + senderId from frontend)
         [HttpPost("send")]
-        public async Task<IActionResult> SendMessage([FromBody] Message msg)
+        public async Task<IActionResult> SendMessage([FromBody] SendMessageDto dto)
         {
             try
             {
-                await _messageService.CreateAsync(msg);
-                return Ok(new { success = true, message = "Message sent successfully", data = msg });
+                // 1. Find sender
+                var sender = await _userService.GetById(dto.SenderId);
+                if (sender == null)
+                    return NotFound(new { success = false, message = "Sender not found" });
+
+                // 2. Find receiver
+                var receiver = await _userService.GetByUsername(dto.ReceiverUsername);
+                if (receiver == null)
+                    return NotFound(new { success = false, message = "Receiver not found" });
+
+                // 3. Build message
+                var message = new Message
+                {
+                    Id = ObjectId.GenerateNewId().ToString(),
+                    SenderId = sender.Id,
+                    SenderUsername = sender.Username,
+                    ReceiverId = receiver.Id,
+                    ReceiverUsername = receiver.Username,
+                    Text = dto.Text,
+                    Timestamp = DateTime.UtcNow,
+                    Status = "unseen"
+                };
+
+                await _messageService.CreateAsync(message);
+
+                return Ok(new { success = true, message = "Message sent successfully", data = message });
             }
             catch (Exception ex)
             {
@@ -39,7 +63,7 @@ namespace Backend.Controllers
             }
         }
 
-        // GET: api/messages/conversation/{user1}/{user2}
+        // ✅ Conversation between two users
         [HttpGet("conversation/{user1}/{user2}")]
         public async Task<IActionResult> GetConversation(string user1, string user2)
         {
@@ -55,41 +79,27 @@ namespace Backend.Controllers
             }
         }
 
-        // POST: api/messages/seen/{messageId}
-        [HttpPost("seen/{messageId}")]
-        public async Task<IActionResult> MarkSeen(string messageId)
-        {
-            try
-            {
-                var updated = await _messageService.MarkSeenAsync(messageId);
-                if (!updated)
-                    return NotFound(new { success = false, message = "Message not found" });
-
-                return Ok(new { success = true, message = "Message marked as seen" });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to mark message as seen");
-                return StatusCode(500, new { success = false, error = ex.Message });
-            }
-        }
-
-        // GET: api/messages/inbox/{userId}
+        // ✅ Inbox
         [HttpGet("inbox/{userId}")]
         public async Task<IActionResult> GetInbox(string userId)
         {
             try
             {
-                // Use the service to get messages where the user is the receiver
-                var messages = await _messageService.GetConversationAsync(userId, userId); 
-                // Optionally, filter in the service to only receiverId == userId
+                var messages = await _messageService.GetInboxAsync(userId);
                 return Ok(new { success = true, data = messages });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to get inbox messages");
+                _logger.LogError(ex, "Failed to get inbox");
                 return StatusCode(500, new { success = false, error = ex.Message });
             }
         }
+    }
+
+    public class SendMessageDto
+    {
+        public string SenderId { get; set; } = null!;
+        public string ReceiverUsername { get; set; } = null!;
+        public string Text { get; set; } = null!;
     }
 }
