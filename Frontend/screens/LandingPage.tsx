@@ -15,6 +15,7 @@ import { RootStackParamList } from "../App";
 import BottomNav from "../component/bottomNav";
 import { EventItem, getEvents } from "../services/eventService";
 import Constants from "expo-constants";
+import PostText from "../component/PostText";
 
 // ---------------------
 // Type for navigation props
@@ -107,7 +108,7 @@ export default function LandingPage() {
             <TouchableOpacity onPress={() => handlePostPress(item)}>
               <Text style={styles.category}>{item.category}</Text>
               <Text style={styles.title}>{item.title}</Text>
-              <Text style={styles.description}>{item.description}</Text>
+              <PostText content={item.description} />
             </TouchableOpacity>
 
             {/* ---------------------

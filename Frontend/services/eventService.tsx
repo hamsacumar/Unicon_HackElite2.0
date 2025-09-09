@@ -43,13 +43,17 @@ export async function getEventById(postId: string): Promise<EventItem | null> {
 
 export async function getComments(postId: string): Promise<Comment[]> {
   try {
-    const res = await api.get<Comment[]>(`/Posts/${postId}/comments`);
-    return res.data;
+    const res = await api.get<{ success: boolean; comments: Comment[] }>(
+      `/Posts/${postId}/comments`
+    );
+
+    return res.data.comments || []; // ✅ always return an array
   } catch (err) {
     console.error("Error fetching comments:", err);
     return [];
   }
 }
+
 
 
 export async function getCommentCount(postId: string): Promise<number> {

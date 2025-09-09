@@ -21,7 +21,7 @@ import { format } from 'date-fns';
 import Constants from "expo-constants";
 import BottomNav from "../component/bottomNav";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
+import PostText from "../component/PostText";
 const API_URL = Constants.expoConfig?.extra?.apiUrl?.replace("/api", "");
 
 type PostDetailRouteProp = RouteProp<RootStackParamList, "PostDetail">;
@@ -172,7 +172,7 @@ const handleLikeUpdate = (count: number, liked: boolean) => {
         <View style={styles.contentContainer}>
           <Text style={styles.category}>{post.category}</Text>
           <Text style={styles.title}>{post.title}</Text>
-          <Text style={styles.description}>{post.description}</Text>
+          <PostText content={post.description} style={styles.description}/>
           {post.imageUrl && (
             <Image 
               source={{ 
@@ -196,27 +196,26 @@ const handleLikeUpdate = (count: number, liked: boolean) => {
           </Text>
         </View>
 
-        {/* Post Actions */}
         <PostActions
-          postId={postId}
-          userId={userId}
-          initialLikeCount={likeCount}
-          initialCommentCount={commentCount}
-          initialIsLiked={isLiked}
-          initialIsBookmarked={isBookmarkedPost}
-          onLikeUpdate={handleLikeUpdate}
-          onBookmarkToggle={handleBookmarkToggle}
-          onCommentPress={handleCommentPress}
-        
+  postId={postId}
+  userId={userId}
+  initialLikeCount={likeCount}
+  initialCommentCount={commentCount}
+  initialIsLiked={userId ? isLiked : false} // ensures heart is gray if not logged in
+  initialIsBookmarked={userId ? isBookmarkedPost : false}
+  onLikeUpdate={handleLikeUpdate}
+  onBookmarkToggle={handleBookmarkToggle}
+  onCommentPress={handleCommentPress}
+/>
 
-        />
-
-        {/* Comment Section */}
-        {userId && showComments && (
+        {/* Comment Section - Always show comments but disable input for unauthenticated users */}
+        {showComments && (
           <CommentSection
             postId={postId}
-            userId={userId}
+            userId={userId || undefined}
             onCommentAdd={handleCommentAdd}
+            initialComments={[]}
+            initialCommentCount={commentCount}
           />
         )}
       </ScrollView>

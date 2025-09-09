@@ -8,6 +8,10 @@ import {
   Image,
   TouchableOpacity,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -25,6 +29,7 @@ import PostActions from "../component/PostActions";
 import RoleBasedBottomNav from "./Profile";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import CommentSection from "../component/CommentSection";
+import PostText from "../component/PostText";
 
 type HomeNavigationProp = NativeStackNavigationProp<RootStackParamList, "Home">;
 
@@ -106,108 +111,115 @@ export default function Home() {
     );
 
   return (
-    <View style={styles.container}>
-      <FlatList
-        data={events}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => (
-          <View style={styles.postCard}>
-            {/* Profile Row */}
-            <View style={styles.userRow}>
-              <Image
-                source={{
-                  uri: item.userImage
-                    ? (item.userImage.startsWith("http")
-                        ? item.userImage
-                        : `${API_URL}${item.userImage}`)
-                    : "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
-                }}
-                style={styles.avatar}
-              />
-              <TouchableOpacity
-                onPress={() =>
-                  navigation.navigate("ViewProfile", { username: item.username })
-                }
-              >
-                <Text style={styles.username}>{item.username}</Text>
-              </TouchableOpacity>
-
-            
-            </View>
-
-            {/* Post Image - full width and aspect ratio preserved */}
-            {item.imageUrl ? (
-              <TouchableOpacity onPress={() => handlePostPress(item)}>
-                <Image
-                  source={{
-                    uri: item.imageUrl.startsWith('http')
-                      ? item.imageUrl
-                      : `${API_URL}${item.imageUrl.startsWith('/') ? '' : '/'}${item.imageUrl}`,
-                  }}
-                  style={styles.postImage}
-                  resizeMode="contain" // <-- ensures entire image fits
-                />
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity onPress={() => handlePostPress(item)}>
-                <View style={styles.noImage}>
-                  <Text style={styles.noImageText}>No Image</Text>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      keyboardVerticalOffset={80} // offset for header/navbar
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+        <View style={styles.container}>
+          <FlatList
+            data={events}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={({ item }) => (
+              <View style={styles.postCard}>
+                {/* Profile Row */}
+                <View style={styles.userRow}>
+                  <Image
+                    source={{
+                      uri: item.userImage
+                        ? (item.userImage.startsWith("http")
+                            ? item.userImage
+                            : `${API_URL}${item.userImage}`)
+                        : "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
+                    }}
+                    style={styles.avatar}
+                  />
+                  <TouchableOpacity
+                    onPress={() =>
+                      navigation.navigate("ViewProfile", { username: item.username })
+                    }
+                  >
+                    <Text style={styles.username}>{item.username}</Text>
+                  </TouchableOpacity>
                 </View>
-              </TouchableOpacity>
+
+                {/* Post Image */}
+                {item.imageUrl ? (
+                  <TouchableOpacity onPress={() => handlePostPress(item)}>
+                    <Image
+                      source={{
+                        uri: item.imageUrl.startsWith("http")
+                          ? item.imageUrl
+                          : `${API_URL}${item.imageUrl.startsWith("/") ? "" : "/"}${item.imageUrl}`,
+                      }}
+                      style={styles.postImage}
+                      resizeMode="cover"
+                    />
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity onPress={() => handlePostPress(item)}>
+                    <View style={styles.noImage}>
+                      <Text style={styles.noImageText}>No Image</Text>
+                    </View>
+                  </TouchableOpacity>
+                )}
+
+                {/* Category, title, description */}
+                <TouchableOpacity onPress={() => handlePostPress(item)}>
+                  <Text style={styles.category}>{item.category}</Text>
+                  <Text style={styles.title}>{item.title}</Text>
+                  <PostText content={item.description} style={styles.description}/>
+                </TouchableOpacity>
+
+                {/* Post actions */}
+                <PostActions
+                  postId={item.id}
+                  userId={userId}
+                  initialLikeCount={item.likeCount || 0}
+                  initialCommentCount={item.commentCount || 0}
+                  initialIsBookmarked={item.isBookmarked}
+                  onCommentPress={() => {
+                    setEvents((prev) =>
+                      prev.map((ev) =>
+                        ev.id === item.id ? { ...ev, showComments: !ev.showComments } : ev
+                      )
+                    );
+                  }}
+                  onBookmarkToggle={(isBookmarked) => {
+                    setEvents((prev) =>
+                      prev.map((ev) =>
+                        ev.id === item.id ? { ...ev, isBookmarked } : ev
+                      )
+                    );
+                  }}
+                />
+
+                {/* Inline Comment Section */}
+                <CommentSection
+                  postId={item.id}
+                  userId={userId}
+                  visible={!!item.showComments}
+                  initialComments={item.comments || []}
+                  initialCommentCount={item.commentCount || 0}
+                  onCommentAdd={(newCount) => {
+                    setEvents((prev) =>
+                      prev.map((ev) =>
+                        ev.id === item.id ? { ...ev, commentCount: newCount } : ev
+                      )
+                    );
+                  }}
+                />
+              </View>
             )}
+            contentContainerStyle={styles.listContent}
+            keyboardShouldPersistTaps="handled"
+          />
 
-            {/* Category, title, description */}
-            <TouchableOpacity onPress={() => handlePostPress(item)}>
-              <Text style={styles.category}>{item.category}</Text>
-              <Text style={styles.title}>{item.title}</Text>
-              <Text style={styles.description}>{item.description}</Text>
-            </TouchableOpacity>
-
-            {/* Post actions: Like + Comment + Bookmark */}
-            <PostActions
-              postId={item.id}
-              userId={userId}
-              initialLikeCount={item.likeCount || 0}
-              initialCommentCount={item.commentCount || 0}
-              initialIsBookmarked={item.isBookmarked}
-              onCommentPress={() => {
-                setEvents((prev) =>
-                  prev.map((ev) =>
-                    ev.id === item.id ? { ...ev, showComments: !ev.showComments } : ev
-                  )
-                );
-              }}
-              onBookmarkToggle={(isBookmarked) => {
-                setEvents((prev) =>
-                  prev.map((ev) =>
-                    ev.id === item.id ? { ...ev, isBookmarked } : ev
-                  )
-                );
-              }}
-            />
-
-            {/* Inline Comment Section */}
-            <CommentSection
-              postId={item.id}
-              userId={userId}
-              visible={!!item.showComments}
-              initialComments={item.comments || []}
-              initialCommentCount={item.commentCount || 0}
-              onCommentAdd={(newCount) => {
-                setEvents((prev) =>
-                  prev.map((ev) =>
-                    ev.id === item.id ? { ...ev, commentCount: newCount } : ev
-                  )
-                );
-              }}
-            />
-          </View>
-        )}
-        contentContainerStyle={styles.listContent}
-      />
-
-      <RoleBasedBottomNav navigation={navigation} />
-    </View>
+          <RoleBasedBottomNav navigation={navigation} />
+        </View>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -221,52 +233,47 @@ const styles = StyleSheet.create({
   postCard: {
     backgroundColor: "#f9f9f9",
     marginBottom: 15,
-    padding: 10,
-    borderRadius: 10,
+    padding: 12,
+    borderRadius: 12,
     shadowColor: "#000",
     shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 3 },
+    shadowRadius: 5,
     elevation: 4,
   },
 
-  userRow: { 
-    flexDirection: "row", 
-    alignItems: "center", 
-    marginBottom: 8,
-    justifyContent: "flex-start" // <-- avatar + username stay close
-  },
-  
-  avatar: { width: 40, height: 40, borderRadius: 20, marginRight: 10 },
-  username: { fontWeight: "600", fontSize: 14, color: "#333" },
+  userRow: { flexDirection: "row", alignItems: "center", marginBottom: 8 },
+  avatar: { width: 42, height: 42, borderRadius: 21, marginRight: 10 },
+  username: { fontWeight: "600", fontSize: 15, color: "#333" },
 
-  configButton: {
-    padding: 5,
-    marginLeft: "auto",
-  },
-  configButtonText: {
-    fontSize: 20,
-    color: "#555",
-  },
-
-  postImage: { 
-    width: "100%", 
-    height: 200, // increased to accommodate full image
-    borderRadius: 8, 
-    marginVertical: 5
-  },
+  postImage: { width: "100%", height: 200, borderRadius: 10, marginTop: 6 },
   noImage: {
     width: "100%",
     height: 200,
-    borderRadius: 8,
+    borderRadius: 10,
     backgroundColor: "#ddd",
     justifyContent: "center",
     alignItems: "center",
-    marginVertical: 5
+    marginTop: 6,
   },
-  noImageText: { color: "#555" },
+  noImageText: { color: "#555", fontSize: 14 },
 
-  category: { fontWeight: "bold", marginTop: 8, fontSize: 14, color: "#E64A0D" },
-  title: { fontSize: 16, marginTop: 4, fontWeight: "600", color: "#333" },
-  description: { fontSize: 13, marginTop: 4, color: "#666" },
+  category: {
+    fontWeight: "bold",
+    marginTop: 10,
+    fontSize: 14,
+    color: "#E64A0D",
+    textTransform: "uppercase",
+  },
+  title: { fontSize: 18, marginTop: 4, fontWeight: "700", color: "#222" },
+  description: { fontSize: 14, marginTop: 6, color: "#555", lineHeight: 20 },
+
+  statsContainer: {
+    flexDirection: "row",
+    paddingTop: 10,
+    marginTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: "#eee",
+  },
+  statsText: { fontSize: 14, color: "#666" },
 });

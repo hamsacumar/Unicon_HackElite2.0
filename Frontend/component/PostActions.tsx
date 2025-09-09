@@ -6,6 +6,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import {
@@ -14,6 +15,7 @@ import {
   checkIfLiked,
   getCommentCount,
   toggleBookmark,
+  isBookmarked,
 } from "../services/eventService";
 import BottomNav from "../component/bottomNav";
 
@@ -45,66 +47,111 @@ const PostActions: React.FC<Props> = ({
   const [likeCount, setLikeCount] = useState(initialLikeCount);
   const [commentCount, setCommentCount] = useState(initialCommentCount);
   const [isLiked, setIsLiked] = useState(initialIsLiked);
-  const [isBookmarked, setIsBookmarked] = useState(initialIsBookmarked);
+  const [isPostBookmarked, setIsPostBookmarked] = useState(initialIsBookmarked);
   const [isLiking, setIsLiking] = useState(false);
   const [isBookmarking, setIsBookmarking] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch counts and user-specific info if authenticated
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setIsLoading(true);
+ // Fetch counts and user-specific info
+useEffect(() => {
+  const fetchData = async () => {
+    try {
+      setIsLoading(true);
 
-        const likeRes = await getLikeCount(postId);
-        const commentRes = await getCommentCount(postId);
+      // Always fetch like and comment counts (visible to all users)
+      const [likeRes, commentRes] = await Promise.all([
+        getLikeCount(postId),
+        getCommentCount(postId),
+      ]);
 
-        setLikeCount(likeRes);
-        setCommentCount(commentRes);
+      setLikeCount(likeRes);
+      setCommentCount(commentRes);
 
-        if (isAuthenticated) {
-          const likedRes = await checkIfLiked(postId, userId!);
-          setIsLiked(likedRes);
-
-          // Optional: fetch bookmark status if your API supports it
-          const bookmarkRes = await toggleBookmark(postId); // or another API to check
-          setIsBookmarked(bookmarkRes?.isBookmarked ?? false);
-
-          onLikeUpdate?.(likeRes, likedRes);
+      // Only fetch user-specific data if authenticated
+      if (isAuthenticated && userId) {
+        try {
+          const [liked, bookmarkedResponse] = await Promise.all([
+            checkIfLiked(postId, userId),
+            isBookmarked(postId)
+          ]);
+          
+          const bookmarked = !!bookmarkedResponse;
+          
+          setIsLiked(liked);
+          setIsPostBookmarked(bookmarked);
+          onLikeUpdate?.(likeCount, liked);
+        } catch (error) {
+          console.error("Error fetching user-specific data:", error);
         }
-      } catch (error) {
-        console.error("Error fetching post actions:", error);
-      } finally {
-        setIsLoading(false);
+      } else {
+        // Reset user-specific states when not authenticated
+        setIsLiked(false);
+        setIsPostBookmarked(false);
       }
-    };
+    } catch (error) {
+      console.error("Error fetching post actions:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    fetchData();
-  }, [postId, userId]);
+  fetchData();
+}, [postId, userId, isAuthenticated]);
 
-  // Show alert for unauthenticated users
+// <<< Add this new useEffect BELOW the above useEffect >>>
+useEffect(() => {
+  if (!isAuthenticated) {
+    setIsLiked(false);
+  }
+}, [isAuthenticated]);
+
+
+  // Show login prompt for unauthenticated users
   const handleUnauthenticated = () => {
-    Alert.alert("Login required", "Please login to use this feature");
+    Alert.alert(
+      "Login Required",
+      "You need to be logged in to perform this action.",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Login",
+          onPress: () => {
+            // You can implement navigation to login screen here if needed
+            // navigation.navigate('Login');
+            console.log("Navigate to login screen");
+          },
+        },
+      ]
+    );
   };
 
   // Handle like button
   const handleLike = async () => {
-    if (!isAuthenticated) return handleUnauthenticated();
+    if (!isAuthenticated || !userId) {
+      handleUnauthenticated();
+      return;
+    }
 
     try {
       setIsLiking(true);
       const newIsLiked = !isLiked;
-      const newLikeCount = newIsLiked
-        ? likeCount + 1
-        : Math.max(0, likeCount - 1);
+      const newLikeCount = newIsLiked ? likeCount + 1 : Math.max(0, likeCount - 1);
 
+      // Optimistic update
       setIsLiked(newIsLiked);
       setLikeCount(newLikeCount);
       onLikeUpdate?.(newLikeCount, newIsLiked);
 
+      // API call - the server handles the user context from the auth token
       await likePost(postId);
     } catch (error) {
       console.error("Error liking post:", error);
+      // Revert on error
+      setIsLiked(!isLiked);
+      setLikeCount(likeCount);
       Alert.alert("Error", "Could not update like. Please try again.");
     } finally {
       setIsLiking(false);
@@ -113,14 +160,27 @@ const PostActions: React.FC<Props> = ({
 
   // Handle bookmark button
   const handleBookmarkPress = async () => {
-    if (!isAuthenticated) return handleUnauthenticated();
+    if (!isAuthenticated || !userId) {
+      handleUnauthenticated();
+      return;
+    }
 
     try {
       setIsBookmarking(true);
+      const newBookmarkState = !isPostBookmarked;
+      
+      // Optimistic update
+      setIsPostBookmarked(newBookmarkState);
+      
+      // API call - the server handles the user context from the auth token
       const res = await toggleBookmark(postId);
+      
       if (res && res.success) {
-        setIsBookmarked(res.isBookmarked);
         onBookmarkToggle?.(res.isBookmarked);
+      } else {
+        // Revert on failure
+        setIsPostBookmarked((prev) => !prev);
+        throw new Error("Failed to update bookmark");
       }
     } catch (error) {
       console.error("Error toggling bookmark:", error);
@@ -130,16 +190,29 @@ const PostActions: React.FC<Props> = ({
     }
   };
 
-  if (isLoading) return <ActivityIndicator size="small" color="#e74c3c" />;
+  if (isLoading) {
+    return (
+      <View style={[styles.container, styles.loadingContainer]}>
+        <ActivityIndicator size="small" color="#e74c3c" />
+      </View>
+    );
+  }
+
+  // Common button props for unauthenticated state
+  const getButtonStyle = (isActive: boolean) => ({
+    ...styles.actionButton,
+    opacity: isAuthenticated ? 1 : 0.6,
+  });
 
   return (
     <View style={styles.container}>
       <View style={styles.actionContainer}>
         {/* Like button + count */}
         <TouchableOpacity
-          style={styles.actionButton}
-          onPress={isAuthenticated ? handleLike : handleUnauthenticated}
+          style={getButtonStyle(isLiked)}
+          onPress={isAuthenticated ? handleLike : handleUnauthenticated} // ← here
           disabled={!isAuthenticated || isLiking}
+          activeOpacity={0.7}
         >
           <Ionicons
             name={isLiked ? "heart" : "heart-outline"}
@@ -151,9 +224,10 @@ const PostActions: React.FC<Props> = ({
 
         {/* Comment button + count */}
         <TouchableOpacity
-          style={styles.actionButton}
-          onPress={isAuthenticated ? onCommentPress : handleUnauthenticated}
+          style={getButtonStyle(false)}
+          onPress={isAuthenticated ? onCommentPress : handleUnauthenticated} // ← here
           disabled={!isAuthenticated}
+          activeOpacity={0.7}
         >
           <Ionicons
             name="chatbubble-outline"
@@ -163,26 +237,30 @@ const PostActions: React.FC<Props> = ({
           <Text style={styles.countText}>{commentCount}</Text>
         </TouchableOpacity>
 
-        {/* Bookmark button */}
-        {isAuthenticated && (
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={handleBookmarkPress}
-            disabled={isBookmarking}
-          >
-            <Ionicons
-              name={isBookmarked ? "bookmark" : "bookmark-outline"}
-              size={24}
-              color={isBookmarked ? "#f39c12" : "#999"}
-            />
-          </TouchableOpacity>
-        )}
+        {/* Bookmark button - visible to all but disabled when not authenticated */}
+        <TouchableOpacity
+          style={getButtonStyle(isPostBookmarked)}
+          onPress={isAuthenticated ? handleBookmarkPress : handleUnauthenticated}
+          disabled={!isAuthenticated || isBookmarking}
+          activeOpacity={0.7}
+        >
+          <Ionicons
+            name={isPostBookmarked ? "bookmark" : "bookmark-outline"}
+            size={24}
+            color={isPostBookmarked ? "#f39c12" : "#999"}
+          />
+        </TouchableOpacity>
+        
 
-        {/* Configure button */}
+        {/* Configure button - only for authenticated users */}
         {isAuthenticated && (
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => alert("Configure enabled")}
+            onPress={() => {
+              // Handle configure action
+              console.log("Configure button pressed");
+            }}
+            activeOpacity={0.7}
           >
             <Ionicons name="settings-outline" size={24} color="#333" />
           </TouchableOpacity>
@@ -197,20 +275,37 @@ const PostActions: React.FC<Props> = ({
 
 const styles = StyleSheet.create({
   container: {
-    paddingVertical: 8,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
+    paddingVertical: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     borderColor: "#f0f0f0",
     marginVertical: 8,
+    backgroundColor: '#fff',
+  },
+  loadingContainer: {
+    padding: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   actionContainer: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
-    gap: 16,
+    gap: 24,
   },
-  countText: { marginLeft: 4, fontSize: 14, color: "#666" },
-  actionButton: { flexDirection: "row", alignItems: "center", marginLeft: 12 },
+  countText: { 
+    marginLeft: 4, 
+    fontSize: 14, 
+    color: "#666",
+    minWidth: 16,
+    textAlign: 'center',
+  },
+  actionButton: { 
+    flexDirection: "row", 
+    alignItems: "center",
+    padding: 4,
+    borderRadius: 8,
+  },
 });
 
 export default PostActions;
