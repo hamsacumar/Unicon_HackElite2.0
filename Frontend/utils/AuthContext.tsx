@@ -43,6 +43,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const loadAuth = async () => {
       const savedToken = await SecureStore.getItemAsync("accessToken");
+      console.log("Saved token:", savedToken);
       if (savedToken) {
         try {
           // First try to get user info using the token
