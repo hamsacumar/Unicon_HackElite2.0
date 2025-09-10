@@ -40,7 +40,7 @@ const OrgProfile: React.FC = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [postCount, setPostCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
-  
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -50,8 +50,8 @@ const OrgProfile: React.FC = () => {
         setPosts(postsData);
 
         const count = await ProfileService.getPostCount();
-      setPostCount(count);
-      
+        setPostCount(count);
+
       } catch (error) {
         console.error("Error fetching profile or posts:", error);
       } finally {
@@ -76,31 +76,31 @@ const OrgProfile: React.FC = () => {
       {/* Fixed Profile Section */}
       <View style={styles.profileSection}>
         <View style={styles.profileHeader}>
-        <View style={styles.profileBorder}>
-  <View style={styles.profileImage}>
-    <Image
-      source={{
-        uri: profile?.profileImageUrl
-          ? (profile.profileImageUrl.startsWith("http")
-              ? profile.profileImageUrl
-              : `${API_URL}${profile.profileImageUrl.startsWith("/") ? "" : "/"}${profile.profileImageUrl}`)
-          : Image.resolveAssetSource(require("../assets/icon.png")).uri, // ✅ fallback
-      }}
-      style={styles.image}
-      resizeMode="cover"
-      onError={(e) =>
-        console.log("Error loading profile image:", e.nativeEvent.error)
-      }
-    />
-  </View>
-</View>
+          <View style={styles.profileBorder}>
+            <View style={styles.profileImage}>
+              <Image
+                source={{
+                  uri: profile?.profileImageUrl
+                    ? (profile.profileImageUrl.startsWith("http")
+                      ? profile.profileImageUrl
+                      : `${API_URL}${profile.profileImageUrl.startsWith("/") ? "" : "/"}${profile.profileImageUrl}`)
+                    : Image.resolveAssetSource(require("../assets/icon.png")).uri, // ✅ fallback
+                }}
+                style={styles.image}
+                resizeMode="cover"
+                onError={(e) =>
+                  console.log("Error loading profile image:", e.nativeEvent.error)
+                }
+              />
+            </View>
+          </View>
 
 
           <View style={styles.profileInfo}>
             <Text style={styles.profileName}>{profile?.username}</Text>
             <View style={styles.statsContainer}>
               <View style={styles.statItem}>
-          <Text style={styles.statNumber}>{postCount}</Text>
+                <Text style={styles.statNumber}>{postCount}</Text>
                 <Text style={styles.statLabel}>posts</Text>
               </View>
               <View style={styles.statItem}>
@@ -119,10 +119,10 @@ const OrgProfile: React.FC = () => {
 
         <View style={styles.buttonContainer}>
           <TouchableOpacity style={styles.editButton}>
-            <Text 
-              style={styles.buttonText}  
+            <Text
+              style={styles.buttonText}
               onPress={() => navigation.navigate('EditProfile')}>
-                Edit profile
+              Edit profile
             </Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.shareButton}>
@@ -146,33 +146,33 @@ const OrgProfile: React.FC = () => {
       <ScrollView style={styles.postsContainer} showsVerticalScrollIndicator={false}>
         {posts.map((post) => (
           <View key={post.id} style={styles.postCard}>
-          <View style={styles.postContent}>
-            <View style={styles.postTextContainer}>
-              <Text style={styles.postTitle}>{post.title}</Text>
-              <Text style={styles.postSubtitle}>{post.category}</Text>
-              <Text style={styles.postDescription} numberOfLines={4}>
-                {post.description}
-              </Text>
-            </View>
-            <View style={styles.postImageContainer}>
-  <Image
-    source={{
-      uri: post.imageUrl
-        ? post.imageUrl.startsWith("http")
-          ? post.imageUrl
-          : `${API_URL}${post.imageUrl.startsWith("/") ? "" : "/"}${post.imageUrl}`
-        : "https://via.placeholder.com/300x200", // fallback
-    }}
-    style={styles.postImage}
-    resizeMode="cover"
-    onError={(e) =>
-      console.log("Error loading post image:", e.nativeEvent.error)
-    }
-  />
-</View>
+            <View style={styles.postContent}>
+              <View style={styles.postTextContainer}>
+                <Text style={styles.postTitle}>{post.title}</Text>
+                <Text style={styles.postSubtitle}>{post.category}</Text>
+                <Text style={styles.postDescription} numberOfLines={4}>
+                  {post.description}
+                </Text>
+              </View>
+              <View style={styles.postImageContainer}>
+                <Image
+                  source={{
+                    uri: post.imageUrl
+                      ? post.imageUrl.startsWith("http")
+                        ? post.imageUrl
+                        : `${API_URL}${post.imageUrl.startsWith("/") ? "" : "/"}${post.imageUrl}`
+                      : "https://via.placeholder.com/300x200", // fallback
+                  }}
+                  style={styles.postImage}
+                  resizeMode="cover"
+                  onError={(e) =>
+                    console.log("Error loading post image:", e.nativeEvent.error)
+                  }
+                />
+              </View>
 
+            </View>
           </View>
-        </View>
 
         ))}
       </ScrollView>

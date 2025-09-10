@@ -36,6 +36,7 @@ import OrgProfile from "./screens/OrgProfile";
 import PostDetail from "./screens/PostDetail";
 import { EventItem } from "./services/eventService";
 import SplashScreen from "./screens/SplashScreen"; 
+import OrgPostDetail from "./screens/OrgPostDetail";
 // Context
 import { AuthProvider } from "./utils/AuthContext";
 
@@ -52,6 +53,7 @@ export type RootStackParamList = {
   ProfileSetup: undefined;
   OrgProfile: undefined;
   PostDetail: { post: EventItem; userId?: string | null };
+  OrgPostDetail: { post: EventItem; userId?: string | null };
 
   Test: undefined;
   Login: undefined;
@@ -251,6 +253,16 @@ const AppStack = () => (
       name="MessagePage"
       component={MessagesPage}
       options={{ title: "Message" }}
+    />
+     <Stack.Screen
+      name="PostDetail"
+      component={PostDetail}
+      options={{ title: "EventTrix" }}
+    />
+    <Stack.Screen
+      name="OrgPostDetail"
+      component={OrgPostDetail}
+      options={{ title: "EventTrix" }}
     />
   </Stack.Navigator>
 );
