@@ -252,6 +252,11 @@ const AppStack = () => (
       component={MessagesPage}
       options={{ title: "Message" }}
     />
+     <Stack.Screen
+      name="PostDetail"
+      component={PostDetail}
+      options={{ title: "EventTrix" }}
+    />
   </Stack.Navigator>
 );
 
