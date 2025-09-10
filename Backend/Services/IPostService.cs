@@ -21,7 +21,8 @@ namespace Backend.Services
     Task<List<CommentModel>> GetCommentsByPostIdAsync(string postId);
     Task<bool> CheckIfLikedAsync(string postId, string userId);
     Task<AppUser> GetUserByIdAsync(string userId);
-
+    
+    Task<List<EventDto>> FilterEventsAsync(string? category, DateTime? startDate, DateTime? endDate);
 }
 
 }

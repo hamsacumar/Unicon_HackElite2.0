@@ -28,6 +28,7 @@ async function authGet<T>(url: string): Promise<T> {
 export interface Profile {
   username: string;
   description: string;
+  profileImageUrl?: string | null;
 }
 
 export interface Post {
