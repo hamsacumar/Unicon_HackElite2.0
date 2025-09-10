@@ -63,7 +63,7 @@ export async function getLikeCount(postId: string): Promise<number> {
   catch { return 0; }
 }
 
-export async function checkIfLiked(postId: string): Promise<boolean> {
+export async function checkIfLiked(postId: string, userId: string): Promise<boolean> {
   try {
     const token = await getToken();
     if (!token) return false;

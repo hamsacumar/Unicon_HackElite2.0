@@ -201,6 +201,14 @@ fetchIsBookmarked(postId),          ]);
             color={isBookmarked ? "#f39c12" : "#999"}
           />
         </TouchableOpacity>
+
+        {/* configure Button */}
+<TouchableOpacity
+  style={styles.actionButton}
+  onPress={() => Alert.alert("configure enabled")}
+>
+  <Ionicons name="settings-outline" size={22} color="#333" />
+</TouchableOpacity>
       </View>
 
       {/* For guests, show bottom nav */}
