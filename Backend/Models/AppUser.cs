@@ -1,6 +1,5 @@
 // Backend/Models/AppUser.cs
 using System;
-using System;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 

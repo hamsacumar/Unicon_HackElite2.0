@@ -25,6 +25,7 @@ const API_URL = Constants.expoConfig?.extra?.apiUrl?.replace("/api", "");
 type RootStackParamList = {
   OrgProfile: undefined;
   EditProfile: undefined;
+  OrgPostDetail: { post: Post };
 };
 
 // Define the type for navigation prop
@@ -118,10 +119,11 @@ const OrgProfile: React.FC = () => {
         <Text style={styles.trustText}>{profile?.description}</Text>
 
         <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.editButton}>
+          <TouchableOpacity 
+          style={styles.editButton}
+          onPress={() => navigation.navigate('EditProfile')}>
             <Text
-              style={styles.buttonText}
-              onPress={() => navigation.navigate('EditProfile')}>
+              style={styles.buttonText}>
               Edit profile
             </Text>
           </TouchableOpacity>
@@ -145,7 +147,12 @@ const OrgProfile: React.FC = () => {
       {/* Scrollable Posts Section */}
       <ScrollView style={styles.postsContainer} showsVerticalScrollIndicator={false}>
         {posts.map((post) => (
-          <View key={post.id} style={styles.postCard}>
+          <TouchableOpacity
+            key={post.id}
+            style={styles.postCard}
+            activeOpacity={0.7}
+            onPress={() => navigation.navigate("OrgPostDetail", { post })}
+          >
             <View style={styles.postContent}>
               <View style={styles.postTextContainer}>
                 <Text style={styles.postTitle}>{post.title}</Text>
@@ -161,7 +168,7 @@ const OrgProfile: React.FC = () => {
                       ? post.imageUrl.startsWith("http")
                         ? post.imageUrl
                         : `${API_URL}${post.imageUrl.startsWith("/") ? "" : "/"}${post.imageUrl}`
-                      : "https://via.placeholder.com/300x200", // fallback
+                      : "https://via.placeholder.com/300x200",
                   }}
                   style={styles.postImage}
                   resizeMode="cover"
@@ -170,10 +177,8 @@ const OrgProfile: React.FC = () => {
                   }
                 />
               </View>
-
             </View>
-          </View>
-
+          </TouchableOpacity>
         ))}
       </ScrollView>
 

@@ -4,10 +4,10 @@ import { jwtDecode } from "jwt-decode";
 
 // -------------------- Types --------------------
 interface TokenPayload {
-  sub?: string;        // common claim for userId
-  userId?: string;     // custom claim if backend uses this
-  id?: string;         // some backends use 'id'
-  nameid?: string;     // some backends use 'nameid'
+  sub?: string;
+  userId?: string;
+  id?: string;
+  nameid?: string;
   exp?: number;
 }
 
@@ -22,11 +22,25 @@ export interface Message {
   timestamp: string;
 }
 
+export interface ProfileResponse {
+  firstName: string;
+  lastName: string;
+  description: string;
+  username: string;
+}
+
+export interface ProfileUpdateRequest {
+  firstName?: string;
+  lastName?: string;
+  description?: string;
+  username?: string;
+}
+
 // -------------------- Constants --------------------
 const API_BASE = "http://10.10.10.158:5179/api";
 const TOKEN_KEY = "accessToken";
-const USER_ID_CLAIM = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier";
-
+const USER_ID_CLAIM =
+  "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier";
 
 // -------------------- Secure Storage Helpers --------------------
 const secureStorage = {
@@ -58,7 +72,6 @@ const secureStorage = {
 let authToken: string | null = null;
 let currentUserId: string | null = null;
 
-// Save token and decode user ID
 export const setAuthToken = (token: string) => {
   authToken = token;
 
@@ -66,22 +79,25 @@ export const setAuthToken = (token: string) => {
     const decoded = jwtDecode<any>(token);
     console.log("[Auth] Decoded JWT payload:", decoded);
 
-    // Extract userId from multiple possible fields
-    currentUserId = decoded.sub || decoded.userId || decoded.id || decoded.nameid || decoded[USER_ID_CLAIM] || null;
+    currentUserId =
+      decoded.sub ||
+      decoded.userId ||
+      decoded.id ||
+      decoded.nameid ||
+      decoded[USER_ID_CLAIM] ||
+      null;
 
     if (!currentUserId) {
       console.warn("[Auth] Could not extract userId from token");
     }
 
-    // Save token and userId to secure storage
-    secureStorage.setItem("accessToken", token);
+    secureStorage.setItem(TOKEN_KEY, token);
     if (currentUserId) secureStorage.setItem("userId", currentUserId);
   } catch (error) {
     console.error("[Auth] Failed to decode JWT:", error);
   }
 };
 
-// Get token from memory or secure storage
 export const getAuthToken = async (): Promise<string> => {
   if (authToken) return authToken;
 
@@ -94,7 +110,6 @@ export const getAuthToken = async (): Promise<string> => {
   throw new Error("No authentication token available");
 };
 
-// Get current user ID from memory, storage, or token
 export const getCurrentUserId = async (): Promise<string> => {
   if (currentUserId) return currentUserId;
 
@@ -107,14 +122,19 @@ export const getCurrentUserId = async (): Promise<string> => {
   const token = await getAuthToken();
   if (token) {
     const decoded = jwtDecode<any>(token);
-    currentUserId = decoded.sub || decoded.userId || decoded.id || decoded.nameid || decoded[USER_ID_CLAIM] || null;
+    currentUserId =
+      decoded.sub ||
+      decoded.userId ||
+      decoded.id ||
+      decoded.nameid ||
+      decoded[USER_ID_CLAIM] ||
+      null;
     if (currentUserId) return currentUserId;
   }
 
   throw new Error("User ID not available");
 };
 
-// Clear authentication
 export const clearAuth = async () => {
   authToken = null;
   currentUserId = null;
@@ -132,7 +152,6 @@ const api = axios.create({
   timeout: 10000,
 });
 
-// Attach token automatically
 api.interceptors.request.use(async (config) => {
   try {
     const token = await getAuthToken();
@@ -145,7 +164,6 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
-// Handle 401 globally
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -174,10 +192,35 @@ export const getInbox = async (): Promise<Message[]> => {
   return res.data?.data || [];
 };
 
-export const getConversation = async (otherUserId: string): Promise<Message[]> => {
+export const getConversation = async (
+  otherUserId: string
+): Promise<Message[]> => {
   const userId = await getCurrentUserId();
   const res = await api.get(`/Messages/conversation/${userId}/${otherUserId}`);
   return res.data?.data || [];
 };
+
+// ---------------- PROFILE SERVICE ----------------
+export async function getProfile(): Promise<ProfileResponse | null> {
+  try {
+    const response = await api.get<ProfileResponse>("/account/profile");
+    return response.data;
+  } catch (error) {
+    console.error("[Profile] Error fetching profile:", error);
+    return null;
+  }
+}
+
+export async function updateProfile(
+  profile: ProfileUpdateRequest
+): Promise<ProfileResponse | null> {
+  try {
+    const response = await api.put<ProfileResponse>("/account/update", profile);
+    return response.data;
+  } catch (error) {
+    console.error("[Profile] Error updating profile:", error);
+    return null;
+  }
+}
 
 export default api;
