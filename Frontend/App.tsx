@@ -38,6 +38,7 @@ import { EventItem } from "./services/eventService";
 import SplashScreen from "./screens/SplashScreen"; 
 // Context
 import { AuthProvider } from "./utils/AuthContext";
+import LandingPostDetail from "./screens/LandingPostDetail";
 
 export type RootStackParamList = {
   SplashScreen: undefined;
@@ -52,7 +53,7 @@ export type RootStackParamList = {
   ProfileSetup: undefined;
   OrgProfile: undefined;
   PostDetail: { post: EventItem; userId?: string | null };
-
+  LandingPostDetail: { post: EventItem };
   Test: undefined;
   Login: undefined;
   Signup: undefined;
@@ -257,6 +258,12 @@ const AppStack = () => (
       component={PostDetail}
       options={{ title: "EventTrix" }}
     />
+    <Stack.Screen
+      name="LandingPostDetail"
+      component={LandingPostDetail}
+      options={{ title: "EventTrix" }}
+    />
+
   </Stack.Navigator>
 );
 
