@@ -1,5 +1,5 @@
 // InputPage.tsx
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -12,15 +12,33 @@ import {
   Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
-} from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
-import { Picker } from '@react-native-picker/picker';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import { useNavigation } from '@react-navigation/native';
-import { submitEvent, getCurrentUser } from '../services/in_api';
+  StyleSheet,
+} from "react-native";
+import * as ImagePicker from "expo-image-picker";
+import { Picker } from "@react-native-picker/picker";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { useNavigation } from "@react-navigation/native";
+import { submitEvent, getCurrentUser } from "../services/in_api";
 
-type Category = 'Work' | 'Personal' | 'Holiday' | 'Other';
-const categories: Category[] = ['Work', 'Personal', 'Holiday', 'Other'];
+type Category =
+  | "Submission"
+  | "Competition"
+  | "Seminar"
+  | "Promotion"
+  | "Research"
+  | "Interview"
+  | "Registration"
+  | "Others";
+const categories: Category[] = [
+  "Submission",
+  "Competition",
+  "Seminar",
+  "Promotion",
+  "Research",
+  "Interview",
+  "Registration",
+  "Others",
+];
 
 // --- Image Picker Component ---
 const ImagePickerField: React.FC<{
@@ -29,13 +47,15 @@ const ImagePickerField: React.FC<{
   submitting: boolean;
 }> = ({ imageUri, setImageUri, submitting }) => {
   const requestPermissions = async (fromCamera: boolean) => {
-    const perm =
-      fromCamera
-        ? await ImagePicker.requestCameraPermissionsAsync()
-        : await ImagePicker.requestMediaLibraryPermissionsAsync();
+    const perm = fromCamera
+      ? await ImagePicker.requestCameraPermissionsAsync()
+      : await ImagePicker.requestMediaLibraryPermissionsAsync();
 
-    if (perm.status !== 'granted') {
-      Alert.alert('Permission required', `Permission to access ${fromCamera ? 'camera' : 'gallery'} is required!`);
+    if (perm.status !== "granted") {
+      Alert.alert(
+        "Permission required",
+        `Permission to access ${fromCamera ? "camera" : "gallery"} is required!`
+      );
       return false;
     }
     return true;
@@ -46,8 +66,14 @@ const ImagePickerField: React.FC<{
     if (!ok) return;
 
     const result = fromCamera
-      ? await ImagePicker.launchCameraAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.7 })
-      : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.7 });
+      ? await ImagePicker.launchCameraAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          quality: 0.7,
+        })
+      : await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          quality: 0.7,
+        });
 
     if (!result.canceled) {
       // @ts-ignore
@@ -56,25 +82,29 @@ const ImagePickerField: React.FC<{
   };
 
   return (
-    <View style={{ marginBottom: 12 }}>
-      <TouchableOpacity onPress={() => pickOrTakeImage(false)} disabled={submitting}>
-        <View
-          style={{
-            height: 150,
-            backgroundColor: '#eee',
-            justifyContent: 'center',
-            alignItems: 'center',
-            marginBottom: 8,
-          }}
-        >
+    <View style={styles.imagePickerContainer}>
+      <TouchableOpacity
+        onPress={() => pickOrTakeImage(false)}
+        disabled={submitting}
+      >
+        <View style={styles.imageBox}>
           {imageUri ? (
-            <Image source={{ uri: imageUri }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+            <Image
+              source={{ uri: imageUri }}
+              style={styles.image}
+              resizeMode="cover"
+            />
           ) : (
             <Text>Tap to pick image from gallery</Text>
           )}
         </View>
       </TouchableOpacity>
-      <Button title="Take Photo" onPress={() => pickOrTakeImage(true)} disabled={submitting} />
+      <Button
+        title="Take Photo"
+        onPress={() => pickOrTakeImage(true)}
+        disabled={submitting}
+        color={"#FF5722"}
+      />
     </View>
   );
 };
@@ -88,11 +118,11 @@ const DatePickerField: React.FC<{
   const [showPicker, setShowPicker] = useState(false);
 
   return (
-    <View style={{ marginBottom: 8 }}>
+    <View style={styles.fieldContainer}>
       <Text>{label}</Text>
       <TouchableOpacity
         onPress={() => setShowPicker(true)}
-        style={{ padding: 10, borderWidth: 1, borderColor: '#ccc', borderRadius: 6 }}
+        style={styles.dateBox}
       >
         <Text>{date.toDateString()}</Text>
       </TouchableOpacity>
@@ -116,9 +146,9 @@ const InputPage: React.FC = () => {
   const navigation = useNavigation();
 
   const [imageUri, setImageUri] = useState<string | null>(null);
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [category, setCategory] = useState<Category>('Work');
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [category, setCategory] = useState<Category>("Submission");
   const [startDate, setStartDate] = useState<Date>(new Date());
   const [endDate, setEndDate] = useState<Date>(() => {
     const d = new Date();
@@ -128,9 +158,9 @@ const InputPage: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
 
   const resetForm = () => {
-    setTitle('');
-    setDescription('');
-    setCategory('Work');
+    setTitle("");
+    setDescription("");
+    setCategory("Submission");
     setStartDate(new Date());
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
@@ -139,62 +169,82 @@ const InputPage: React.FC = () => {
   };
 
   const onSubmit = async () => {
-    if (!title.trim()) return Alert.alert('Validation', 'Title is required');
-    if (endDate <= startDate) return Alert.alert('Validation', 'End date must be after start date');
+    if (!title.trim()) return Alert.alert("Validation", "Title is required");
+    if (endDate <= startDate)
+      return Alert.alert("Validation", "End date must be after start date");
 
     setSubmitting(true);
 
     try {
-
       const currentUser = await getCurrentUser();
       if (!currentUser || !currentUser.id) {
-        Alert.alert('Error', 'Cannot determine your user ID. Please log in again.');
+        Alert.alert(
+          "Error",
+          "Cannot determine your user ID. Please log in again."
+        );
         setSubmitting(false);
         return;
       }
 
-
       const formData = new FormData();
-      formData.append('title', title);
-      formData.append('description', description);
-      formData.append('category', category);
-      formData.append('startDate', startDate.toISOString());
-      formData.append('endDate', endDate.toISOString());
-
-        // 2️⃣ Append correct userId from logged-in user
-      formData.append('userId', currentUser.id);
+      formData.append("title", title);
+      formData.append("description", description);
+      formData.append("category", category);
+      formData.append("startDate", startDate.toISOString());
+      formData.append("endDate", endDate.toISOString());
+      formData.append("userId", currentUser.id);
 
       if (imageUri) {
-        const uriParts = imageUri.split('.');
+        const uriParts = imageUri.split(".");
         const fileExt = uriParts[uriParts.length - 1].toLowerCase();
-        const mimeType = fileExt === 'jpg' ? 'jpeg' : fileExt;
+        const mimeType = fileExt === "jpg" ? "jpeg" : fileExt;
         const fileName = `post_${Date.now()}.${fileExt}`;
-        formData.append('image', { uri: imageUri, name: fileName, type: `image/${mimeType}` } as any);
+        formData.append("image", {
+          uri: imageUri,
+          name: fileName,
+          type: `image/${mimeType}`,
+        } as any);
       }
 
       const result = await submitEvent(formData);
 
       if (result.success) {
-        Alert.alert('Success', 'Event created successfully!', [
-          { text: 'OK', onPress: () => { resetForm(); navigation.goBack(); } },
+        Alert.alert("Success", "Event created successfully!", [
+          {
+            text: "OK",
+            onPress: () => {
+              resetForm();
+              navigation.goBack();
+            },
+          },
         ]);
       } else {
-        throw new Error(result.message || 'Failed to create event');
+        throw new Error(result.message || "Failed to create event");
       }
     } catch (error) {
-      console.error('Error submitting event:', error);
-      Alert.alert('Error', 'Something went wrong');
+      console.error("Error submitting event:", error);
+      Alert.alert("Error", "Something went wrong");
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-      <ScrollView contentContainerStyle={{ padding: 16 }} keyboardShouldPersistTaps="handled">
-        <Text style={{ fontSize: 20, marginBottom: 12 }}>Create Event</Text>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      style={styles.container}
+    >
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Text style={styles.heading}>Create Event</Text>
 
-        <ImagePickerField imageUri={imageUri} setImageUri={setImageUri} submitting={submitting} />
+        <ImagePickerField
+          imageUri={imageUri}
+          setImageUri={setImageUri}
+          submitting={submitting}
+        />
 
         <Text>Title</Text>
         <TextInput
@@ -202,7 +252,7 @@ const InputPage: React.FC = () => {
           onChangeText={setTitle}
           placeholder="Title"
           editable={!submitting}
-          style={{ borderWidth: 1, borderColor: '#ccc', padding: 8, borderRadius: 6, marginBottom: 8 }}
+          style={styles.input}
         />
 
         <Text>Description</Text>
@@ -213,18 +263,11 @@ const InputPage: React.FC = () => {
           editable={!submitting}
           multiline
           numberOfLines={4}
-          style={{
-            borderWidth: 1,
-            borderColor: '#ccc',
-            padding: 8,
-            borderRadius: 6,
-            marginBottom: 8,
-            textAlignVertical: 'top',
-          }}
+          style={styles.textArea}
         />
 
         <Text>Category</Text>
-        <View style={{ borderWidth: 1, borderColor: '#ccc', borderRadius: 6, marginBottom: 8 }}>
+        <View style={styles.pickerBox}>
           <Picker
             selectedValue={category}
             enabled={!submitting}
@@ -236,14 +279,18 @@ const InputPage: React.FC = () => {
           </Picker>
         </View>
 
-        <DatePickerField label="Start Date" date={startDate} setDate={setStartDate} />
+        <DatePickerField
+          label="Start Date"
+          date={startDate}
+          setDate={setStartDate}
+        />
         <DatePickerField label="End Date" date={endDate} setDate={setEndDate} />
 
-        <View style={{ marginTop: 12 }}>
+        <View style={styles.submitButton}>
           {submitting ? (
             <ActivityIndicator size="large" color="#FF5722" />
           ) : (
-            <Button title="Submit" onPress={onSubmit} />
+            <Button title="Submit" onPress={onSubmit} color="#FF5722" />
           )}
         </View>
       </ScrollView>
@@ -252,3 +299,60 @@ const InputPage: React.FC = () => {
 };
 
 export default InputPage;
+
+// -------------------- Styles --------------------
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  scrollContent: { padding: 16 },
+  heading: { fontSize: 20, marginBottom: 12 },
+  imagePickerContainer: {
+     marginBottom: 12,
+     marginTop: 10,
+     },
+  imageBox: {
+    height: 180,
+    backgroundColor: "#eee",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  image: { width: "100%", height: "100%" },
+  fieldContainer: { marginBottom: 8 },
+  dateBox: {
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 6,
+    marginTop: 8,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    padding: 10,
+    borderRadius: 6,
+    marginBottom: 8,
+    marginTop: 8,
+  },
+  textArea: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    padding: 10,
+    borderRadius: 6,
+    marginBottom: 8,
+    marginTop: 8,
+    textAlignVertical: "top",
+  },
+  pickerBox: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    marginBottom: 12,
+    marginTop: 8,
+  },
+  submitButton: {
+    marginTop: 10,
+    marginBottom: 20,
+    borderRadius: 6,
+    backgroundColor: "#FF5722",
+  },
+});

@@ -1,5 +1,6 @@
 import axios from "axios";
 import * as SecureStore from "expo-secure-store";
+import Constants from "expo-constants";
 import { jwtDecode } from "jwt-decode";
 
 // -------------------- Types --------------------
@@ -9,6 +10,7 @@ interface TokenPayload {
   id?: string;
   nameid?: string;
   exp?: number;
+  [key: string]: any;
 }
 
 export interface Message {
@@ -37,47 +39,47 @@ export interface ProfileUpdateRequest {
 }
 
 // -------------------- Constants --------------------
-const API_BASE = "http://10.10.10.158:5179/api";
+const API_BASE = Constants.expoConfig?.extra?.apiUrl || "http://localhost:5000/api";
 const TOKEN_KEY = "accessToken";
-const USER_ID_CLAIM =
-  "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier";
+const USER_ID_KEY = "userId";
+const USER_ID_CLAIM = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier";
 
-// -------------------- Secure Storage Helpers --------------------
-const secureStorage = {
-  async getItem(key: string) {
+// -------------------- Secure Storage --------------------
+const storage = {
+  async get(key: string) {
     try {
       return await SecureStore.getItemAsync(key);
-    } catch (error) {
-      console.warn(`Error getting ${key} from secure store:`, error);
+    } catch (err) {
+      console.warn(`[Storage] Error getting ${key}:`, err);
       return null;
     }
   },
-  async setItem(key: string, value: string) {
+  async set(key: string, value: string) {
     try {
       await SecureStore.setItemAsync(key, value);
-    } catch (error) {
-      console.warn(`Error setting ${key} in secure store:`, error);
+    } catch (err) {
+      console.warn(`[Storage] Error setting ${key}:`, err);
     }
   },
-  async removeItem(key: string) {
+  async remove(key: string) {
     try {
       await SecureStore.deleteItemAsync(key);
-    } catch (error) {
-      console.warn(`Error removing ${key} from secure store:`, error);
+    } catch (err) {
+      console.warn(`[Storage] Error removing ${key}:`, err);
     }
   },
 };
 
-// -------------------- Auth Storage --------------------
+// -------------------- Auth Helpers --------------------
 let authToken: string | null = null;
 let currentUserId: string | null = null;
 
-export const setAuthToken = (token: string) => {
+export const setAuthToken = async (token: string) => {
   authToken = token;
 
   try {
-    const decoded = jwtDecode<any>(token);
-    console.log("[Auth] Decoded JWT payload:", decoded);
+    const decoded: TokenPayload = jwtDecode(token);
+    console.log("[Auth] Decoded token:", decoded);
 
     currentUserId =
       decoded.sub ||
@@ -87,21 +89,19 @@ export const setAuthToken = (token: string) => {
       decoded[USER_ID_CLAIM] ||
       null;
 
-    if (!currentUserId) {
-      console.warn("[Auth] Could not extract userId from token");
-    }
+    if (!currentUserId) console.warn("[Auth] Could not extract userId from token");
 
-    secureStorage.setItem(TOKEN_KEY, token);
-    if (currentUserId) secureStorage.setItem("userId", currentUserId);
-  } catch (error) {
-    console.error("[Auth] Failed to decode JWT:", error);
+    await storage.set(TOKEN_KEY, token);
+    if (currentUserId) await storage.set(USER_ID_KEY, currentUserId);
+  } catch (err) {
+    console.error("[Auth] Failed to decode token:", err);
   }
 };
 
 export const getAuthToken = async (): Promise<string> => {
   if (authToken) return authToken;
 
-  const token = await secureStorage.getItem(TOKEN_KEY);
+  const token = await storage.get(TOKEN_KEY);
   if (token) {
     authToken = token;
     return token;
@@ -113,15 +113,15 @@ export const getAuthToken = async (): Promise<string> => {
 export const getCurrentUserId = async (): Promise<string> => {
   if (currentUserId) return currentUserId;
 
-  const storedUserId = await secureStorage.getItem("userId");
-  if (storedUserId) {
-    currentUserId = storedUserId;
-    return storedUserId;
+  const storedId = await storage.get(USER_ID_KEY);
+  if (storedId) {
+    currentUserId = storedId;
+    return storedId;
   }
 
   const token = await getAuthToken();
   if (token) {
-    const decoded = jwtDecode<any>(token);
+    const decoded: TokenPayload = jwtDecode(token);
     currentUserId =
       decoded.sub ||
       decoded.userId ||
@@ -138,17 +138,14 @@ export const getCurrentUserId = async (): Promise<string> => {
 export const clearAuth = async () => {
   authToken = null;
   currentUserId = null;
-  await Promise.all([
-    secureStorage.removeItem(TOKEN_KEY),
-    secureStorage.removeItem("userId"),
-  ]);
-  console.log("[Auth] Cleared authentication data");
+  await Promise.all([storage.remove(TOKEN_KEY), storage.remove(USER_ID_KEY)]);
+  console.log("[Auth] Cleared authentication");
 };
 
 // -------------------- Axios Instance --------------------
 const api = axios.create({
   baseURL: API_BASE,
-  headers: { "Content-Type": "application/json" },
+  headers: { Accept: "application/json", "Content-Type": "application/json" },
   timeout: 10000,
 });
 
@@ -159,27 +156,27 @@ api.interceptors.request.use(async (config) => {
       config.headers.Authorization = `Bearer ${token}`;
     }
   } catch {
-    console.warn("No auth token available, request will be unauthenticated");
+    console.warn("[API] No auth token available");
   }
   return config;
 });
 
 api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    if (error.response?.status === 401 && !error.config._retry) {
-      console.warn("401 Unauthorized - clearing auth data");
+  (res) => res,
+  async (err) => {
+    if (err.response?.status === 401 && !err.config._retry) {
+      console.warn("[API] 401 Unauthorized - clearing auth");
       await clearAuth();
     }
-    return Promise.reject(error);
+    return Promise.reject(err);
   }
 );
 
 // -------------------- Messaging API --------------------
 export const sendMessage = async (receiverUsername: string, text: string) => {
-  const userId = await getCurrentUserId();
+  const senderId = await getCurrentUserId();
   const res = await api.post("/Messages/send", {
-    SenderId: userId,
+    SenderId: senderId,
     ReceiverUsername: receiverUsername.trim(),
     Text: text.trim(),
   });
@@ -192,12 +189,15 @@ export const getInbox = async (): Promise<Message[]> => {
   return res.data?.data || [];
 };
 
-export const getConversation = async (
-  otherUserId: string
-): Promise<Message[]> => {
-  const userId = await getCurrentUserId();
-  const res = await api.get(`/Messages/conversation/${userId}/${otherUserId}`);
+export const getConversation = async (otherUserId: string): Promise<Message[]> => {
+  const currentUserId = await getCurrentUserId();
+  const res = await api.get(`/Messages/conversation/${currentUserId}/${otherUserId}`);
   return res.data?.data || [];
+};
+
+export const deleteMessages = async (ids: string[]) => {
+  const res = await api.post("/Messages/delete", ids);
+  return res.data;
 };
 
 // ---------------- PROFILE SERVICE ----------------

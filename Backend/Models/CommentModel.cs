@@ -9,9 +9,11 @@ public class CommentModel
     public string Id { get; set; } = string.Empty;
 
     [BsonElement("postId")]
+    [BsonRepresentation(BsonType.ObjectId)]
     public string PostId { get; set; } = string.Empty;
 
     [BsonElement("userId")]
+    [BsonRepresentation(BsonType.ObjectId)]
     public string UserId { get; set; } = string.Empty;
 
     [BsonElement("username")]

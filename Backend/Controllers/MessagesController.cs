@@ -94,6 +94,30 @@ namespace Backend.Controllers
                 return StatusCode(500, new { success = false, error = ex.Message });
             }
         }
+
+        // ✅ Bulk delete messages
+        [HttpPost("delete")]
+            public async Task<IActionResult> DeleteMessages([FromBody] List<string> ids)
+        {
+            try
+            {
+                if (ids == null || ids.Count == 0)
+                return BadRequest(new { success = false, message = "No message IDs provided" });
+
+                foreach (var id in ids)
+                {
+                    await _messageService.DeleteAsync(id);
+                }
+
+                return Ok(new { success = true, message = "Messages deleted successfully" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to delete messages");
+                return StatusCode(500, new { success = false, error = ex.Message });
+            }
+        }
+
     }
 
     public class SendMessageDto
@@ -102,4 +126,8 @@ namespace Backend.Controllers
         public string ReceiverUsername { get; set; } = null!;
         public string Text { get; set; } = null!;
     }
+
+    
+
+
 }

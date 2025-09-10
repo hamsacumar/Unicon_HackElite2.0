@@ -194,7 +194,7 @@ const flatListRef = useRef<FlatList<EventWithUI>>(null);
                   visible={!!item.showComments}
                   initialComments={item.comments || []}
                   initialCommentCount={item.commentCount || 0}
-              flatListRef={flatListRef}
+             // flatListRef={flatListRef}
                   onCommentAdd={(newCount) => {
                     setEvents(prev =>
                       prev.map(ev => ev.id === item.id ? { ...ev, commentCount: newCount } : ev)
