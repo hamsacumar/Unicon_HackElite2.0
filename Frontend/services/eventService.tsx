@@ -63,10 +63,21 @@ export async function getLikeCount(postId: string): Promise<number> {
   catch { return 0; }
 }
 
-export async function checkIfLiked(postId: string, userId: string): Promise<boolean> {
-  try { const res = await api.get<{ isLiked: boolean }>(`/Posts/${postId}/isLiked?userId=${userId}`); return res.data.isLiked; } 
-  catch { return false; }
+export async function checkIfLiked(postId: string): Promise<boolean> {
+  try {
+    const token = await getToken();
+    if (!token) return false;
+
+    const res = await api.get<{ isLiked: boolean }>(
+      `/Posts/${postId}/isLiked`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    return res.data.isLiked;
+  } catch {
+    return false;
+  }
 }
+
 
 // ---------------------------
 // Write APIs (token required)
@@ -135,6 +146,22 @@ export async function isBookmarked(postId: string): Promise<boolean> {
     );
     return res.data.isBookmarked;
   } catch {
+    return false;
+  }
+}
+export async function deletePost(postId: string): Promise<boolean> {
+  try {
+    const token = await getToken();
+    if (!token) throw new Error("Not authenticated");
+
+    const res = await api.delete<{ success: boolean; message: string }>(
+      `/Posts/${postId}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    return res.data.success;
+  } catch (error) {
+    console.error("Error deleting post:", error);
     return false;
   }
 }

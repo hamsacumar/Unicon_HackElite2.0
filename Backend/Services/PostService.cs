@@ -383,5 +383,29 @@ public async Task<long> GetCommentCountAsync(string postId)
 
             return await _bookmarks.Aggregate<BsonDocument>(pipeline).ToListAsync();
         }
+
+
+
+    
+public async Task<bool> DeletePostAsync(string postId, string userId)
+{
+    // Ensure the post exists and belongs to the user
+    var post = await _events.Find(ev => ev.Id == postId && ev.UserId == userId).FirstOrDefaultAsync();
+    if (post == null)
+        return false;
+
+    // Delete the post
+    await _events.DeleteOneAsync(ev => ev.Id == postId);
+
+    // Also clean up related data
+    await _likes.DeleteManyAsync(l => l.PostId == postId);
+    await _comments.DeleteManyAsync(c => c.PostId == postId);
+    await _bookmarks.DeleteManyAsync(b => b.PostId == postId);
+
+    return true;
+}
+
     }
 }
+
+  
