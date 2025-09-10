@@ -36,16 +36,30 @@ namespace Backend.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> UploadImage([FromForm] UploadImageRequest request)
         {
-            // Log all available claims for debugging
-            var allClaims = User.Claims.Select(c => $"{c.Type}:{c.Value}").ToList();
-            _logger.LogInformation("Available claims: {Claims}", string.Join(", ", allClaims));
+            _logger.LogInformation("=== Starting UploadImage ===");
             
-            // Try to get user ID from different possible claim types
-            var userId = User.FindFirst("id")?.Value ?? 
-                        User.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")?.Value ??
-                        User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-            
-            _logger.LogInformation($"Extracted user ID: {userId ?? "null"}");
+            try
+            {
+                // Log request details
+                _logger.LogInformation("Request Content-Type: {ContentType}", Request.ContentType);
+                _logger.LogInformation("Request Headers: {Headers}", 
+                    string.Join(", ", Request.Headers.Select(h => $"{h.Key}: {h.Value}")));
+                
+                // Try to get user ID from different possible claim types
+                var userId = User.FindFirst("id")?.Value ?? 
+                            User.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")?.Value ??
+                            User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                
+                _logger.LogInformation($"Extracted user ID: {userId ?? "null"}");
+                
+                if (request?.File == null)
+                {
+                    _logger.LogWarning("No file was provided in the request");
+                    return BadRequest(new { message = "No file was provided" });
+                }
+                
+                _logger.LogInformation("Received file: {FileName}, {ContentType}, {Length} bytes", 
+                    request.File.FileName, request.File.ContentType, request.File.Length);
             
             try
             {
@@ -57,11 +71,26 @@ namespace Backend.Controllers
                     return BadRequest(new { message = "Invalid request" });
                 }
                 
+                _logger.LogInformation("Request received. Files count: {FileCount}", Request.Form.Files?.Count ?? 0);
+                _logger.LogInformation("Request headers: {Headers}", string.Join(", ", Request.Headers.Select(h => $"{h.Key}: {h.Value}")));
+                
                 var file = request.File;
                 if (file == null || file.Length == 0)
                 {
                     _logger.LogWarning("No file was uploaded or file is empty");
-                    return BadRequest(new { message = "No file uploaded or file is empty" });
+                    _logger.LogWarning("Request form keys: {Keys}", string.Join(", ", Request.Form.Keys));
+                    _logger.LogWarning("Request form files: {Files}", string.Join(", ", Request.Form.Files?.Select(f => $"Name: {f.Name}, FileName: {f.FileName}, Length: {f.Length}") ?? new List<string>()));
+                    return BadRequest(new { 
+                        success = false,
+                        message = "No file uploaded or file is empty",
+                        formKeys = Request.Form.Keys.ToList(),
+                        files = Request.Form.Files?.Select(f => new { 
+                            f.Name, 
+                            f.FileName, 
+                            f.Length,
+                            f.ContentType 
+                        })
+                    });
                 }
 
                 // Validate file type and size
@@ -82,16 +111,35 @@ namespace Backend.Controllers
 
                 // Ensure uploads folder exists
                 var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+                _logger.LogInformation($"Ensuring uploads directory exists: {uploadsFolder}");
                 Directory.CreateDirectory(uploadsFolder);
 
-                var fileName = $"{Guid.NewGuid()}{fileExtension}";
+                var fileName = $"profile_{userId}_{DateTime.UtcNow:yyyyMMddHHmmss}{fileExtension}";
                 var savePath = Path.Combine(uploadsFolder, fileName);
 
-                _logger.LogInformation($"Saving file to: {savePath}");
+                _logger.LogInformation($"Saving file: OriginalName={file.FileName}, SavedName={fileName}, Size={file.Length} bytes, Type={file.ContentType}, Path={savePath}");
                 
-                await using (var stream = new FileStream(savePath, FileMode.Create))
+                try 
                 {
-                    await file.CopyToAsync(stream);
+                    await using (var stream = new FileStream(savePath, FileMode.Create))
+                    {
+                        await file.CopyToAsync(stream);
+                        await stream.FlushAsync();
+                        _logger.LogInformation($"File saved successfully to {savePath}");
+                    }
+                    
+                    // Verify file was written
+                    var fileInfo = new FileInfo(savePath);
+                    if (!fileInfo.Exists || fileInfo.Length == 0)
+                    {
+                        _logger.LogError($"File was not written correctly. Exists: {fileInfo.Exists}, Length: {fileInfo.Length} bytes");
+                        throw new Exception("Failed to save file to disk");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, $"Error saving file to {savePath}");
+                    throw new Exception($"Failed to save file: {ex.Message}", ex);
                 }
 
                 // Get user ID from different possible claim types

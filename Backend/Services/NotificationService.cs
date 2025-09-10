@@ -225,16 +225,42 @@ namespace Backend.Services
 
             try
             {
+                // Set timestamps
                 notification.CreatedAt = DateTime.UtcNow;
+                notification.UpdatedAt = DateTime.UtcNow;
+
+                // Set default type if not specified
+                notification.Type ??= "info";
+
                 await _notifications.InsertOneAsync(notification);
-                _logger.LogDebug("Created notification with ID {NotificationId}", notification.Id);
+                _logger.LogInformation($"Created notification {notification.Id} for user {notification.UserId}");
                 return notification;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error creating notification");
+                _logger.LogError(ex, $"Error creating notification: {ex.Message}");
                 throw;
             }
+        }
+
+        public async Task<Notification> CreateEventNotificationAsync(
+            string userId,
+            string eventId,
+            string title,
+            string message,
+            string? fromUserId = null,
+            string? organizerId = null)
+        {
+            return await CreateNotificationAsync(
+                userId: userId,
+                organizerId: organizerId,
+                category: "event",
+                title: title,
+                message: message,
+                type: "info",
+                referenceId: eventId,
+                fromUserId: fromUserId
+            );
         }
 
         /// <summary>

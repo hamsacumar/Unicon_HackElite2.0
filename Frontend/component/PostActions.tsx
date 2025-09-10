@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { likePost, getLikeCount, checkIfLiked, getCommentCount } from "../services/eventService";
 
@@ -116,6 +116,13 @@ export default function PostActions({
             {commentCount}
           </Text>
         </TouchableOpacity>
+{/* configure Button */}
+<TouchableOpacity
+  style={styles.actionButton}
+  onPress={() => Alert.alert("configure enabled")}
+>
+  <Ionicons name="settings-outline" size={22} color="#333" />
+</TouchableOpacity>
       </View>
     </View>
   );

@@ -103,10 +103,7 @@ export default function Home() {
                   {item.username}
                 </Text>
               </TouchableOpacity>
-              {/* Configuration / Settings Button */}
-              <TouchableOpacity style={styles.configButton}>
-                <Text style={styles.configButtonText}>⚙️</Text>
-              </TouchableOpacity>
+             
             </View>
 
             {/* Post image (clickable) */}

@@ -4,30 +4,24 @@ import { View, Text, StyleSheet, Image, ActivityIndicator } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../App"; // Adjust path as needed
-import { useAuth } from "../utils/AuthContext";
 
-type SplashScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
+type SplashScreenNavigationProp = NativeStackNavigationProp<
+  RootStackParamList,
+  "SplashScreen"
+>;
 
 const SplashScreen = () => {
   const navigation = useNavigation<SplashScreenNavigationProp>();
 
-  const { token } = useAuth();
-
   useEffect(() => {
-    // After 2 seconds, navigate based on auth status
+    // Navigate to LandingPage after 3 seconds
     const timer = setTimeout(() => {
-      if (token) {
-        // Navigate to AppStack which shows the main app
-        navigation.navigate('AppStack');
-      } else {
-        // Navigate to LandingPage directly
-        navigation.navigate('LandingPage');
-      }
+      navigation.navigate("LandingPage");
     }, 2000);
 
     // Clean up the timer if the component unmounts
     return () => clearTimeout(timer);
-  }, [navigation, token]);
+  }, [navigation]);
 
   return (
     <View style={styles.container}>

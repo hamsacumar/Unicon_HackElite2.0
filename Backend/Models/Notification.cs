@@ -50,6 +50,20 @@ namespace Backend.Models
         public string? OrganizerId { get; set; }
 
         /// <summary>
+        /// The ID of the related event (if applicable)
+        /// </summary>
+        [BsonElement("eventId")]
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string? EventId { get; set; }
+
+        /// <summary>
+        /// The ID of the related post (if applicable)
+        /// </summary>
+        [BsonElement("postId")]
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string? PostId { get; set; }
+
+        /// <summary>
         /// Category of the notification (e.g., 'event', 'message', 'system')
         /// </summary>
         [StringLength(50)]

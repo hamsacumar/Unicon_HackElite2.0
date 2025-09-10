@@ -8,11 +8,13 @@ import {
   Alert,
   ActivityIndicator,
   SafeAreaView,
-  ScrollView 
+  ScrollView,
+  Platform
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { api } from "../services/api"; // your axios instance
 import { useAuth } from "../utils/AuthContext"; // get JWT token
+import * as SecureStore from 'expo-secure-store';
 import { Ionicons } from '@expo/vector-icons';
 
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -85,29 +87,131 @@ export default function ProfileSetup({ navigation }: { navigation: ProfileSetupS
     if (!image) return;
 
     setIsUploading(true);
-    const formData = new FormData();
-    formData.append("file", {
-      uri: image,
-      name: "profile.jpg",
-      type: "image/jpeg",
-    } as any);
-
+    
     try {
-      await api.post("/profile/upload-image", formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data",
-        },
-      });
+      // Get the file extension from the image URI
+      const fileExt = image.split('.').pop()?.toLowerCase() || 'jpg';
+      const fileName = `profile_${Date.now()}.${fileExt}`;
+      const fileType = `image/${fileExt === 'png' ? 'png' : 'jpeg'}`;
       
-      Alert.alert(
-        "Success!",
-        "Your profile photo has been uploaded successfully!",
-        [{ text: "Continue", onPress: () => navigation.replace("Home") }]
-      );
-    } catch (err) {
-      console.error(err);
-      Alert.alert("Error", "Failed to upload image. Please try again.");
+      if (Platform.OS === 'web') {
+        // For web
+        const formData = new FormData();
+        const response = await fetch(image);
+        const blob = await response.blob();
+        const file = new File([blob], fileName, { type: fileType });
+        formData.append('File', file);
+        
+        console.log('Uploading file (web):', {
+          name: file.name,
+          type: file.type,
+          size: file.size
+        });
+
+        const uploadResponse = await api.post("/profile/upload-image", formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+        
+        console.log('Upload response:', uploadResponse);
+        return uploadResponse;
+      } else {
+        // For React Native - using XMLHttpRequest for better control
+        const formData = new FormData();
+        
+        // @ts-ignore - React Native specific FormData append
+        formData.append('File', {
+          uri: image,
+          name: fileName,
+          type: fileType,
+        });
+        
+        console.log('Uploading file (mobile):', {
+          name: fileName,
+          type: fileType,
+          uri: image
+        });
+        
+        // Use XMLHttpRequest for better control over the request
+        return new Promise((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('POST', 'http://10.10.8.5:5179/api/profile/upload-image');
+          xhr.setRequestHeader('Accept', 'application/json');
+          
+          // Get the token asynchronously
+          SecureStore.getItemAsync('token').then((token: string | null) => {
+            if (token) {
+              xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+            }
+            
+            xhr.onload = () => {
+              if (xhr.status >= 200 && xhr.status < 300) {
+                try {
+                  const response = typeof xhr.response === 'string' 
+                    ? JSON.parse(xhr.response) 
+                    : xhr.response;
+                  console.log('Upload successful:', response);
+                  resolve(response);
+                } catch (e) {
+                  console.error('Error parsing response:', e);
+                  reject(new Error('Invalid response from server'));
+                }
+              } else {
+                console.error('Upload failed with status:', xhr.status);
+                reject(new Error(`Upload failed with status ${xhr.status}`));
+              }
+            };
+            
+            xhr.onerror = () => {
+              console.error('Network error during upload');
+              reject(new Error('Network error. Please check your connection.'));
+            };
+            
+            xhr.ontimeout = () => {
+              console.error('Request timed out');
+              reject(new Error('Request timed out. Please try again.'));
+            };
+            
+            xhr.upload.onprogress = (event) => {
+              if (event.lengthComputable) {
+                const progress = Math.round((event.loaded / event.total) * 100);
+                console.log(`Upload progress: ${progress}%`);
+              }
+            };
+            
+            try {
+              xhr.send(formData);
+            } catch (error) {
+              console.error('Error sending request:', error);
+              reject(new Error('Failed to send request'));
+            }
+          }).catch((error: Error) => {
+            console.error('Error getting token:', error);
+            reject(new Error('Authentication error'));
+          });
+        });
+      }
+      
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      
+      // Handle different error formats
+      let errorMessage = 'Failed to upload image';
+      
+      if (error.response) {
+        // Axios error with response
+        errorMessage = error.response.data?.message || error.response.statusText || 'Unknown server error';
+      } else if (error.request) {
+        // Request was made but no response received
+        errorMessage = 'No response from server. Please check your connection.';
+      } else if (error.message) {
+        // Other error with message
+        errorMessage = error.message;
+      }
+      
+      Alert.alert('Upload Failed', errorMessage);
+      throw new Error(errorMessage);
     } finally {
       setIsUploading(false);
     }
