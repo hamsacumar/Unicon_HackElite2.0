@@ -50,7 +50,6 @@ export default function CommentSection({
   useEffect(() => {
     if (visible) {
       loadComments();
-      setTimeout(() => inputRef.current?.focus(), 100);
     }
   }, [visible, postId]);
 
@@ -93,6 +92,9 @@ export default function CommentSection({
     setComments((prev) => [tempComment, ...prev]);
     const updatedCount = commentCount + 1;
     setCommentCount(updatedCount);
+
+    // Blur the input so keyboard hides
+    inputRef.current?.blur();
     setText("");
     onCommentAdd?.(updatedCount);
 
@@ -124,48 +126,47 @@ export default function CommentSection({
     }
   };
 
-  return visible ? (
+  // =================== FIXED JSX ===================
+  if (!visible) return null;
+
+  return (
     <View style={{ paddingVertical: 10 }}>
       {isLoading ? (
         <ActivityIndicator size="large" color="#e74c3c" />
-      ) : comments.length ? (
-        comments.map((item, index) => (
-          <Animated.View
-            key={item.id || `comment-${index}`}
-            style={{
-              opacity: fadeAnim,
-              marginBottom: 16,
-              ...styles.commentContainer,
-            }}
-          >
-            <View style={styles.commentHeader}>
-              {item.userImage ? (
-                <Image source={{ uri: item.userImage }} style={styles.avatar} />
-              ) : (
-                <View style={[styles.avatar, styles.avatarPlaceholder]}>
-                  <Text style={styles.avatarText}>
-                    {item.username?.charAt(0)?.toUpperCase() || "U"}
+      ) : comments.length > 0 ? (
+        <FlatList
+          data={comments}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <View style={styles.commentContainer}>
+              <View style={styles.commentHeader}>
+                {item.userImage ? (
+                  <Image source={{ uri: item.userImage }} style={styles.avatar} />
+                ) : (
+                  <View style={[styles.avatar, styles.avatarPlaceholder]}>
+                    <Text style={styles.avatarText}>
+                      {item.username?.charAt(0)?.toUpperCase() || "U"}
+                    </Text>
+                  </View>
+                )}
+                <View style={styles.commentContent}>
+                  <Text style={styles.commentAuthor}>
+                    {item.username || (item.userId === userId ? "You" : "Anonymous")}
+                  </Text>
+                  <Text style={styles.commentText}>{item.text}</Text>
+                  <Text style={styles.commentTime}>
+                    {item.createdAt
+                      ? new Date(item.createdAt).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })
+                      : "Just now"}
                   </Text>
                 </View>
-              )}
-              <View style={styles.commentContent}>
-                <Text style={styles.commentAuthor}>
-                  {item.username ||
-                    (item.userId === userId ? "You" : "Anonymous")}
-                </Text>
-                <Text style={styles.commentText}>{item.text}</Text>
-                <Text style={styles.commentTime}>
-                  {item.createdAt
-                    ? new Date(item.createdAt).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })
-                    : "Just now"}
-                </Text>
               </View>
             </View>
-          </Animated.View>
-        ))
+          )}
+        />
       ) : (
         <View style={styles.emptyState}>
           <Ionicons name="chatbubble-ellipses-outline" size={48} color="#ccc" />
@@ -173,6 +174,7 @@ export default function CommentSection({
         </View>
       )}
 
+      {/* Input */}
       <View style={styles.inputContainer}>
         <TextInput
           ref={inputRef}
@@ -193,7 +195,7 @@ export default function CommentSection({
         </TouchableOpacity>
       </View>
     </View>
-  ) : null;
+  );
 }
 
 const styles = StyleSheet.create({
