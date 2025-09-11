@@ -39,6 +39,7 @@ import SplashScreen from "./screens/SplashScreen";
 import OrgPostDetail from "./screens/OrgPostDetail";
 // Context
 import { AuthProvider } from "./utils/AuthContext";
+import LandingPostDetail from "./screens/LandingPostDetail";
 import NotificationScreen from "./screens/NotificationScreen";
 import HelpScreen from "./screens/HelpScreen";
 import TermsScreen from "./screens/TermsScreen";
@@ -61,6 +62,7 @@ export type RootStackParamList = {
   ProfileSetup: undefined;
   OrgProfile: undefined;
   PostDetail: { post: EventItem; userId?: string | null };
+  LandingPostDetail: { post: EventItem };
   OrgPostDetail: { post: EventItem; userId?: string | null };
 
   Test: undefined;
@@ -143,7 +145,7 @@ const AppStack = () => (
             onPress={() => navigation.goBack()}
             style={{ marginLeft: 15 }}
           >
-            <Ionicons name="arrow-back" size={24} color="white" />
+            
           </TouchableOpacity>
         ),
       })}
@@ -188,6 +190,7 @@ const AppStack = () => (
       options={{ title: "Filter" }}
       initialParams={{ userId: "" }} // This will be populated with the actual userId when navigating
     />
+     
     <Stack.Screen
       name="InputPage"
       component={InputPage}
@@ -273,20 +276,33 @@ const AppStack = () => (
       options={{ title: "Message" }}
     />
 
+<Stack.Screen
+  name="Help"
+  component={HelpScreen}
+  options={{ title: "Help & Support" }}
+/>
+<Stack.Screen
+  name="Terms"
+  component={TermsScreen}
+  options={{ title: "Terms & Policies" }}
+/>
+<Stack.Screen
+  name="About"
+  component={AboutScreen}
+  options={{ title: "About" }}
+/>
+    
+    
     <Stack.Screen
-      name="Help"
-      component={HelpScreen}
-      options={{ title: "Help & Support" }}
+      name="LandingPostDetail"
+      component={LandingPostDetail}
+      options={{ title: "EventTrix" }}
     />
+
     <Stack.Screen
-      name="Terms"
-      component={TermsScreen}
-      options={{ title: "Terms & Policies" }}
-    />
-    <Stack.Screen
-      name="About"
-      component={AboutScreen}
-      options={{ title: "About" }}
+      name="OrgPostDetail"
+      component={OrgPostDetail}
+      options={{ title: "EventTrix" }}
     />
   </Stack.Navigator>
 );
