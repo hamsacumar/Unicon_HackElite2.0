@@ -211,11 +211,7 @@ const AppStack = () => (
       component={PostDetail}
       options={{ title: "Post Details" }}
     />
-    <Stack.Screen
-      name="OrgPostDetail"
-      component={OrgPostDetail}
-      options={{ title: "EventTrix" }}
-    />
+   
     <Stack.Screen name="Test" component={Test} />
     <Stack.Screen
       name="Login"
