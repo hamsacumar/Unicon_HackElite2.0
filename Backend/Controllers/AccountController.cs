@@ -73,5 +73,46 @@ namespace Backend.Controllers
                 CreatedAt = user.CreatedAt
             });
         }
+
+        [HttpPut("update")]
+public async Task<IActionResult> Update([FromBody] UpdateUserDto dto)
+{
+    var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+    if (userId == null) return Unauthorized();
+
+    var success = await _userService.UpdateAllowedFields(
+        userId,
+        dto.FirstName,
+        dto.LastName,
+        dto.Description,
+        dto.Username
+    );
+
+    if (!success)
+        return BadRequest("No changes applied or update failed.");
+
+    return Ok(new { Message = "Profile updated successfully." });
+}
+
+[HttpGet("profile")]
+public async Task<IActionResult> GetProfile()
+{
+    var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+    if (userId == null) return Unauthorized();
+
+    var user = await _userService.GetById(userId);
+    if (user == null) return NotFound("User not found");
+
+    var profile = new UserProfileDto
+    {
+        FirstName = user.FirstName,
+        LastName = user.LastName,
+        Description = user.Description,
+        Username = user.Username
+    };
+
+    return Ok(profile);
+}
+
     }
 }

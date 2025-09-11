@@ -11,7 +11,7 @@ import {
   Platform,
   Alert,
 } from "react-native";
-import { getConversation, sendMessage } from "../services/api/api";
+import { getConversation, sendMessage, getCurrentUserId } from "../services/api/api";
 
 interface Message {
   id: string;
@@ -36,20 +36,20 @@ const Conversation: React.FC<Props> = ({ otherUserId, otherUsername }) => {
 
   const flatListRef = useRef<FlatList>(null);
 
-  // Fetch current user's ID on mount
-  useEffect(() => {
-    const fetchCurrentUserId = async () => {
-      try {
-        const user = await fetchCurrentUser();
-        setCurrentUserId(user.id);
-      } catch (err: any) {
-        console.error("Error fetching user:", err);
-        Alert.alert("Error", err.message || "Failed to get user info.");
-      }
-    };
+// Fetch current user's ID on mount
+useEffect(() => {
+  const fetchCurrentUserId = async () => {
+    try {
+      const userId = await getCurrentUserId();
+      setCurrentUserId(userId);
+    } catch (err: any) {
+      console.error("Error fetching user:", err);
+      Alert.alert("Error", err.message || "Failed to get user info.");
+    }
+  };
 
-    fetchCurrentUserId();
-  }, []);
+  fetchCurrentUserId();
+}, []);
 
   // Fetch conversation messages
   const fetchConversationMessages = async () => {
@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
   flatListContainer: { padding: 16, paddingBottom: 80 },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
   messageContainer: { maxWidth: "80%", marginBottom: 12, padding: 10, borderRadius: 12 },
-  myMessage: { backgroundColor: "#007AFF", alignSelf: "flex-end" },
+  myMessage: { backgroundColor: "green", alignSelf: "flex-end" },
   theirMessage: { backgroundColor: "#E5E5EA", alignSelf: "flex-start" },
   messageText: { fontSize: 16 },
   timestamp: { fontSize: 10, color: "#888", marginTop: 2, alignSelf: "flex-end" },
@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
   },
   sendButton: {
     marginLeft: 8,
-    backgroundColor: "#007AFF",
+    backgroundColor: "#FF5722",
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 10,

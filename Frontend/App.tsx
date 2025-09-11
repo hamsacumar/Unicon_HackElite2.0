@@ -36,9 +36,13 @@ import OrgProfile from "./screens/OrgProfile";
 import PostDetail from "./screens/PostDetail";
 import { EventItem } from "./services/eventService";
 import SplashScreen from "./screens/SplashScreen"; 
+import OrgPostDetail from "./screens/OrgPostDetail";
 // Context
 import { AuthProvider } from "./utils/AuthContext";
 import LandingPostDetail from "./screens/LandingPostDetail";
+import HelpScreen from "./screens/HelpScreen";
+import TermsScreen from "./screens/TermsScreen";
+import AboutScreen from "./screens/AboutScreen";
 
 export type RootStackParamList = {
   SplashScreen: undefined;
@@ -53,7 +57,8 @@ export type RootStackParamList = {
   ProfileSetup: undefined;
   OrgProfile: undefined;
   PostDetail: { post: EventItem; userId?: string | null };
-  LandingPostDetail: { post: EventItem };
+  LandingPostDetail: { post: EventItem };  OrgPostDetail: { post: EventItem; userId?: string | null };
+
   Test: undefined;
   Login: undefined;
   Signup: undefined;
@@ -63,13 +68,10 @@ export type RootStackParamList = {
   ResetPassword: undefined;
   Filter: { userId: string };
   MessagePage: undefined;
-  InboxScreen: undefined;
-  Chat: {
-    currentUserId: string;
-    otherUserId: string;
-    currentUsername: string;
-    otherUsername: string;
-  };
+  Help: undefined;
+  Terms: undefined;
+  About: undefined;
+
 
 
 };
@@ -137,26 +139,6 @@ const AppStack = () => (
     />
 
     <Stack.Screen
-      name="OrgProfile"
-      component={OrgProfile}
-      options={({
-        navigation,
-      }: {
-        navigation: NativeStackNavigationProp<RootStackParamList, "OrgProfile">;
-      }) => ({
-        title: "Organization Profile",
-        headerLeft: () => (
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={{ marginLeft: 15 }}
-          >
-            <Ionicons name="arrow-back" size={24} color="white" />
-          </TouchableOpacity>
-        ),
-      })}
-    />
-
-    <Stack.Screen
       name="Profile"
       component={Profile}
       options={({
@@ -190,10 +172,20 @@ const AppStack = () => (
       options={{ title: "Settings and Activity" }}
     />
     <Stack.Screen
+      name="PostDetail"
+      component={PostDetail}
+      options={{ title: "PostDetail" }}
+    />
+    <Stack.Screen
       name="Filter"
       component={Filter}
       options={{ title: "Filter" }}
       initialParams={{ userId: "" }} // This will be populated with the actual userId when navigating
+    />
+      <Stack.Screen
+      name="PostDetail"
+      component={PostDetail}
+      options={{ title: "Post Details" }}
     />
     <Stack.Screen
       name="InputPage"
@@ -253,6 +245,27 @@ const AppStack = () => (
       component={MessagesPage}
       options={{ title: "Message" }}
     />
+
+<Stack.Screen
+  name="Help"
+  component={HelpScreen}
+  options={{ title: "Help & Support" }}
+/>
+<Stack.Screen
+  name="Terms"
+  component={TermsScreen}
+  options={{ title: "Terms & Policies" }}
+/>
+<Stack.Screen
+  name="About"
+  component={AboutScreen}
+  options={{ title: "About" }}
+/>
+     <Stack.Screen
+      name="PostDetail"
+      component={PostDetail}
+      options={{ title: "EventTrix" }}
+    />
      <Stack.Screen
       name="PostDetail"
       component={PostDetail}
@@ -264,6 +277,11 @@ const AppStack = () => (
       options={{ title: "EventTrix" }}
     />
 
+    <Stack.Screen
+      name="OrgPostDetail"
+      component={OrgPostDetail}
+      options={{ title: "EventTrix" }}
+    />
   </Stack.Navigator>
 );
 
