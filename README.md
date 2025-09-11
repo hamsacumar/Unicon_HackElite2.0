@@ -2,55 +2,104 @@
 
 ![My Website Logo](/Frontend/assets/eventTrix.png)  
 
-This project is a secure web application where users can register, log in, and manage links categorized according to their preferences. Security is a key focus, with encryption and hashing applied to sensitive data.
+Event Trix is a modern mobile application designed to deliver technology news and updates to students, companies, and IT professionals. The app allows IT solutions providers to post updates, while users can subscribe, filter content, and receive notifications in real-time.
 
-## Features
+Features
 
-- **User Registration & Login**
-  - Register with a username and password.
-  - A verification code is sent to your Gmail to confirm your account.
-  - Log in using your credentials after verification.
+User Registration & Login
 
-- **Link Management**
-  - Add new links.
-  - Categorize links for better organization.
-  - Update existing links and categories.
-  - Delete links as needed.
+Register securely with a username and password.
 
-- **Security**
-  - User passwords, links, and categories are hashed and encrypted for maximum security.
-  - Users can update their username and password at any time.
+Login using JWT authentication to ensure secure access.
 
-## Getting Started
+Passwords are hashed using bcrypt for security.
 
-1. **Register an Account**
-   - Go to the registration page.
-   - Enter your desired username and password.
-   - A Gmail verification code will be sent to confirm your email.
-   - Enter the code to activate your account.
+News Feed & Content Management
 
-2. **Login**
-   - Enter your username and password to access your dashboard.
+IT solutions providers can post technology news and updates.
 
-3. **Managing Links**
-   - Add new links and assign them to categories.
-   - Edit or update links/categories whenever necessary.
-   - Delete links you no longer need.
+Users can subscribe to specific companies, categories, or topics.
 
-4. **Updating Credentials**
-   - Change your username or password from your profile settings.
+Content can be filtered by category, date, or popularity for efficient browsing.
 
-5. **Username: Logasini**
-   **Password: admin123**
-   - Use this Username and password to get into
-   Admin dashboard.
+Notifications & Real-Time Updates
 
-## Security Notes
+Receive push notifications for new posts from subscribed sources.
 
-- All sensitive data is securely hashed and encrypted.
-- Email verification ensures only valid users can access the system.
-- Always keep your credentials safe and private.
+WebSocket integration ensures instant updates and dynamic content refresh.
 
----
+User Personalization
 
-This project ensures a secure and organized way to manage your personal or professional links efficiently.
+Configure your preferences for notifications and subscriptions.
+
+Manage your account settings, including updating username or password.
+
+Admin & IT Solution Features
+
+Admins and IT solution providers can manage posts, categories, and subscriptions efficiently.
+
+Ensure proper content delivery and manage user subscriptions.
+
+Getting Started
+
+Install & Run
+
+Use Expo Go to run the mobile app on iOS or Android devices.
+
+Make sure the backend .NET API is running and connected to MongoDB.
+
+Register & Verify Account
+
+Open the app and create a new account.
+
+Verification emails are sent via SMTP to confirm user registration.
+
+Enter the verification code to activate your account.
+
+Browse & Subscribe
+
+Explore technology news posted by companies or IT solutions providers.
+
+Subscribe to categories, topics, or companies to receive targeted updates.
+
+Manage Preferences
+
+Configure notifications and subscription settings to match your interests.
+
+Update personal credentials securely.
+
+Posting News (For IT Solution Providers)
+
+Login as a provider/admin.
+
+Create, update, or delete news posts.
+
+Organize posts by categories for better visibility to users.
+
+Tech Stack
+
+Frontend: React Native + Expo Go
+
+Backend: .NET (C#)
+
+Database: MongoDB
+
+Authentication: JWT tokens
+
+Password Security: bcrypt
+
+Email Verification: SMTP
+
+Real-Time Updates: WebSockets
+
+API Requests: Axios
+
+Security Notes
+
+All sensitive user data, including passwords, are securely hashed.
+
+Email verification ensures only valid users can access the app.
+
+JWT tokens protect endpoints from unauthorized access.
+
+Users control their subscriptions and notification preferences securely.inks efficiently.
