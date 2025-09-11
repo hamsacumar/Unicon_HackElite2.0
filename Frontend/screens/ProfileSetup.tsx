@@ -148,7 +148,7 @@ export default function ProfileSetup({
 
       console.log("Upload successful:", res.data);
       Alert.alert("Success", "Profile photo uploaded successfully!");
-      navigation.replace("Home");
+      navigation.replace("Login");
     } catch (error: any) {
       console.error("Upload error:", error);
       let errorMessage = "Failed to upload image";
@@ -176,7 +176,7 @@ export default function ProfileSetup({
           headers: { Authorization: `Bearer ${savedToken}` },
         }
       );
-      navigation.replace("Home");
+      navigation.replace("Login");
     } catch (err) {
       console.error(err);
       Alert.alert("Error", "Something went wrong. Please try again.");

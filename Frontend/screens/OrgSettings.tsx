@@ -1,15 +1,16 @@
 import React from "react";
-import { ScrollView, Alert, StyleSheet } from "react-native";
+import { ScrollView, StyleSheet } from "react-native";
 import SettingsButton from "../component/SettingButton";
+import { logout } from "../services/api"; // 👈 import logout service
 
 interface Props {
   navigation: any;
 }
 
 const SettingsScreen: React.FC<Props> = ({ navigation }) => {
-  const handleLogout = () => {
-    Alert.alert("Logout", "You have been successfully logged out.");
-    // Clear token/session here if needed
+  const handleLogout = async () => {
+    // Call your logout service and pass navigation
+    await logout(navigation);
   };
 
   return (
@@ -30,9 +31,7 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
         title="Logout"
         onPress={handleLogout}
       />
-    
     </ScrollView>
-    
   );
 };
 
