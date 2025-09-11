@@ -1,6 +1,6 @@
 # EventTrix
 
-![My Website Logo](/froentend/assts/eventTrix.png)  
+![My Website Logo](/Frontend/assets/eventTrix.png)  
 
 This project is a secure web application where users can register, log in, and manage links categorized according to their preferences. Security is a key focus, with encryption and hashing applied to sensitive data.
 
