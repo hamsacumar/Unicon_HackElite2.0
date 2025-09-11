@@ -40,7 +40,7 @@ namespace Backend.Services
             return await _users.Find(u => u.Username == username).FirstOrDefaultAsync();
         }
 
-        public async Task<AppUser> GetByEmail(string email)
+         public async Task<AppUser> GetByEmail(string email)
         {
             return await _users.Find(u => u.Email == email).FirstOrDefaultAsync();
         }
@@ -116,5 +116,46 @@ namespace Backend.Services
                 return false;
             }
         }
+
+        public async Task<bool> UpdateAllowedFields(string userId, string? firstName, string? lastName, string? description, string? username)
+{
+    try
+    {
+        if (string.IsNullOrEmpty(userId))
+            return false;
+
+        var filter = Builders<AppUser>.Filter.Eq(u => u.Id, userId);
+
+        var updateDef = new List<UpdateDefinition<AppUser>>();
+
+        if (!string.IsNullOrEmpty(firstName))
+            updateDef.Add(Builders<AppUser>.Update.Set(u => u.FirstName, firstName));
+
+        if (!string.IsNullOrEmpty(lastName))
+            updateDef.Add(Builders<AppUser>.Update.Set(u => u.LastName, lastName));
+
+        if (!string.IsNullOrEmpty(description))
+            updateDef.Add(Builders<AppUser>.Update.Set(u => u.Description, description));
+
+        if (!string.IsNullOrEmpty(username))
+            updateDef.Add(Builders<AppUser>.Update.Set(u => u.Username, username));
+
+        updateDef.Add(Builders<AppUser>.Update.Set(u => u.UpdatedAt, DateTime.UtcNow));
+
+        if (updateDef.Count == 0) return false;
+
+        var update = Builders<AppUser>.Update.Combine(updateDef);
+
+        var result = await _users.UpdateOneAsync(filter, update);
+
+        return result.ModifiedCount > 0;
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Error updating allowed fields for {userId}: {ex.Message}");
+        return false;
+    }
+}
+
     }
 }

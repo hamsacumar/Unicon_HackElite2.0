@@ -1,11 +1,7 @@
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Backend.Models;
 using Backend.Services;
-using Microsoft.Extensions.Logging;
-using System;
-using System.Threading.Tasks;
-using System.Collections.Generic;
+using MongoDB.Bson;
 using System.Security.Claims;
 using Microsoft.AspNetCore.SignalR;
 using Hackelite2._0.Hubs;
@@ -14,71 +10,62 @@ namespace Backend.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize]
     public class MessagesController : ControllerBase
     {
         private readonly IMessageService _messageService;
         private readonly INotificationService _notificationService;
         private readonly IHubContext<NotificationHub> _hubContext;
+        private readonly IUserService _userService;
         private readonly ILogger<MessagesController> _logger;
 
         public MessagesController(
+            
             IMessageService messageService, 
             INotificationService notificationService,
             IHubContext<NotificationHub> hubContext,
+           
+            IUserService userService,
             ILogger<MessagesController> logger)
         {
             _messageService = messageService;
             _notificationService = notificationService;
             _hubContext = hubContext;
+            _userService = userService;
             _logger = logger;
         }
 
-        // POST: api/messages/send
+        // ✅ Send message (only need receiver + text + senderId from frontend)
         [HttpPost("send")]
-        public async Task<IActionResult> SendMessage([FromBody] Message msg)
+        public async Task<IActionResult> SendMessage([FromBody] SendMessageDto dto)
         {
             try
             {
-                var senderId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                if (string.IsNullOrEmpty(senderId))
-                    return Unauthorized(new { success = false, message = "User not authenticated" });
+                // 1. Find sender
+                var sender = await _userService.GetById(dto.SenderId);
+                if (sender == null)
+                    return NotFound(new { success = false, message = "Sender not found" });
 
-                // Set the sender ID from the authenticated user
-                msg.SenderId = senderId;
-                msg.Timestamp = DateTime.UtcNow;
-                msg.Status = "sent";
+                // 2. Find receiver
+                var receiver = await _userService.GetByUsername(dto.ReceiverUsername);
+                if (receiver == null)
+                    return NotFound(new { success = false, message = "Receiver not found" });
 
-                await _messageService.CreateAsync(msg);
-
-                // Send notification to the receiver
-                try
+                // 3. Build message
+                var message = new Message
                 {
-                    await _notificationService.SendMessageNotificationAsync(
-                        receiverId: msg.ReceiverId,
-                        senderId: senderId,
-                        messageContent: msg.Content
-                    );
+                    Id = ObjectId.GenerateNewId().ToString(),
+                    SenderId = sender.Id,
+                    SenderUsername = sender.Username,
+                    ReceiverId = receiver.Id,
+                    ReceiverUsername = receiver.Username,
+                    Text = dto.Text,
+                    Timestamp = DateTime.UtcNow,
+                    Status = "unseen"
+                };
 
-                    // Send real-time notification via SignalR
-                    await _hubContext.Clients.User(msg.ReceiverId).SendAsync("ReceiveNotification", new
-                    {
-                        Title = "New Message",
-                        Message = "You have received a new message",
-                        Type = "message",
-                        FromUserId = senderId,
-                        Timestamp = DateTime.UtcNow
-                    });
+                await _messageService.CreateAsync(message);
 
-                    _logger.LogInformation("Message notification sent to user {ReceiverId}", msg.ReceiverId);
-                }
-                catch (Exception notifEx)
-                {
-                    _logger.LogError(notifEx, "Failed to send message notification");
-                    // Don't fail the entire request if notification fails
-                }
-
-                return Ok(new { success = true, message = "Message sent successfully", data = msg });
+                return Ok(new { success = true, message = "Message sent successfully", data = message });
             }
             catch (Exception ex)
             {
@@ -87,7 +74,7 @@ namespace Backend.Controllers
             }
         }
 
-        // GET: api/messages/conversation/{user1}/{user2}
+        // ✅ Conversation between two users
         [HttpGet("conversation/{user1}/{user2}")]
         public async Task<IActionResult> GetConversation(string user1, string user2)
         {
@@ -116,81 +103,55 @@ namespace Backend.Controllers
             throw new NotImplementedException();
         }
 
-        // POST: api/messages/seen/{messageId}
-        [HttpPost("seen/{messageId}")]
-        public async Task<IActionResult> MarkSeen(string messageId)
+        // ✅ Inbox
+        [HttpGet("inbox/{userId}")]
+        public async Task<IActionResult> GetInbox(string userId)
         {
             try
             {
-                var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                if (string.IsNullOrEmpty(currentUserId))
-                    return Unauthorized(new { success = false, message = "User not authenticated" });
-
-                // Get the message to verify the current user is the receiver
-                var message = await _messageService.GetByIdAsync(messageId);
-                if (message == null)
-                    return NotFound(new { success = false, message = "Message not found" });
-
-                if (message.ReceiverId != currentUserId)
-                    return Forbid(new { success = false, message = "Access denied" });
-
-                var updated = await _messageService.MarkSeenAsync(messageId);
-                if (!updated)
-                    return NotFound(new { success = false, message = "Message not found" });
-
-                // Notify the sender via SignalR that their message was seen
-                await _hubContext.Clients.User(message.SenderId).SendAsync("MessageSeen", messageId);
-
-                return Ok(new { success = true, message = "Message marked as seen" });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to mark message as seen");
-                return StatusCode(500, new { success = false, error = ex.Message });
-            }
-        }
-
-        // GET: api/messages/inbox
-        [HttpGet("inbox")]
-        public async Task<IActionResult> GetInbox()
-        {
-            try
-            {
-                var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                if (string.IsNullOrEmpty(currentUserId))
-                    return Unauthorized(new { success = false, message = "User not authenticated" });
-
-                var messages = await _messageService.GetInboxAsync(currentUserId);
+                var messages = await _messageService.GetInboxAsync(userId);
                 return Ok(new { success = true, data = messages });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to get inbox messages");
+                _logger.LogError(ex, "Failed to get inbox");
                 return StatusCode(500, new { success = false, error = ex.Message });
             }
         }
 
-        // GET: api/messages/conversations
-        [HttpGet("conversations")]
-        public IActionResult GetUserConversations()
+        // ✅ Bulk delete messages
+        [HttpPost("delete")]
+            public async Task<IActionResult> DeleteMessages([FromBody] List<string> ids)
         {
             try
             {
-                var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                if (string.IsNullOrEmpty(currentUserId))
-                    return Unauthorized(new { success = false, message = "User not authenticated" });
+                if (ids == null || ids.Count == 0)
+                return BadRequest(new { success = false, message = "No message IDs provided" });
 
-                // This would require implementing a method to get all conversations for a user
-                // For now, return empty list
-                var conversations = new List<object>();
+                foreach (var id in ids)
+                {
+                    await _messageService.DeleteAsync(id);
+                }
 
-                return Ok(new { success = true, data = conversations });
+                return Ok(new { success = true, message = "Messages deleted successfully" });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to get user conversations");
+                _logger.LogError(ex, "Failed to delete messages");
                 return StatusCode(500, new { success = false, error = ex.Message });
             }
         }
+
     }
+
+    public class SendMessageDto
+    {
+        public string SenderId { get; set; } = null!;
+        public string ReceiverUsername { get; set; } = null!;
+        public string Text { get; set; } = null!;
+    }
+
+    
+
+
 }

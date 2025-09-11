@@ -25,6 +25,8 @@ const API_URL = Constants.expoConfig?.extra?.apiUrl?.replace("/api", "");
 // Define your stack param list
 type RootStackParamList = {
   ViewProfile: { username: string };
+  PostDetail: { post: UserEvent };
+  MessagePage: undefined;
 };
 
 type ViewProfileNavigationProp = NativeStackNavigationProp<
@@ -79,19 +81,19 @@ const ViewProfile: React.FC = () => {
       <View style={styles.profileSection}>
         <View style={styles.profileHeader}>
           <View style={styles.profileBorder}>
-          <View style={styles.profileImage}>
-  <Image
-    source={{
-      uri: profile?.profileImageUrl
-        ? profile.profileImageUrl.startsWith("http")
-          ? profile.profileImageUrl
-          : `${API_URL}${profile.profileImageUrl.startsWith("/") ? "" : "/"}${profile.profileImageUrl}`
-        : "https://cdn-icons-png.flaticon.com/512/3135/3135715.png", // fallback
-    }}
-    style={styles.image}
-    onError={(e) => console.log("Error loading profile image:", e.nativeEvent.error)}
-  />
-</View>
+            <View style={styles.profileImage}>
+              <Image
+                source={{
+                  uri: profile?.profileImageUrl
+                    ? profile.profileImageUrl.startsWith("http")
+                      ? profile.profileImageUrl
+                      : `${API_URL}${profile.profileImageUrl.startsWith("/") ? "" : "/"}${profile.profileImageUrl}`
+                    : "https://cdn-icons-png.flaticon.com/512/3135/3135715.png", // fallback
+                }}
+                style={styles.image}
+                onError={(e) => console.log("Error loading profile image:", e.nativeEvent.error)}
+              />
+            </View>
 
           </View>
 
@@ -133,9 +135,13 @@ const ViewProfile: React.FC = () => {
               {isSubscribed ? 'Subscribed' : 'Subscribe'}
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.shareButton}>
+          <TouchableOpacity
+            style={styles.shareButton}
+            onPress={() => navigation.navigate("MessagePage")} // ✅ navigate to MessagePage
+          >
             <Text style={styles.shareButtonText}>Mail</Text>
           </TouchableOpacity>
+
         </View>
 
         <View style={styles.tabContainer}>
@@ -153,7 +159,12 @@ const ViewProfile: React.FC = () => {
       {/* Events Section */}
       <ScrollView style={styles.postsContainer} showsVerticalScrollIndicator={false}>
         {posts.map((post) => (
-          <View key={post.id} style={styles.postCard}>
+          <TouchableOpacity
+            key={post.id}
+            style={styles.postCard}
+            activeOpacity={0.7}
+            onPress={() => navigation.navigate("PostDetail", { post })}
+          >
             <View style={styles.postContent}>
               <View style={styles.postTextContainer}>
                 <Text style={styles.postTitle}>{post.title}</Text>
@@ -173,12 +184,13 @@ const ViewProfile: React.FC = () => {
                   }}
                   style={styles.postImage}
                   resizeMode="cover"
-                  onError={(e) => console.log("Error loading post image:", e.nativeEvent.error)}
+                  onError={(e) =>
+                    console.log("Error loading post image:", e.nativeEvent.error)
+                  }
                 />
               </View>
             </View>
-
-          </View>
+          </TouchableOpacity>
         ))}
       </ScrollView>
 

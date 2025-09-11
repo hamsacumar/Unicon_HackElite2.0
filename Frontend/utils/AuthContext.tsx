@@ -46,6 +46,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const loadAuth = async () => {
       setIsLoading(true);
       const savedToken = await SecureStore.getItemAsync("accessToken");
+      console.log("Saved token:", savedToken);
       if (savedToken) {
         try {
           // First try to get user info using the token

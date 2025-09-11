@@ -11,7 +11,7 @@ namespace Backend.Models
         public required string Id { get; set; }
 
         [BsonElement("senderId")]
-        public required string  SenderId { get; set; }   // UserId of sender
+        public required string SenderId { get; set; }   // UserId of sender
 
         [BsonElement("senderUsername")]
         public required string SenderUsername { get; set; } // Username of sender
@@ -28,8 +28,11 @@ namespace Backend.Models
         [BsonElement("timestamp")]
         public DateTime Timestamp { get; set; } = DateTime.UtcNow;
 
-        [BsonElement("replyToId")]
-        public string? ReplyToId { get; set; } = null;
-        public object? Content { get; internal set; }
+        [BsonElement("receiverUsername")]
+        public required string ReceiverUsername { get; set; } // Username of receiver
+
+
+        // [BsonElement("replyToId")]
+        // public string? ReplyToId { get; set; } = null; 
     }
 }

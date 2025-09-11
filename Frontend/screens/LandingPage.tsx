@@ -1,4 +1,4 @@
-//screens/LandingPage.tsx
+// screens/LandingPage.tsx
 
 import React, { useEffect, useState } from "react";
 import {
@@ -15,21 +15,28 @@ import { RootStackParamList } from "../App";
 import BottomNav from "../component/bottomNav";
 import { EventItem, getEvents } from "../services/eventService";
 import Constants from "expo-constants";
-import PostActions from "../component/PostActions";
+import PostText from "../component/PostText";
 
+// ---------------------
 // Type for navigation props
+// ---------------------
 type LandingPageNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
   "LandingPage"
 >;
 
+// ---------------------
 // Base API URL from Expo constants
+// ---------------------
 const API_URL = Constants.expoConfig?.extra?.apiUrl?.replace("/api", "");
 
 export default function LandingPage() {
   const navigation = useNavigation<LandingPageNavigationProp>();
   const [events, setEvents] = useState<EventItem[]>([]);
 
+  // ---------------------
+  // Fetch public posts (no login required)
+  // ---------------------
   useEffect(() => {
     async function fetchData() {
       try {
@@ -42,23 +49,29 @@ export default function LandingPage() {
     fetchData();
   }, []);
 
+  // Navigate to PostDetail screen when a post is clicked
   const handlePostPress = (item: EventItem) => {
     navigation.navigate("PostDetail", { post: item });
   };
 
   return (
     <View style={styles.container}>
+      {/* Post Feed */}
       <FlatList
         data={events}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
           <View style={styles.postCard}>
-            {/* Profile section */}
+            {/* ---------------------
+                Profile Row
+              --------------------- */}
             <View style={styles.userRow}>
               <Image
                 source={{
                   uri: item.userImage
-                    ? item.userImage
+                    ? (item.userImage.startsWith("http")
+                        ? item.userImage
+                        : `${API_URL}${item.userImage}`)
                     : "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
                 }}
                 style={styles.avatar}
@@ -66,18 +79,23 @@ export default function LandingPage() {
               <Text style={styles.username}>{item.username}</Text>
             </View>
 
-            {/* Post image (clickable) */}
-            {item.imageUrl ? (
-              <TouchableOpacity onPress={() => handlePostPress(item)}>
-                <Image
-                  source={{
-                    uri: item.imageUrl.startsWith("http")
-                      ? item.imageUrl
-                      : `${API_URL}${item.imageUrl.startsWith("/") ? "" : "/"}${item.imageUrl}`,
-                  }}
-                  style={styles.postImage}
-                />
-              </TouchableOpacity>
+            {/* ---------------------
+                Post Image (clickable)
+              --------------------- */}
+           {item.imageUrl ? (
+  <TouchableOpacity onPress={() => handlePostPress(item)}>
+    <View style={{ marginHorizontal: -12, borderRadius: 10, overflow: 'hidden' }}>
+      <Image
+        source={{
+          uri: item.imageUrl.startsWith("http")
+            ? item.imageUrl
+            : `${API_URL}${item.imageUrl.startsWith("/") ? "" : "/"}${item.imageUrl}`,
+        }}
+        style={{ width: '100%', height: 250 }} // full width, taller if needed
+        resizeMode="cover"
+      />
+    </View>
+  </TouchableOpacity>
             ) : (
               <TouchableOpacity onPress={() => handlePostPress(item)}>
                 <View style={styles.noImage}>
@@ -86,30 +104,36 @@ export default function LandingPage() {
               </TouchableOpacity>
             )}
 
-            {/* Post category, title, and description (clickable) */}
+            {/* ---------------------
+                Post Info (category, title, description)
+              --------------------- */}
             <TouchableOpacity onPress={() => handlePostPress(item)}>
               <Text style={styles.category}>{item.category}</Text>
               <Text style={styles.title}>{item.title}</Text>
-              <Text style={styles.description}>{item.description}</Text>
+              <PostText content={item.description} />
             </TouchableOpacity>
 
-            {/* Post actions: Like + Comment */}
-            <PostActions
-              postId={item.id}
-              userId={null} // Pass null for unauthenticated users
-              initialLikeCount={item.likeCount || 0}
-              initialCommentCount={item.commentCount || 0}
-              onCommentPress={() => {
-                // For unauthenticated users, you might want to show a login prompt
-                // For now, we'll just log to console
-                console.log("Please login to comment");
-              }}
-            />
+            {/* ---------------------
+                Stats (Only counts for guests)
+                - No like/comment buttons for unauthenticated users
+              --------------------- */}
+            <View style={styles.statsContainer}>
+              <Text style={styles.statsText}>
+                {item.likeCount || 0} {item.likeCount === 1 ? "Like" : "Likes"}
+              </Text>
+              <Text style={[styles.statsText, { marginLeft: 16 }]}>
+                {item.commentCount || 0}{" "}
+                {item.commentCount === 1 ? "Comment" : "Comments"}
+              </Text>
+            </View>
           </View>
         )}
         contentContainerStyle={styles.listContent}
       />
 
+      {/* ---------------------
+          Bottom Navigation (Login / Signup buttons)
+        --------------------- */}
       <BottomNav
         onPressLogin={() => navigation.navigate("Login")}
         onPressRegister={() => navigation.navigate("Signup")}
@@ -118,7 +142,9 @@ export default function LandingPage() {
   );
 }
 
+// ====================
 // Styles
+// ====================
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff" },
   listContent: { padding: 10, paddingBottom: 100 },
@@ -126,36 +152,47 @@ const styles = StyleSheet.create({
   postCard: {
     backgroundColor: "#f9f9f9",
     marginBottom: 15,
-    padding: 10,
-    borderRadius: 10,
+    padding: 12,
+    borderRadius: 12,
     shadowColor: "#000",
     shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 3 },
+    shadowRadius: 5,
     elevation: 4,
   },
 
   userRow: { flexDirection: "row", alignItems: "center", marginBottom: 8 },
-  avatar: { width: 40, height: 40, borderRadius: 20, marginRight: 10 },
-  username: { fontWeight: "600", fontSize: 14, color: "#333" },
+  avatar: { width: 42, height: 42, borderRadius: 21, marginRight: 10 },
+  username: { fontWeight: "600", fontSize: 15, color: "#333" },
 
-  postImage: { width: "100%", height: 150, borderRadius: 8 },
+  postImage: { width: "100%", height: 200, borderRadius: 10, marginTop: 6 },
   noImage: {
     width: "100%",
-    height: 150,
-    borderRadius: 8,
+    height: 200,
+    borderRadius: 10,
     backgroundColor: "#ddd",
     justifyContent: "center",
     alignItems: "center",
+    marginTop: 6,
   },
-  noImageText: { color: "#555" },
+  noImageText: { color: "#555", fontSize: 14 },
 
   category: {
     fontWeight: "bold",
-    marginTop: 8,
+    marginTop: 10,
     fontSize: 14,
     color: "#E64A0D",
+    textTransform: "uppercase",
   },
-  title: { fontSize: 16, marginTop: 4, fontWeight: "600", color: "#333" },
-  description: { fontSize: 13, marginTop: 4, color: "#666" },
+  title: { fontSize: 18, marginTop: 4, fontWeight: "700", color: "#222" },
+  description: { fontSize: 14, marginTop: 6, color: "#555", lineHeight: 20 },
+
+  statsContainer: {
+    flexDirection: "row",
+    paddingTop: 10,
+    marginTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: "#eee",
+  },
+  statsText: { fontSize: 14, color: "#666" },
 });

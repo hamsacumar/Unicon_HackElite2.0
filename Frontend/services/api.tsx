@@ -701,3 +701,4 @@ export const logout = async (navigation?: NavigationProp<any>) => {
     Alert.alert("Logout failed", "An error occurred during logout.");
   }
 };
+  

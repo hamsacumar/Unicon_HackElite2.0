@@ -1,55 +1,43 @@
-// screens/OrgSettings.tsx
-import React from 'react';
-import { View, Text, StyleSheet, Button } from 'react-native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useNavigation } from '@react-navigation/native';
+import React from "react";
+import { ScrollView, Alert, StyleSheet } from "react-native";
+import SettingsButton from "../component/SettingButton";
 
-import RoleBasedBottomNav from "../component/rolebasedNav";
-import { logout } from '../services/api';
-// Define your stack param list
-type RootStackParamList = {
-  OrgSettings: undefined;
-  Test: undefined;
-  // Add other screens here if needed
-};
+interface Props {
+  navigation: any;
+}
 
-// Define the type for navigation prop
-type OrgSettingsNavigationProp = NativeStackNavigationProp<
-  RootStackParamList,
-  'OrgSettings'
->;
-
-const OrgSettings: React.FC = () => {
-  const navigation = useNavigation<OrgSettingsNavigationProp>();
+const SettingsScreen: React.FC<Props> = ({ navigation }) => {
+  const handleLogout = () => {
+    Alert.alert("Logout", "You have been successfully logged out.");
+    // Clear token/session here if needed
+  };
 
   return (
-    <View style={styles.container}>
-      <Text>This is the Org Settings Screen</Text>
-      <Button
-              title="test"
-              onPress={() => navigation.navigate("Test")}
-            />
-      <Button title="Go Back" onPress={() => navigation.goBack()} />
-    <RoleBasedBottomNav navigation={navigation} />
+    <ScrollView style={styles.container}>
+      <SettingsButton
+        title="Help & Support"
+        onPress={() => navigation.navigate("Help")}
+      />
+      <SettingsButton
+        title="Terms & Policies"
+        onPress={() => navigation.navigate("Terms")}
+      />
+      <SettingsButton
+        title="About"
+        onPress={() => navigation.navigate("About")}
+      />
+      <SettingsButton
+        title="Logout"
+        onPress={handleLogout}
+      />
     
-    <Button
-  title="Logout"
-  onPress={() => logout(navigation)}
-/>
-
-    </View>
-
-          
-
+    </ScrollView>
+    
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  container: { flex: 1, backgroundColor: "#f8f8f8" },
 });
 
-export default OrgSettings;
+export default SettingsScreen;

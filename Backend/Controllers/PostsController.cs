@@ -5,6 +5,7 @@ using Backend.Services;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Backend.Controllers
@@ -23,11 +24,7 @@ namespace Backend.Controllers
             _logger = logger;
         }
 
-
-       
-
-
-        // -------------------- GET POSTS --------------------
+        // -------------------- GET ALL POSTS --------------------
         [AllowAnonymous] // Anyone can view posts
         [HttpGet]
         public async Task<ActionResult<List<EventDto>>> GetAllPosts()
@@ -44,6 +41,7 @@ namespace Backend.Controllers
             }
         }
 
+        // -------------------- GET SINGLE POST --------------------
         [AllowAnonymous]
         [HttpGet("filter")]
         public async Task<ActionResult<List<EventDto>>> GetFilteredEvents(
@@ -107,7 +105,7 @@ namespace Backend.Controllers
             }
         }
 
-        // -------------------- LIKES --------------------
+        // -------------------- LIKE POST --------------------
         [HttpPost("{id}/like")]
         public async Task<IActionResult> LikePost(string id)
         {
@@ -126,6 +124,7 @@ namespace Backend.Controllers
             return Ok(new { success = true, likeCount });
         }
 
+        // -------------------- CHECK IF POST IS LIKED --------------------
         [HttpGet("{id}/isLiked")]
         public async Task<IActionResult> IsLiked(string id)
         {
@@ -137,18 +136,17 @@ namespace Backend.Controllers
             return Ok(new { isLiked = existing });
         }
 
-        // -------------------- LIKE COUNT --------------------
-[AllowAnonymous]
-[HttpGet("{id}/likeCount")]
-public async Task<IActionResult> GetLikeCount(string id)
-{
-    var likeCount = await _postService.GetLikeCountAsync(id);
-    return Ok(new { likeCount });
-}
+        // -------------------- GET LIKE COUNT --------------------
+        [AllowAnonymous]
+        [HttpGet("{id}/likeCount")]
+        public async Task<IActionResult> GetLikeCount(string id)
+        {
+            var likeCount = await _postService.GetLikeCountAsync(id);
+            return Ok(new { likeCount });
+        }
 
-
-        // -------------------- COMMENTS --------------------
-       [HttpPost("{id}/comment")]
+        // -------------------- ADD COMMENT --------------------
+[HttpPost("{id}/comment")]
 public async Task<IActionResult> CommentPost(string id, [FromBody] CommentModel comment)
 {
     var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
@@ -162,7 +160,7 @@ public async Task<IActionResult> CommentPost(string id, [FromBody] CommentModel 
     comment.PostId = id;
     comment.UserId = userId;
     comment.Username = user?.Username ?? "Anonymous";
-    comment.UserImage = user?.ProfileImageUrl;  // <-- include user image
+    comment.UserImage = user?.ProfileImageUrl;  // include user image
     comment.CreatedAt = DateTime.UtcNow;
 
     // Add comment via service
@@ -183,21 +181,116 @@ public async Task<IActionResult> CommentPost(string id, [FromBody] CommentModel 
 }
 
 
+        [HttpPost("{id}/bookmark")]
+public async Task<IActionResult> ToggleBookmark(string id)
+{
+    var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+    if (string.IsNullOrEmpty(userId))
+        return Unauthorized(new { success = false, message = "User not logged in." });
 
-        [AllowAnonymous]
-        [HttpGet("{id}/comments")]
-        public async Task<ActionResult<List<CommentModel>>> GetComments(string id)
+    var isBookmarked = await _postService.IsBookmarkedAsync(id, userId);
+    if (isBookmarked)
+        await _postService.RemoveBookmarkAsync(id, userId);
+    else
+        await _postService.AddBookmarkAsync(id, userId);
+
+    return Ok(new { success = true, isBookmarked = !isBookmarked });
+}
+
+[HttpGet("{id}/isBookmarked")]
+public async Task<IActionResult> IsBookmarked(string id)
+{
+    var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+    if (string.IsNullOrEmpty(userId))
+        return Unauthorized(new { success = false, message = "User not logged in." });
+
+    var existing = await _postService.IsBookmarkedAsync(id, userId);
+    return Ok(new { isBookmarked = existing });
+}
+
+[HttpGet("bookmarks")]
+public async Task<IActionResult> GetUserBookmarks()
+{
+    var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+    if (string.IsNullOrEmpty(userId))
+        return Unauthorized(new { success = false, message = "User not logged in." });
+
+    var bookmarks = await _postService.GetBookmarksByUserAsync(userId);
+    return Ok(new { success = true, bookmarks });
+}
+
+
+// -------------------- GET COMMENTS --------------------
+[AllowAnonymous]
+[HttpGet("{id}/comments")]
+public async Task<ActionResult<List<object>>> GetComments(string id)
+{
+    _logger.LogInformation($"Fetching comments for post: {id}");
+    
+    if (string.IsNullOrEmpty(id))
+    {
+        _logger.LogWarning("Post ID is null or empty");
+        return BadRequest(new { success = false, message = "Post ID is required" });
+    }
+
+    try
+    {
+        _logger.LogDebug($"Calling GetCommentsByPostIdAsync for post: {id}");
+        var comments = await _postService.GetCommentsByPostIdAsync(id);
+        _logger.LogDebug($"Retrieved {comments?.Count ?? 0} comments for post: {id}");
+
+        if (comments == null)
         {
-            var comments = await _postService.GetCommentsByPostIdAsync(id);
-            return Ok(comments);
+            _logger.LogWarning($"No comments found for post: {id}");
+            return Ok(new List<object>());
         }
 
-        [AllowAnonymous]
-        [HttpGet("{id}/comments/count")]
-        public async Task<IActionResult> GetCommentCount(string id)
+        // Directly use stored username and userImage from the comment
+        var response = comments.Select(c => new
         {
-            var comments = await _postService.GetCommentsByPostIdAsync(id);
-            return Ok(new { count = comments.Count });
-        }
+            id = c?.Id ?? string.Empty,
+            postId = c?.PostId ?? string.Empty,
+            userId = c?.UserId ?? string.Empty,
+            username = c?.Username ?? "Anonymous",
+            userImage = c?.UserImage ?? string.Empty,
+            text = c?.Text ?? string.Empty,
+            createdAt = c?.CreatedAt ?? DateTime.UtcNow
+        }).ToList();
+
+        _logger.LogInformation($"Successfully processed {response.Count} comments for post: {id}");
+        return Ok(response);
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, $"Failed to fetch comments for post {id}");
+        return StatusCode(500, new { 
+            success = false, 
+            message = "Unable to fetch comments.",
+            error = ex.Message,
+            stackTrace = ex.StackTrace
+        });
     }
 }
+
+// -------------------- GET COMMENT COUNT --------------------
+
+[AllowAnonymous]
+[HttpGet("{id}/comments/count")]
+public async Task<IActionResult> GetCommentCount(string id)
+{
+    try
+    {
+        var count = await _postService.GetCommentCountAsync(id);
+        return Ok(new { count });
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, $"Failed to fetch comment count for post {id}");
+        return StatusCode(500, new { success = false, message = "Unable to fetch comment count." });
+    }
+} // end of GetCommentCount
+
+} // end of PostsController class
+} // end of namespace Backend.Controllers
+
+    

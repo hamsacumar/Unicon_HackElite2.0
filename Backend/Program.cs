@@ -168,12 +168,13 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+// Static files (images)
+app.UseStaticFiles(); 
 
-// Static files
-app.UseStaticFiles();
 
-// CORS, Auth
+// ✅ Enable CORS before Authorization
 app.UseCors("AllowAll");
+
 app.UseAuthentication();
 app.UseAuthorization();
 

@@ -20,7 +20,7 @@ namespace Backend.Services
         public async Task<List<Message>> GetAllAsync() =>
             await _messages.Find(_ => true).ToListAsync();
 
-        public async Task<Message> GetByIdAsync(string id) =>
+        public async Task<Message?> GetByIdAsync(string id) =>
             await _messages.Find(m => m.Id == id).FirstOrDefaultAsync();
 
         public async Task CreateAsync(Message message) =>

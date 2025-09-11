@@ -1,16 +1,15 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
-  ScrollView,
   StyleSheet,
   ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
   Animated,
   Image,
+  Alert,
+  FlatList,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import {
@@ -20,12 +19,15 @@ import {
   Comment,
 } from "../services/eventService";
 
-type Props = {
+// Props expected by the CommentSection component
+type Props<T = any> = {
   postId: string;
   userId?: string | null;
   onCommentAdd?: (count: number) => void;
   initialComments?: Comment[];
   initialCommentCount?: number;
+  visible?: boolean;
+  flatListRef?: React.RefObject<FlatList<T> | null>;
 };
 
 export default function CommentSection({
@@ -34,19 +36,25 @@ export default function CommentSection({
   onCommentAdd,
   initialComments = [],
   initialCommentCount = 0,
+  visible = false,
+  flatListRef,
 }: Props) {
   const [comments, setComments] = useState<Comment[]>(initialComments);
   const [text, setText] = useState("");
-  const [isLoading, setIsLoading] = useState(!initialComments.length);
+  const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [commentCount, setCommentCount] = useState(initialCommentCount);
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const inputRef = useRef<TextInput>(null);
 
   useEffect(() => {
-    if (!initialComments.length) loadComments();
-  }, [postId]);
+    if (visible) {
+      loadComments();
+    }
+  }, [visible, postId]);
 
   const loadComments = async () => {
+    if (isLoading) return;
     setIsLoading(true);
     try {
       const [fetched, count] = await Promise.all([
@@ -55,6 +63,7 @@ export default function CommentSection({
       ]);
       setComments(fetched);
       setCommentCount(count);
+      onCommentAdd?.(count);
     } catch (error) {
       console.error("Error loading comments:", error);
     } finally {
@@ -64,19 +73,28 @@ export default function CommentSection({
 
   const handleAddComment = async () => {
     if (!text.trim() || isSubmitting) return;
+    if (!userId) {
+      Alert.alert("Login Required", "Please login to add a comment");
+      return;
+    }
 
+    const tempId = `temp-${Date.now()}`;
     const tempComment: Comment = {
-      id: `temp-${Date.now()}`,
+      id: tempId,
       postId,
-      userId: userId || "guest",
-      username: userId ? "You" : "Guest", // temporary placeholder
+      userId,
+      username: "You",
       text,
       createdAt: new Date().toISOString(),
+      userImage: undefined,
     };
 
-    setComments([tempComment, ...comments]);
+    setComments((prev) => [tempComment, ...prev]);
     const updatedCount = commentCount + 1;
     setCommentCount(updatedCount);
+
+    // Blur the input so keyboard hides
+    inputRef.current?.blur();
     setText("");
     onCommentAdd?.(updatedCount);
 
@@ -87,60 +105,43 @@ export default function CommentSection({
       useNativeDriver: true,
     }).start();
 
-    if (!userId) return;
-
     try {
       setIsSubmitting(true);
-      // Call backend API which returns { success, comment }
-      const res = (await addComment(postId, { text })) as { success: boolean; comment: Comment };
-
+      const res = await addComment(postId, { text });
       if (res?.success && res.comment) {
-        // Replace temp comment with real comment from backend
         setComments((prev) => [
           res.comment,
-          ...prev.filter((c) => c.id !== tempComment.id),
+          ...prev.filter((c) => c.id !== tempId),
         ]);
       } else {
         throw new Error("Failed to add comment");
       }
     } catch (error) {
       console.error("Error adding comment:", error);
-      // Remove temp comment on failure
-      setComments((prev) => prev.filter((c) => c.id !== tempComment.id));
+      setComments((prev) => prev.filter((c) => c.id !== tempId));
       setCommentCount((prev) => prev - 1);
+      setText(text);
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  // =================== FIXED JSX ===================
+  if (!visible) return null;
+
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={{ flex: 1 }}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
-    >
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: 100 }}
-      >
-        {isLoading ? (
-          <ActivityIndicator size="large" color="#e74c3c" />
-        ) : comments.length ? (
-          comments.map((item, index) => (
-            <Animated.View
-          key={item.id || `comment-${index}`}
-              style={{
-                opacity: fadeAnim,
-                marginBottom: 16,
-                ...styles.commentContainer,
-              }}
-            >
+    <View style={{ paddingVertical: 10 }}>
+      {isLoading ? (
+        <ActivityIndicator size="large" color="#e74c3c" />
+      ) : comments.length > 0 ? (
+        <FlatList
+          data={comments}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <View style={styles.commentContainer}>
               <View style={styles.commentHeader}>
                 {item.userImage ? (
-                  <Image
-                    source={{ uri: item.userImage }}
-                    style={styles.avatar}
-                  />
+                  <Image source={{ uri: item.userImage }} style={styles.avatar} />
                 ) : (
                   <View style={[styles.avatar, styles.avatarPlaceholder]}>
                     <Text style={styles.avatarText}>
@@ -150,7 +151,7 @@ export default function CommentSection({
                 )}
                 <View style={styles.commentContent}>
                   <Text style={styles.commentAuthor}>
-                    {item.username || "Anonymous"}
+                    {item.username || (item.userId === userId ? "You" : "Anonymous")}
                   </Text>
                   <Text style={styles.commentText}>{item.text}</Text>
                   <Text style={styles.commentTime}>
@@ -163,52 +164,37 @@ export default function CommentSection({
                   </Text>
                 </View>
               </View>
-            </Animated.View>
-          ))
-        ) : (
-          <View style={styles.emptyState}>
-            <Ionicons
-              name="chatbubble-ellipses-outline"
-              size={48}
-              color="#ccc"
-            />
-            <Text style={styles.emptyText}>No comments yet</Text>
-          </View>
-        )}
-      </ScrollView>
+            </View>
+          )}
+        />
+      ) : (
+        <View style={styles.emptyState}>
+          <Ionicons name="chatbubble-ellipses-outline" size={48} color="#ccc" />
+          <Text style={styles.emptyText}>No comments yet</Text>
+        </View>
+      )}
 
+      {/* Input */}
       <View style={styles.inputContainer}>
         <TextInput
-          style={[styles.input, !userId && styles.disabledInput]}
+          ref={inputRef}
+          style={[styles.input, isSubmitting && styles.disabledInput]}
           value={text}
           onChangeText={setText}
-          placeholder={userId ? "Add a comment..." : "Log in to comment"}
-          placeholderTextColor="#999"
+          placeholder="Write a comment..."
+          editable={!isSubmitting}
           multiline
-          maxLength={500}
-          onSubmitEditing={handleAddComment}
-          returnKeyType="send"
-          blurOnSubmit={false}
-          editable={!!userId}
-          pointerEvents={userId ? "auto" : "none"}
+          onFocus={() => flatListRef?.current?.scrollToEnd({ animated: true })}
         />
         <TouchableOpacity
-          style={[
-            styles.sendButton,
-            (!text.trim() || isSubmitting || !userId) &&
-              styles.sendButtonDisabled,
-          ]}
+          style={[styles.sendButton, isSubmitting && styles.sendButtonDisabled]}
           onPress={handleAddComment}
-          disabled={!text.trim() || isSubmitting || !userId}
+          disabled={isSubmitting}
         >
-          {isSubmitting ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <Ionicons name="send" size={20} color="#fff" />
-          )}
+          <Ionicons name="send" size={24} color="#fff" />
         </TouchableOpacity>
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
@@ -224,9 +210,9 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 18,
     marginRight: 12,
-    backgroundColor: "#e0e0e0",
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "#e0e0e0",
   },
   avatarPlaceholder: { backgroundColor: "#e74c3c" },
   avatarText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
@@ -247,10 +233,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
     backgroundColor: "#fff",
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
+    marginTop: 10,
   },
   input: {
     flex: 1,
@@ -273,6 +256,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   sendButtonDisabled: { backgroundColor: "#ccc" },
-  emptyState: { justifyContent: "center", alignItems: "center", marginTop: 32 },
+  emptyState: { justifyContent: "center", alignItems: "center", marginTop: 16 },
   emptyText: { fontSize: 14, color: "#999", marginTop: 8 },
 });

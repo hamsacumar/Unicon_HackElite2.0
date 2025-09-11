@@ -1,3 +1,5 @@
+// App.tsx
+import "react-native-gesture-handler";
 import React from "react";
 import { TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -24,20 +26,23 @@ import ResetPasswordScreen from "./screens/auth/ResetPasswordScreen";
 import Filter from "./screens/filter";
 import Home from "./screens/Home";
 import LandingPage from "./screens/LandingPage";
-import InputPage from "./screens/input";
-import Chat from "./screens/Chat";
-import InboxScreen from "./screens/InboxScreen";
+import InputPage from "./screens/input"; // Input Page
 import Profile from "./screens/Profile";
 import ViewProfile from "./screens/ViewProfile";
 import EditProfile from "./screens/EditProfile";
+import MessagesPage from "./screens/MessagePage";
 import ProfileSetup from "./screens/ProfileSetup";
 import OrgProfile from "./screens/OrgProfile";
 import PostDetail from "./screens/PostDetail";
 import { EventItem } from "./services/eventService";
 import SplashScreen from "./screens/SplashScreen"; 
+import OrgPostDetail from "./screens/OrgPostDetail";
 // Context
 import { AuthProvider } from "./utils/AuthContext";
 import NotificationScreen from "./screens/NotificationScreen";
+import HelpScreen from "./screens/HelpScreen";
+import TermsScreen from "./screens/TermsScreen";
+import AboutScreen from "./screens/AboutScreen";
 
 export type RootStackParamList = {
   SplashScreen: undefined;
@@ -56,6 +61,9 @@ export type RootStackParamList = {
   EditProfile: undefined;
   ProfileSetup: undefined;
   OrgProfile: undefined;
+  PostDetail: { post: EventItem; userId?: string | null };
+  OrgPostDetail: { post: EventItem; userId?: string | null };
+
   Test: undefined;
   Login: undefined;
   Signup: undefined;
@@ -64,6 +72,13 @@ export type RootStackParamList = {
   ForgotPassword: undefined;
   ResetPassword: undefined;
   Filter: { userId: string };
+  MessagePage: undefined;
+  Help: undefined;
+  Terms: undefined;
+  About: undefined;
+
+
+
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -102,7 +117,7 @@ const AppStack = () => (
               <Ionicons name="notifications-outline" size={26} color="white" />
             </TouchableOpacity>
             <TouchableOpacity
-              onPress={() => navigation.navigate("InboxScreen", { currentUserId: "123" })}
+              onPress={() => navigation.navigate("MessagePage")}
               style={{ marginRight: 15 }}
             >
               <Ionicons name="chatbubble-ellipses-outline" size={26} color="white" />
@@ -124,26 +139,6 @@ const AppStack = () => (
         >;
       }) => ({
         title: "EventTrix",
-        headerLeft: () => (
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={{ marginLeft: 15 }}
-          >
-            <Ionicons name="arrow-back" size={24} color="white" />
-          </TouchableOpacity>
-        ),
-      })}
-    />
-
-    <Stack.Screen
-      name="OrgProfile"
-      component={OrgProfile}
-      options={({
-        navigation,
-      }: {
-        navigation: NativeStackNavigationProp<RootStackParamList, "OrgProfile">;
-      }) => ({
-        title: "Organization Profile",
         headerLeft: () => (
           <TouchableOpacity
             onPress={() => navigation.goBack()}
@@ -189,22 +184,26 @@ const AppStack = () => (
       options={{ title: "Settings and Activity" }}
     />
     <Stack.Screen
+      name="PostDetail"
+      component={PostDetail}
+      options={{ title: "PostDetail" }}
+    />
+    <Stack.Screen
       name="Filter"
       component={Filter}
       options={{ title: "Filter" }}
       initialParams={{ userId: "" }} // This will be populated with the actual userId when navigating
+    />
+      <Stack.Screen
+      name="PostDetail"
+      component={PostDetail}
+      options={{ title: "Post Details" }}
     />
     <Stack.Screen
       name="InputPage"
       component={InputPage}
       options={{ title: "Create Event" }}
     />
-    <Stack.Screen
-      name="InboxScreen"
-      component={InboxScreen}
-      options={{ title: "Inbox" }}
-    />
-    <Stack.Screen name="Chat" component={Chat} options={{ title: "Chat" }} />
     <Stack.Screen
       name="ViewProfile"
       component={ViewProfile}
@@ -215,11 +214,7 @@ const AppStack = () => (
       component={EditProfile}
       options={{ title: "Edit Profile" }}
     />
-    <Stack.Screen
-      name="PostDetail"
-      component={PostDetail}
-      options={{ title: "Post" }}
-    />
+   
 
     <Stack.Screen name="Test" component={Test} />
     <Stack.Screen
@@ -274,6 +269,42 @@ const AppStack = () => (
         headerTintColor: "#fff",
         headerTitleStyle: { fontWeight: "bold" },
       })}
+    />
+    <Stack.Screen
+      name="MessagePage"
+      component={MessagesPage}
+      options={{ title: "Message" }}
+    />
+
+<Stack.Screen
+  name="Help"
+  component={HelpScreen}
+  options={{ title: "Help & Support" }}
+/>
+<Stack.Screen
+  name="Terms"
+  component={TermsScreen}
+  options={{ title: "Terms & Policies" }}
+/>
+<Stack.Screen
+  name="About"
+  component={AboutScreen}
+  options={{ title: "About" }}
+/>
+     <Stack.Screen
+      name="PostDetail"
+      component={PostDetail}
+      options={{ title: "EventTrix" }}
+    />
+     <Stack.Screen
+      name="PostDetail"
+      component={PostDetail}
+      options={{ title: "EventTrix" }}
+    />
+    <Stack.Screen
+      name="OrgPostDetail"
+      component={OrgPostDetail}
+      options={{ title: "EventTrix" }}
     />
   </Stack.Navigator>
 );
