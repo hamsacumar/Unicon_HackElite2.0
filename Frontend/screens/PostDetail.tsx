@@ -174,9 +174,16 @@ useFocusEffect(
               {/* User Profile Row */}
               <TouchableOpacity style={styles.userRow} onPress={() => handleUserPress(post.userId)} activeOpacity={0.7}>
                 <Image
-                  source={{ uri: post.userImage || "https://cdn-icons-png.flaticon.com/512/3135/3135715.png" }}
-                  style={styles.avatar}
-                />
+  source={{
+    uri: post.userImage
+      ? (post.userImage.startsWith("http")
+          ? post.userImage
+          : `${API_URL}${post.userImage.startsWith("/") ? "" : "/"}${post.userImage}`)
+      : "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
+  }}
+  style={styles.avatar}
+/>
+ 
                 <View>
                   <Text style={styles.username}>{post.username}</Text>
                   <Text style={styles.timestamp}>
