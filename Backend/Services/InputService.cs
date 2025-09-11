@@ -26,4 +26,8 @@ namespace Backend.Services
             return ev;
         }
     }
+
+    public interface IInputService
+    {
+    }
 }

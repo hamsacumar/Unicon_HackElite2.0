@@ -13,7 +13,7 @@ type RootStackParamList = {
   // Add other screens here if needed
   InputPage: undefined;
   MessagePage: undefined;
- 
+  InboxScreen: { currentUserId: string };
   Login: undefined;
   Signup: undefined;
   NotificationScreen: undefined;

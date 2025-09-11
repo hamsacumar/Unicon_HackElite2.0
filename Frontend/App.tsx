@@ -54,7 +54,6 @@ export type RootStackParamList = {
   InputPage: undefined;
   InboxScreen: { currentUserId: string };
   EventDetail: { eventId: string };
-  PostDetail: { post: EventItem; userId?: string | null; focusComments?: boolean };
   Chat: { currentUserId: string; otherUserId: string; currentUsername: string; otherUsername: string };
   Notification: undefined;
   ViewProfile: { username: string };
@@ -184,20 +183,10 @@ const AppStack = () => (
       options={{ title: "Settings and Activity" }}
     />
     <Stack.Screen
-      name="PostDetail"
-      component={PostDetail}
-      options={{ title: "PostDetail" }}
-    />
-    <Stack.Screen
       name="Filter"
       component={Filter}
       options={{ title: "Filter" }}
       initialParams={{ userId: "" }} // This will be populated with the actual userId when navigating
-    />
-      <Stack.Screen
-      name="PostDetail"
-      component={PostDetail}
-      options={{ title: "Post Details" }}
     />
     <Stack.Screen
       name="InputPage"
@@ -214,8 +203,16 @@ const AppStack = () => (
       component={EditProfile}
       options={{ title: "Edit Profile" }}
     />
-   
-
+    <Stack.Screen
+      name="PostDetail"
+      component={PostDetail}
+      options={{ title: "Post Details" }}
+    />
+    <Stack.Screen
+      name="OrgPostDetail"
+      component={OrgPostDetail}
+      options={{ title: "EventTrix" }}
+    />
     <Stack.Screen name="Test" component={Test} />
     <Stack.Screen
       name="Login"
@@ -276,35 +273,20 @@ const AppStack = () => (
       options={{ title: "Message" }}
     />
 
-<Stack.Screen
-  name="Help"
-  component={HelpScreen}
-  options={{ title: "Help & Support" }}
-/>
-<Stack.Screen
-  name="Terms"
-  component={TermsScreen}
-  options={{ title: "Terms & Policies" }}
-/>
-<Stack.Screen
-  name="About"
-  component={AboutScreen}
-  options={{ title: "About" }}
-/>
-     <Stack.Screen
-      name="PostDetail"
-      component={PostDetail}
-      options={{ title: "EventTrix" }}
-    />
-     <Stack.Screen
-      name="PostDetail"
-      component={PostDetail}
-      options={{ title: "EventTrix" }}
+    <Stack.Screen
+      name="Help"
+      component={HelpScreen}
+      options={{ title: "Help & Support" }}
     />
     <Stack.Screen
-      name="OrgPostDetail"
-      component={OrgPostDetail}
-      options={{ title: "EventTrix" }}
+      name="Terms"
+      component={TermsScreen}
+      options={{ title: "Terms & Policies" }}
+    />
+    <Stack.Screen
+      name="About"
+      component={AboutScreen}
+      options={{ title: "About" }}
     />
   </Stack.Navigator>
 );

@@ -8,6 +8,7 @@ namespace Backend.Models
     /// <summary>
     /// Represents a notification sent to a user
     /// </summary>
+    [BsonIgnoreExtraElements]
     public class Notification
     {
         [BsonId]
@@ -48,6 +49,12 @@ namespace Backend.Models
         [BsonElement("organizerId")]
         [BsonRepresentation(BsonType.ObjectId)]
         public string? OrganizerId { get; set; }
+
+        /// <summary>
+        /// The name of the organizer who triggered this notification (if applicable)
+        /// </summary>
+        [BsonElement("organizerName")]
+        public string? OrganizerName { get; set; }
 
         /// <summary>
         /// The ID of the related event (if applicable)
