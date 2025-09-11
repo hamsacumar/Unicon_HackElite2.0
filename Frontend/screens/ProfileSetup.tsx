@@ -1,45 +1,59 @@
 import React, { useState } from "react";
-import { 
-  View, 
-  Text, 
-  Image, 
-  StyleSheet, 
-  TouchableOpacity, 
+import {
+  View,
+  Text,
+  Image,
+  StyleSheet,
+  TouchableOpacity,
   Alert,
   ActivityIndicator,
   SafeAreaView,
-  ScrollView 
+  ScrollView,
+  Platform,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
-import { api } from "../services/api"; // your axios instance
-import { useAuth } from "../utils/AuthContext"; // get JWT token
-import { Ionicons } from '@expo/vector-icons';
+import Constants from "expo-constants";
+import axios from "axios";
+import * as SecureStore from "expo-secure-store";
+import { Ionicons } from "@expo/vector-icons";
 
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../App';
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RootStackParamList } from "../App";
+import { useAuth } from "../utils/AuthContext";
+
 
 type ProfileSetupScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
-  'ProfileSetup'
+  "ProfileSetup"
 >;
 
-export default function ProfileSetup({ navigation }: { navigation: ProfileSetupScreenNavigationProp }) {
+export default function ProfileSetup({
+  navigation,
+}: {
+  navigation: ProfileSetupScreenNavigationProp;
+}) {
   const [image, setImage] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isSkipping, setIsSkipping] = useState(false);
   const { token } = useAuth();
 
+  // Get backend URL from Expo constants
+  const BASE_URL = Constants.expoConfig?.extra?.apiUrl;
+
   const pickImage = async () => {
-    // Request permissions first
-    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    
-    if (permissionResult.granted === false) {
-      Alert.alert("Permission Required", "Permission to access camera roll is required!");
+    const permissionResult =
+      await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (!permissionResult.granted) {
+      Alert.alert(
+        "Permission Required",
+        "Permission to access camera roll is required!"
+      );
       return;
     }
 
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"], // <-- use 'images' string array instead of MediaTypeOptions
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.7,
@@ -52,13 +66,17 @@ export default function ProfileSetup({ navigation }: { navigation: ProfileSetupS
 
   const takePhoto = async () => {
     const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
-    
-    if (permissionResult.granted === false) {
-      Alert.alert("Permission Required", "Permission to access camera is required!");
+
+    if (!permissionResult.granted) {
+      Alert.alert(
+        "Permission Required",
+        "Permission to access camera is required!"
+      );
       return;
     }
 
-    let result = await ImagePicker.launchCameraAsync({
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ["images"], // <-- use 'images' string array
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.7,
@@ -76,7 +94,7 @@ export default function ProfileSetup({ navigation }: { navigation: ProfileSetupS
       [
         { text: "Take Photo", onPress: takePhoto },
         { text: "Choose from Library", onPress: pickImage },
-        { text: "Cancel", style: "cancel" }
+        { text: "Cancel", style: "cancel" },
       ]
     );
   };
@@ -85,29 +103,62 @@ export default function ProfileSetup({ navigation }: { navigation: ProfileSetupS
     if (!image) return;
 
     setIsUploading(true);
-    const formData = new FormData();
-    formData.append("file", {
-      uri: image,
-      name: "profile.jpg",
-      type: "image/jpeg",
-    } as any);
 
     try {
-      await api.post("/profile/upload-image", formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data",
-        },
-      });
-      
-      Alert.alert(
-        "Success!",
-        "Your profile photo has been uploaded successfully!",
-        [{ text: "Continue", onPress: () => navigation.replace("Home") }]
+      const fileExt = image.split(".").pop()?.toLowerCase() || "jpg";
+      const fileName = `profile_${Date.now()}.${fileExt}`;
+      const fileType = `image/${fileExt === "png" ? "png" : "jpeg"}`;
+
+      const formData = new FormData();
+
+      if (Platform.OS === "web") {
+        const response = await fetch(image);
+        const blob = await response.blob();
+        const file = new File([blob], fileName, { type: fileType });
+        formData.append("File", file);
+      } else {
+        // React Native mobile
+        // @ts-ignore
+        formData.append("File", {
+          uri: image,
+          name: fileName,
+          type: fileType,
+        });
+      }
+
+      const savedToken =
+        token || (await SecureStore.getItemAsync("accessToken"));
+
+      const res = await axios.post(
+        `${BASE_URL}/profile/upload-image`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${savedToken}`,
+          },
+          onUploadProgress: (event) => {
+            if (event.total) {
+              const progress = Math.round((event.loaded / event.total) * 100);
+              console.log(`Upload progress: ${progress}%`);
+            }
+          },
+        }
       );
-    } catch (err) {
-      console.error(err);
-      Alert.alert("Error", "Failed to upload image. Please try again.");
+
+      console.log("Upload successful:", res.data);
+      Alert.alert("Success", "Profile photo uploaded successfully!");
+      navigation.replace("Home");
+    } catch (error: any) {
+      console.error("Upload error:", error);
+      let errorMessage = "Failed to upload image";
+      if (error.response) {
+        errorMessage =
+          error.response.data?.message || error.response.statusText;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      Alert.alert("Upload Failed", errorMessage);
     } finally {
       setIsUploading(false);
     }
@@ -116,9 +167,15 @@ export default function ProfileSetup({ navigation }: { navigation: ProfileSetupS
   const skipImage = async () => {
     setIsSkipping(true);
     try {
-      await api.post("/profile/skip-image", {}, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const savedToken =
+        token || (await SecureStore.getItemAsync("accessToken"));
+      await axios.post(
+        `${BASE_URL}/profile/skip-image`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${savedToken}` },
+        }
+      );
       navigation.replace("Home");
     } catch (err) {
       console.error(err);
@@ -132,7 +189,6 @@ export default function ProfileSetup({ navigation }: { navigation: ProfileSetupS
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.container}>
-          {/* Header Section */}
           <View style={styles.header}>
             <Text style={styles.title}>Set Up Your Profile</Text>
             <Text style={styles.subtitle}>
@@ -140,10 +196,9 @@ export default function ProfileSetup({ navigation }: { navigation: ProfileSetupS
             </Text>
           </View>
 
-          {/* Profile Image Section */}
           <View style={styles.imageSection}>
-            <TouchableOpacity 
-              onPress={showImageOptions} 
+            <TouchableOpacity
+              onPress={showImageOptions}
               style={styles.imageContainer}
               activeOpacity={0.8}
             >
@@ -155,16 +210,15 @@ export default function ProfileSetup({ navigation }: { navigation: ProfileSetupS
                   <Text style={styles.placeholderText}>Add Photo</Text>
                 </View>
               )}
-              
-              {/* Edit icon overlay */}
+
               <View style={styles.editIcon}>
                 <Ionicons name="camera" size={20} color="#fff" />
               </View>
             </TouchableOpacity>
 
             {image && (
-              <TouchableOpacity 
-                onPress={() => setImage(null)} 
+              <TouchableOpacity
+                onPress={() => setImage(null)}
                 style={styles.removeButton}
               >
                 <Text style={styles.removeButtonText}>Remove Photo</Text>
@@ -172,11 +226,13 @@ export default function ProfileSetup({ navigation }: { navigation: ProfileSetupS
             )}
           </View>
 
-          {/* Action Buttons */}
           <View style={styles.buttonContainer}>
             {image && (
-              <TouchableOpacity 
-                style={[styles.primaryButton, isUploading && styles.disabledButton]} 
+              <TouchableOpacity
+                style={[
+                  styles.primaryButton,
+                  isUploading && styles.disabledButton,
+                ]}
                 onPress={uploadImage}
                 disabled={isUploading}
               >
@@ -191,8 +247,11 @@ export default function ProfileSetup({ navigation }: { navigation: ProfileSetupS
               </TouchableOpacity>
             )}
 
-            <TouchableOpacity 
-              style={[styles.secondaryButton, isSkipping && styles.disabledButton]} 
+            <TouchableOpacity
+              style={[
+                styles.secondaryButton,
+                isSkipping && styles.disabledButton,
+              ]}
               onPress={skipImage}
               disabled={isSkipping || isUploading}
             >
@@ -207,7 +266,6 @@ export default function ProfileSetup({ navigation }: { navigation: ProfileSetupS
             </TouchableOpacity>
           </View>
 
-          {/* Info Section */}
           <View style={styles.infoSection}>
             <Text style={styles.infoText}>
               You can always add or change your profile photo later in settings
@@ -219,27 +277,22 @@ export default function ProfileSetup({ navigation }: { navigation: ProfileSetupS
   );
 }
 
+// Your existing styles remain unchanged
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#fff",
-  },
+  safeArea: { flex: 1, backgroundColor: "#fff" },
   scrollContainer: {
     flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   container: {
     paddingHorizontal: 20,
     paddingVertical: 20,
     alignItems: "center",
     justifyContent: "center",
-    width: '100%',
+    width: "100%",
   },
-  header: {
-    alignItems: "center",
-    marginBottom: 40,
-  },
+  header: { alignItems: "center", marginBottom: 40 },
   title: {
     fontSize: 32,
     fontWeight: "bold",
@@ -254,14 +307,8 @@ const styles = StyleSheet.create({
     lineHeight: 26,
     paddingHorizontal: 30,
   },
-  imageSection: {
-    alignItems: "center",
-    marginBottom: 40,
-  },
-  imageContainer: {
-    position: "relative",
-    marginBottom: 20,
-  },
+  imageSection: { alignItems: "center", marginBottom: 40 },
+  imageContainer: { position: "relative", marginBottom: 20 },
   image: {
     width: 200,
     height: 200,
@@ -269,10 +316,7 @@ const styles = StyleSheet.create({
     borderWidth: 5,
     borderColor: "#E64A0D",
     shadowColor: "#E64A0D",
-    shadowOffset: {
-      width: 0,
-      height: 8,
-    },
+    shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
     shadowRadius: 12,
     elevation: 8,
@@ -288,10 +332,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#fff5f3",
     shadowColor: "#E64A0D",
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 8,
     elevation: 4,
@@ -315,27 +356,14 @@ const styles = StyleSheet.create({
     borderWidth: 4,
     borderColor: "#fff",
     shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 6,
   },
-  removeButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-  },
-  removeButtonText: {
-    color: "#E64A0D",
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  buttonContainer: {
-    width: "100%",
-    gap: 16,
-  },
+  removeButton: { paddingVertical: 8, paddingHorizontal: 16 },
+  removeButtonText: { color: "#E64A0D", fontSize: 14, fontWeight: "500" },
+  buttonContainer: { width: "100%", gap: 16 },
   primaryButton: {
     backgroundColor: "#E64A0D",
     paddingVertical: 18,
@@ -343,19 +371,12 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: "center",
     shadowColor: "#E64A0D",
-    shadowOffset: {
-      width: 0,
-      height: 6,
-    },
+    shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.4,
     shadowRadius: 12,
     elevation: 8,
   },
-  primaryButtonText: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
+  primaryButtonText: { color: "#fff", fontSize: 18, fontWeight: "bold" },
   secondaryButton: {
     backgroundColor: "transparent",
     paddingVertical: 18,
@@ -365,23 +386,10 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "#E64A0D",
   },
-  secondaryButtonText: {
-    color: "#E64A0D",
-    fontSize: 18,
-    fontWeight: "600",
-  },
-  disabledButton: {
-    opacity: 0.6,
-  },
-  buttonContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  infoSection: {
-    marginTop: 20,
-    paddingHorizontal: 20,
-  },
+  secondaryButtonText: { color: "#E64A0D", fontSize: 18, fontWeight: "600" },
+  disabledButton: { opacity: 0.6 },
+  buttonContent: { flexDirection: "row", alignItems: "center", gap: 8 },
+  infoSection: { marginTop: 20, paddingHorizontal: 20 },
   infoText: {
     fontSize: 14,
     color: "#999",

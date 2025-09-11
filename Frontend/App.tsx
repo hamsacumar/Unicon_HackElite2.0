@@ -57,7 +57,8 @@ export type RootStackParamList = {
   ProfileSetup: undefined;
   OrgProfile: undefined;
   PostDetail: { post: EventItem; userId?: string | null };
-  LandingPostDetail: { post: EventItem };  OrgPostDetail: { post: EventItem; userId?: string | null };
+  LandingPostDetail: { post: EventItem };
+  OrgPostDetail: { post: EventItem; userId?: string | null };
 
   Test: undefined;
   Login: undefined;
@@ -132,7 +133,7 @@ const AppStack = () => (
             onPress={() => navigation.goBack()}
             style={{ marginLeft: 15 }}
           >
-            <Ionicons name="arrow-back" size={24} color="white" />
+            
           </TouchableOpacity>
         ),
       })}
@@ -182,11 +183,7 @@ const AppStack = () => (
       options={{ title: "Filter" }}
       initialParams={{ userId: "" }} // This will be populated with the actual userId when navigating
     />
-      <Stack.Screen
-      name="PostDetail"
-      component={PostDetail}
-      options={{ title: "Post Details" }}
-    />
+     
     <Stack.Screen
       name="InputPage"
       component={InputPage}
@@ -261,16 +258,8 @@ const AppStack = () => (
   component={AboutScreen}
   options={{ title: "About" }}
 />
-     <Stack.Screen
-      name="PostDetail"
-      component={PostDetail}
-      options={{ title: "EventTrix" }}
-    />
-     <Stack.Screen
-      name="PostDetail"
-      component={PostDetail}
-      options={{ title: "EventTrix" }}
-    />
+    
+    
     <Stack.Screen
       name="LandingPostDetail"
       component={LandingPostDetail}
