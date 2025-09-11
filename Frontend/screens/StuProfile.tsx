@@ -12,10 +12,13 @@ import {
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import RoleBasedBottomNav from "../component/rolebasedNav";
+import Constants from "expo-constants";
 
 import Ionicons from "react-native-vector-icons/Ionicons";
 
 import { ProfileService, Profile, Post } from '../services/ProfileService';
+
+const API_URL = Constants.expoConfig?.extra?.apiUrl?.replace("/api", "");
 
 // Define your stack param list
 type RootStackParamList = {
@@ -68,11 +71,21 @@ const StuProfile: React.FC = () => {
       {/* Fixed Profile Section */}
       <View style={styles.profileSection}>
         <View style={styles.profileHeader}>
-          <View style={styles.profileBorder}>
+<View style={styles.profileBorder}>
             <View style={styles.profileImage}>
               <Image
-                source={require("../assets/icon.png")}
+                source={{
+                  uri: profile?.profileImageUrl
+                    ? (profile.profileImageUrl.startsWith("http")
+                      ? profile.profileImageUrl
+                      : `${API_URL}${profile.profileImageUrl.startsWith("/") ? "" : "/"}${profile.profileImageUrl}`)
+                    : Image.resolveAssetSource(require("../assets/icon.png")).uri, // ✅ fallback
+                }}
                 style={styles.image}
+                resizeMode="cover"
+                onError={(e) =>
+                  console.log("Error loading profile image:", e.nativeEvent.error)
+                }
               />
             </View>
           </View>

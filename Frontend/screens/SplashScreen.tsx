@@ -17,7 +17,7 @@ const SplashScreen = () => {
     // Navigate to LandingPage after 3 seconds
     const timer = setTimeout(() => {
       navigation.navigate("LandingPage");
-    }, 2000);
+    }, 4000);
 
     // Clean up the timer if the component unmounts
     return () => clearTimeout(timer);
