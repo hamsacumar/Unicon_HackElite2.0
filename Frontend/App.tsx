@@ -1,7 +1,7 @@
 // App.tsx
 import "react-native-gesture-handler";
 import React from "react";
-import { TouchableOpacity } from "react-native";
+import { TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { NavigationContainer } from "@react-navigation/native";
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -39,6 +39,8 @@ import SplashScreen from "./screens/SplashScreen";
 import OrgPostDetail from "./screens/OrgPostDetail";
 // Context
 import { AuthProvider } from "./utils/AuthContext";
+import LandingPostDetail from "./screens/LandingPostDetail";
+import NotificationScreen from "./screens/NotificationScreen";
 import HelpScreen from "./screens/HelpScreen";
 import TermsScreen from "./screens/TermsScreen";
 import AboutScreen from "./screens/AboutScreen";
@@ -51,11 +53,16 @@ export type RootStackParamList = {
   Profile: undefined;
   OrgSettings: undefined;
   InputPage: undefined;
+  InboxScreen: { currentUserId: string };
+  EventDetail: { eventId: string };
+  Chat: { currentUserId: string; otherUserId: string; currentUsername: string; otherUsername: string };
+  Notification: undefined;
   ViewProfile: { username: string };
   EditProfile: undefined;
   ProfileSetup: undefined;
   OrgProfile: undefined;
   PostDetail: { post: EventItem; userId?: string | null };
+  LandingPostDetail: { post: EventItem };
   OrgPostDetail: { post: EventItem; userId?: string | null };
 
   Test: undefined;
@@ -94,25 +101,32 @@ const AppStack = () => (
       options={{ headerShown: false }}
     />
     <Stack.Screen
-  name="Home"
-  component={Home}
-  options={({
-    navigation,
-  }: {
-    navigation: NativeStackNavigationProp<RootStackParamList, "Home">;
-  }) => ({
-    title: "EventTrix",
-    headerRight: () => (
-      <TouchableOpacity
-        onPress={() => navigation.navigate("MessagePage")} 
-        style={{ marginRight: 15 }}
-      >
-        <Ionicons name="chatbubble-ellipses-outline" size={26} color="white" />
-      </TouchableOpacity>
-    ),
-  })}
-/>
-
+      name="Home"
+      component={Home}
+      options={({
+        navigation,
+      }: {
+        navigation: NativeStackNavigationProp<RootStackParamList, "Home">;
+      }) => ({
+        title: "EventTrix",
+        headerRight: () => (
+          <View style={{ flexDirection: 'row' }}>
+            <TouchableOpacity
+              onPress={() => navigation.navigate("Notification")}
+              style={{ marginRight: 15 }}
+            >
+              <Ionicons name="notifications-outline" size={26} color="white" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => navigation.navigate("MessagePage")}
+              style={{ marginRight: 15 }}
+            >
+              <Ionicons name="chatbubble-ellipses-outline" size={26} color="white" />
+            </TouchableOpacity>
+          </View>
+        ),
+      })}
+    />
 
     <Stack.Screen
       name="LandingPage"
@@ -131,7 +145,7 @@ const AppStack = () => (
             onPress={() => navigation.goBack()}
             style={{ marginLeft: 15 }}
           >
-            <Ionicons name="arrow-back" size={24} color="white" />
+            
           </TouchableOpacity>
         ),
       })}
@@ -176,11 +190,7 @@ const AppStack = () => (
       options={{ title: "Filter" }}
       initialParams={{ userId: "" }} // This will be populated with the actual userId when navigating
     />
-      <Stack.Screen
-      name="PostDetail"
-      component={PostDetail}
-      options={{ title: "Post Details" }}
-    />
+     
     <Stack.Screen
       name="InputPage"
       component={InputPage}
@@ -196,8 +206,12 @@ const AppStack = () => (
       component={EditProfile}
       options={{ title: "Edit Profile" }}
     />
+    <Stack.Screen
+      name="PostDetail"
+      component={PostDetail}
+      options={{ title: "Post Details" }}
+    />
    
-
     <Stack.Screen name="Test" component={Test} />
     <Stack.Screen
       name="Login"
@@ -235,6 +249,24 @@ const AppStack = () => (
       options={{ headerShown: false }}
     />
     <Stack.Screen
+      name="Notification"
+      component={NotificationScreen}
+      options={({ navigation }) => ({
+        title: "Notifications",
+        headerLeft: () => (
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={{ marginLeft: 15 }}
+          >
+            <Ionicons name="arrow-back" size={24} color="white" />
+          </TouchableOpacity>
+        ),
+        headerStyle: { backgroundColor: "#FF5722" },
+        headerTintColor: "#fff",
+        headerTitleStyle: { fontWeight: "bold" },
+      })}
+    />
+    <Stack.Screen
       name="MessagePage"
       component={MessagesPage}
       options={{ title: "Message" }}
@@ -255,6 +287,14 @@ const AppStack = () => (
   component={AboutScreen}
   options={{ title: "About" }}
 />
+    
+    
+    <Stack.Screen
+      name="LandingPostDetail"
+      component={LandingPostDetail}
+      options={{ title: "EventTrix" }}
+    />
+
     <Stack.Screen
       name="OrgPostDetail"
       component={OrgPostDetail}

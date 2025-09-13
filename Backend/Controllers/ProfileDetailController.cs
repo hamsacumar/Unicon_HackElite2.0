@@ -98,9 +98,9 @@ public async Task<IActionResult> GetEventsByUsername(string username)
             if (string.IsNullOrWhiteSpace(username))
                 return BadRequest("Username is required.");
 
-    var count = await _profileService.GetPostCountByUsernameAsync(username);
-    return Ok(new { username, postCount = count });
-}
+            var count = await _profileService.GetPostCountByUsernameAsync(username);
+            return Ok(new { username, postCount = count });
+        }
 
 
 [HttpGet("my-postcount")]

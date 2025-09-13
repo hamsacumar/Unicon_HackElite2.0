@@ -2,6 +2,9 @@ using Microsoft.AspNetCore.Mvc;
 using Backend.Models;
 using Backend.Services;
 using MongoDB.Bson;
+using System.Security.Claims;
+using Microsoft.AspNetCore.SignalR;
+using Hackelite2._0.Hubs;
 
 namespace Backend.Controllers
 {
@@ -10,15 +13,23 @@ namespace Backend.Controllers
     public class MessagesController : ControllerBase
     {
         private readonly IMessageService _messageService;
+        private readonly INotificationService _notificationService;
+        private readonly IHubContext<NotificationHub> _hubContext;
         private readonly IUserService _userService;
         private readonly ILogger<MessagesController> _logger;
 
         public MessagesController(
-            IMessageService messageService,
+            
+            IMessageService messageService, 
+            INotificationService notificationService,
+            IHubContext<NotificationHub> hubContext,
+           
             IUserService userService,
             ILogger<MessagesController> logger)
         {
             _messageService = messageService;
+            _notificationService = notificationService;
+            _hubContext = hubContext;
             _userService = userService;
             _logger = logger;
         }
@@ -69,6 +80,14 @@ namespace Backend.Controllers
         {
             try
             {
+                var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(currentUserId))
+                    return Unauthorized(new { success = false, message = "User not authenticated" });
+
+                // Ensure the current user is part of the conversation
+                if (currentUserId != user1 && currentUserId != user2)
+                    return Forbid(new { success = false, message = "Access denied to this conversation" });
+
                 var messages = await _messageService.GetConversationAsync(user1, user2);
                 return Ok(new { success = true, data = messages });
             }
@@ -77,6 +96,11 @@ namespace Backend.Controllers
                 _logger.LogError(ex, "Failed to get conversation");
                 return StatusCode(500, new { success = false, error = ex.Message });
             }
+        }
+
+        private IActionResult Forbid(object value)
+        {
+            throw new NotImplementedException();
         }
 
         // ✅ Inbox

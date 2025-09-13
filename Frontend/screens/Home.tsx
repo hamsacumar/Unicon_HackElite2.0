@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import {
   View,
   Text,
@@ -32,7 +32,7 @@ import PostText from "../component/PostText";
 
 type HomeNavigationProp = NativeStackNavigationProp<RootStackParamList, "Home">;
 
-type EventWithUI = Omit<EventItem, 'comments' | 'commentCount'> & {
+type EventWithUI = Omit<EventItem, "comments" | "commentCount"> & {
   showComments?: boolean;
   comments?: Comment[];
   commentCount?: number;
@@ -46,7 +46,8 @@ export default function Home() {
   const [events, setEvents] = useState<EventWithUI[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-const flatListRef = useRef<FlatList<EventWithUI>>(null);
+  const flatListRef = useRef<FlatList<EventWithUI>>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     async function fetchUser() {
@@ -60,42 +61,35 @@ const flatListRef = useRef<FlatList<EventWithUI>>(null);
     fetchUser();
   }, []);
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        setLoading(true);
-        const data = await getEvents();
-        const postsWithUI = await Promise.all(
-          data.map(async post => {
-            const [comments, commentCount, bookmarked] = await Promise.all([
-              getComments(post.id),
-              getCommentCount(post.id),
-              userId ? isBookmarked(post.id) : Promise.resolve(false),
-            ]);
-            return {
-              ...post,
-              showComments: false,
-              comments,
-              commentCount: commentCount || 0,
-              isBookmarked: bookmarked,
-            };
-          })
-        );
-        setEvents(postsWithUI);
-      } catch (error) {
-        console.error("Error fetching events:", error);
-      } finally {
-        setLoading(false);
-      }
+  // 🔹 fetchData logic
+  const fetchData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await getEvents();
+      setEvents(data as EventWithUI[]);
+    } catch (err) {
+      console.error("Error fetching events:", err);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
     }
+  }, []);
+
+  useEffect(() => {
     fetchData();
-  }, [userId]);
+  }, [fetchData]);
+
+  // 🔹 pull-to-refresh
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchData();
+  }, [fetchData]);
 
   const handlePostPress = (item: EventWithUI) => {
     navigation.navigate("PostDetail", { post: item, userId });
   };
 
-  if (loading)
+  if (loading && !refreshing) {
     return (
       <ActivityIndicator
         size="large"
@@ -103,6 +97,7 @@ const flatListRef = useRef<FlatList<EventWithUI>>(null);
         style={{ flex: 1, justifyContent: "center" }}
       />
     );
+  }
 
   return (
     <KeyboardAvoidingView
@@ -115,8 +110,9 @@ const flatListRef = useRef<FlatList<EventWithUI>>(null);
           <FlatList
             ref={flatListRef}
             data={events}
-            
             keyExtractor={(item) => item.id.toString()}
+            refreshing={refreshing}
+            onRefresh={onRefresh}
             renderItem={({ item }) => (
               <View style={styles.postCard}>
                 {/* User row */}
@@ -132,7 +128,11 @@ const flatListRef = useRef<FlatList<EventWithUI>>(null);
                     style={styles.avatar}
                   />
                   <TouchableOpacity
-                    onPress={() => navigation.navigate("ViewProfile", { username: item.username })}
+                    onPress={() =>
+                      navigation.navigate("ViewProfile", {
+                        username: item.username,
+                      })
+                    }
                   >
                     <Text style={styles.username}>{item.username}</Text>
                   </TouchableOpacity>
@@ -141,12 +141,20 @@ const flatListRef = useRef<FlatList<EventWithUI>>(null);
                 {/* Post image */}
                 {item.imageUrl ? (
                   <TouchableOpacity onPress={() => handlePostPress(item)}>
-                    <View style={{ marginHorizontal: -12, borderRadius: 10, overflow: "hidden" }}>
+                    <View
+                      style={{
+                        marginHorizontal: -12,
+                        borderRadius: 10,
+                        overflow: "hidden",
+                      }}
+                    >
                       <Image
                         source={{
                           uri: item.imageUrl.startsWith("http")
                             ? item.imageUrl
-                            : `${API_URL}${item.imageUrl.startsWith("/") ? "" : "/"}${item.imageUrl}`,
+                            : `${API_URL}${
+                                item.imageUrl.startsWith("/") ? "" : "/"
+                              }${item.imageUrl}`,
                         }}
                         style={{ width: "100%", height: 250 }}
                         resizeMode="cover"
@@ -165,7 +173,10 @@ const flatListRef = useRef<FlatList<EventWithUI>>(null);
                 <TouchableOpacity onPress={() => handlePostPress(item)}>
                   <Text style={styles.category}>{item.category}</Text>
                   <Text style={styles.title}>{item.title}</Text>
-                  <PostText content={item.description} style={styles.description} />
+                  <PostText
+                    content={item.description}
+                    style={styles.description}
+                  />
                 </TouchableOpacity>
 
                 {/* Post actions */}
@@ -176,13 +187,19 @@ const flatListRef = useRef<FlatList<EventWithUI>>(null);
                   initialCommentCount={item.commentCount || 0}
                   initialIsBookmarked={item.isBookmarked}
                   onCommentPress={() => {
-                    setEvents(prev =>
-                      prev.map(ev => ev.id === item.id ? { ...ev, showComments: !ev.showComments } : ev)
+                    setEvents((prev) =>
+                      prev.map((ev) =>
+                        ev.id === item.id
+                          ? { ...ev, showComments: !ev.showComments }
+                          : ev
+                      )
                     );
                   }}
                   onBookmarkToggle={(isBookmarked) => {
-                    setEvents(prev =>
-                      prev.map(ev => ev.id === item.id ? { ...ev, isBookmarked } : ev)
+                    setEvents((prev) =>
+                      prev.map((ev) =>
+                        ev.id === item.id ? { ...ev, isBookmarked } : ev
+                      )
                     );
                   }}
                 />
@@ -194,10 +211,11 @@ const flatListRef = useRef<FlatList<EventWithUI>>(null);
                   visible={!!item.showComments}
                   initialComments={item.comments || []}
                   initialCommentCount={item.commentCount || 0}
-             // flatListRef={flatListRef}
                   onCommentAdd={(newCount) => {
-                    setEvents(prev =>
-                      prev.map(ev => ev.id === item.id ? { ...ev, commentCount: newCount } : ev)
+                    setEvents((prev) =>
+                      prev.map((ev) =>
+                        ev.id === item.id ? { ...ev, commentCount: newCount } : ev
+                      )
                     );
                   }}
                 />
@@ -205,7 +223,7 @@ const flatListRef = useRef<FlatList<EventWithUI>>(null);
             )}
             contentContainerStyle={styles.listContent}
             keyboardShouldPersistTaps="handled"
-            keyboardDismissMode="interactive" 
+            keyboardDismissMode="interactive"
           />
 
           <RoleBasedBottomNav navigation={navigation} />
@@ -246,7 +264,13 @@ const styles = StyleSheet.create({
   },
   noImageText: { color: "#555", fontSize: 14 },
 
-  category: { fontWeight: "bold", marginTop: 10, fontSize: 14, color: "#E64A0D", textTransform: "uppercase" },
+  category: {
+    fontWeight: "bold",
+    marginTop: 10,
+    fontSize: 14,
+    color: "#E64A0D",
+    textTransform: "uppercase",
+  },
   title: { fontSize: 18, marginTop: 4, fontWeight: "700", color: "#222" },
   description: { fontSize: 14, marginTop: 6, color: "#555", lineHeight: 20 },
 });

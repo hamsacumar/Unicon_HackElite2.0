@@ -26,7 +26,7 @@ namespace Backend.Controllers
             return Ok(new { message = "Profile API is working!" });
         }
 
-        // Upload profile image
+        // ================= Upload Profile Image =================
         [HttpPost("upload-image")]
         [Authorize]
         [Consumes("multipart/form-data")]
@@ -36,47 +36,50 @@ namespace Backend.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> UploadImage([FromForm] UploadImageRequest request)
         {
-            // Log all available claims for debugging
-            var allClaims = User.Claims.Select(c => $"{c.Type}:{c.Value}").ToList();
-            _logger.LogInformation("Available claims: {Claims}", string.Join(", ", allClaims));
-            
-            // Try to get user ID from different possible claim types
-            var userId = User.FindFirst("id")?.Value ?? 
-                        User.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")?.Value ??
-                        User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-            
-            _logger.LogInformation($"Extracted user ID: {userId ?? "null"}");
-            
+            _logger.LogInformation("=== Starting UploadImage ===");
+
             try
             {
-                _logger.LogInformation("UploadImage endpoint called");
-                
-                if (request == null)
+                // Log request details
+                _logger.LogInformation("Request Content-Type: {ContentType}", Request.ContentType);
+                _logger.LogInformation("Request Headers: {Headers}",
+                    string.Join(", ", Request.Headers.Select(h => $"{h.Key}: {h.Value}")));
+
+                // Extract userId from token
+                var userId = User.FindFirst("id")?.Value ??
+                             User.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")?.Value ??
+                             User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+                _logger.LogInformation($"Extracted user ID: {userId ?? "null"}");
+
+                if (string.IsNullOrEmpty(userId))
                 {
-                    _logger.LogWarning("Upload request is null");
-                    return BadRequest(new { message = "Invalid request" });
-                }
-                
-                var file = request.File;
-                if (file == null || file.Length == 0)
-                {
-                    _logger.LogWarning("No file was uploaded or file is empty");
-                    return BadRequest(new { message = "No file uploaded or file is empty" });
+                    return Unauthorized(new { message = "User ID not found in token." });
                 }
 
-                // Validate file type and size
+                if (request?.File == null)
+                {
+                    _logger.LogWarning("No file was provided in the request");
+                    return BadRequest(new { message = "No file was provided" });
+                }
+
+                var file = request.File;
+                _logger.LogInformation("Received file: {FileName}, {ContentType}, {Length} bytes",
+                    file.FileName, file.ContentType, file.Length);
+
+                // Validate file type
                 var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
                 var fileExtension = Path.GetExtension(file.FileName).ToLowerInvariant();
+
                 if (string.IsNullOrEmpty(fileExtension) || !allowedExtensions.Contains(fileExtension))
                 {
-                    _logger.LogWarning("Invalid file type: {FileName}", file.FileName);
                     return BadRequest(new { message = "Invalid file type. Only JPG, JPEG, and PNG files are allowed." });
                 }
 
-                const int maxFileSize = 5 * 1024 * 1024; // 5MB
+                // Validate file size (max 5MB)
+                const int maxFileSize = 5 * 1024 * 1024;
                 if (file.Length > maxFileSize)
                 {
-                    _logger.LogWarning("File size exceeds the limit: {FileSize} bytes", file.Length);
                     return BadRequest(new { message = "File size exceeds the 5MB limit." });
                 }
 
@@ -84,48 +87,35 @@ namespace Backend.Controllers
                 var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
                 Directory.CreateDirectory(uploadsFolder);
 
-                var fileName = $"{Guid.NewGuid()}{fileExtension}";
+                var fileName = $"profile_{userId}_{DateTime.UtcNow:yyyyMMddHHmmss}{fileExtension}";
                 var savePath = Path.Combine(uploadsFolder, fileName);
 
-                _logger.LogInformation($"Saving file to: {savePath}");
-                
+                _logger.LogInformation("Saving file: {FileName} -> {SavePath}", file.FileName, savePath);
+
                 await using (var stream = new FileStream(savePath, FileMode.Create))
                 {
                     await file.CopyToAsync(stream);
+                    await stream.FlushAsync();
                 }
 
-                // Get user ID from different possible claim types
-                var currentUserId = User.FindFirst("id")?.Value ?? 
-                                 User.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")?.Value ??
-                                 User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-                            
-                _logger.LogInformation($"User ID from token: {currentUserId}");
-                
-                if (string.IsNullOrEmpty(currentUserId))
+                var fileInfo = new FileInfo(savePath);
+                if (!fileInfo.Exists || fileInfo.Length == 0)
                 {
-                    _logger.LogWarning("User ID not found in token. Available claims: {Claims}", 
-                        string.Join(", ", User.Claims.Select(c => $"{c.Type}:{c.Value}")));
-                    return Unauthorized(new { message = "User ID not found in token." });
+                    throw new Exception("File was not written correctly.");
                 }
 
                 var imageUrl = $"/uploads/{fileName}";
-                _logger.LogInformation($"Updating profile image for user {currentUserId} to {imageUrl}");
-                
-                if (string.IsNullOrEmpty(currentUserId))
-                {
-                    _logger.LogError("Cannot update profile image: currentUserId is null or empty");
-                    throw new InvalidOperationException("User ID is required to update profile image");
-                }
-                
-                await _userService.UpdateProfileImage(currentUserId, imageUrl);
-                _logger.LogInformation("Profile image updated successfully");
+                _logger.LogInformation("Updating profile image for user {UserId} to {ImageUrl}", userId, imageUrl);
+
+                await _userService.UpdateProfileImage(userId, imageUrl);
 
                 return Ok(new { message = "Profile image updated", imageUrl });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error uploading profile image: {Message}", ex.Message);
-                return StatusCode(500, new { 
+                _logger.LogError(ex, "Error uploading profile image");
+                return StatusCode(500, new
+                {
                     success = false,
                     message = "An error occurred while uploading profile image.",
                     error = ex.Message
@@ -133,7 +123,7 @@ namespace Backend.Controllers
             }
         }
 
-        //  Skip uploading profile image
+        // ================= Skip Profile Image =================
         [HttpPost("skip-image")]
         [Authorize]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -144,66 +134,48 @@ namespace Backend.Controllers
             try
             {
                 _logger.LogInformation("SkipImage endpoint called");
-                
-                // Log all available claims for debugging
+
                 var allClaims = User.Claims.Select(c => $"{c.Type}:{c.Value}").ToList();
-                _logger.LogInformation("Available claims in SkipImage: {Claims}", string.Join(", ", allClaims));
-            
-                // Try to get user ID from all possible claim types
+                _logger.LogInformation("Available claims: {Claims}", string.Join(", ", allClaims));
+
                 var userId = User.Claims
-                    .Where(c => c.Type == "id" || 
-                              c.Type == "sub" ||
-                              c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier" ||
-                              c.Type == System.Security.Claims.ClaimTypes.NameIdentifier)
+                    .Where(c => c.Type == "id" ||
+                                c.Type == "sub" ||
+                                c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier" ||
+                                c.Type == System.Security.Claims.ClaimTypes.NameIdentifier)
                     .Select(c => c.Value)
                     .FirstOrDefault();
-            
-                _logger.LogInformation($"Extracted user ID in SkipImage: {userId ?? "null"}");
-                            
+
                 if (string.IsNullOrEmpty(userId))
                 {
-                    _logger.LogWarning("User ID not found in token. Available claims: {Claims}", 
-                        string.Join(", ", User.Claims.Select(c => $"{c.Type}:{c.Value}")));
-                    return Unauthorized(new { 
+                    return Unauthorized(new
+                    {
                         success = false,
-                        message = "User ID not found in token. Please login again." 
+                        message = "User ID not found in token. Please login again."
                     });
                 }
 
-                _logger.LogInformation("Updating profile image to null for user {UserId}", userId);
-                try 
+                var result = await _userService.UpdateProfileImage(userId, null);
+                if (!result)
                 {
-                    var result = await _userService.UpdateProfileImage(userId, null);
-                    
-                    if (!result)
+                    return StatusCode(500, new
                     {
-                        _logger.LogError("Failed to update profile image for user {UserId} - UserService returned false", userId);
-                        return StatusCode(500, new { 
-                            success = false,
-                            message = "Failed to update profile image. Please try again later." 
-                        });
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Exception in SkipImage for user {UserId}: {Message}", userId, ex.Message);
-                    return StatusCode(500, new { 
                         success = false,
-                        message = "An error occurred while processing your request.",
-                        details = ex.Message
+                        message = "Failed to update profile image. Please try again later."
                     });
                 }
-                
-                _logger.LogInformation("Profile image skipped successfully for user {UserId}", userId);
-                return Ok(new { 
+
+                return Ok(new
+                {
                     success = true,
-                    message = "Profile image skipped successfully." 
+                    message = "Profile image skipped successfully."
                 });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error skipping profile image: {Message}", ex.Message);
-                return StatusCode(500, new { 
+                _logger.LogError(ex, "Error skipping profile image");
+                return StatusCode(500, new
+                {
                     success = false,
                     message = "An error occurred while skipping profile image.",
                     error = ex.Message

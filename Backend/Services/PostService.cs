@@ -111,23 +111,30 @@ namespace Backend.Services
                     try
                     {
                         Console.WriteLine($"[FilterEventsAsync] Processing event: {ev.Id} - {ev.Title}");
-                     AppUser? user = null; 
+                        AppUser? user = null;
                         string username = "Unknown";
-                        string userImage = null;
+                        string? userImage = null;
                         
                         try 
                         {
-                            Console.WriteLine($"[FilterEventsAsync] Retrieving user with ID: {ev.UserId}");
-                            user = await GetUserByIdAsync(ev.UserId);
-                            if (user != null)
+                            if (string.IsNullOrEmpty(ev.UserId))
                             {
-                                username = user.Username ?? "Unknown";
-                                userImage = user.ProfileImageUrl;
-                                Console.WriteLine($"[FilterEventsAsync] Found user: {username}");
+                                Console.WriteLine("[FilterEventsAsync] UserId is null or empty");
                             }
                             else
                             {
-                                Console.WriteLine($"[FilterEventsAsync] User not found for ID: {ev.UserId}");
+                                Console.WriteLine($"[FilterEventsAsync] Retrieving user with ID: {ev.UserId}");
+                                user = await GetUserByIdAsync(ev.UserId);
+                                if (user != null)
+                                {
+                                    username = user.Username ?? "Unknown";
+                                    userImage = user.ProfileImageUrl ?? string.Empty;
+                                    Console.WriteLine($"[FilterEventsAsync] Found user: {username}");
+                                }
+                                else
+                                {
+                                    Console.WriteLine($"[FilterEventsAsync] User not found for ID: {ev.UserId}");
+                                }
                             }
                         }
                         catch (Exception userEx)
@@ -138,13 +145,13 @@ namespace Backend.Services
                         
                         var eventDto = new EventDto
                         {
-                            Id = ev.Id,
-                            Title = ev.Title,
-                            Description = ev.Description,
-                            Category = ev.Category,
+                            Id = ev.Id ?? string.Empty,
+                            Title = ev.Title ?? "No Title",
+                            Description = ev.Description ?? string.Empty,
+                            Category = ev.Category ?? "Uncategorized",
                             ImageUrl = ev.ImageUrl,
-                            UserId = ev.UserId,
-                            Username = username,
+                            UserId = ev.UserId ?? string.Empty,
+                            Username = !string.IsNullOrEmpty(username) ? username : "Unknown",
                             UserImage = userImage
                         };
                         
@@ -383,5 +390,29 @@ public async Task<long> GetCommentCountAsync(string postId)
 
             return await _bookmarks.Aggregate<BsonDocument>(pipeline).ToListAsync();
         }
+
+
+
+    
+public async Task<bool> DeletePostAsync(string postId, string userId)
+{
+    // Ensure the post exists and belongs to the user
+    var post = await _events.Find(ev => ev.Id == postId && ev.UserId == userId).FirstOrDefaultAsync();
+    if (post == null)
+        return false;
+
+    // Delete the post
+    await _events.DeleteOneAsync(ev => ev.Id == postId);
+
+    // Also clean up related data
+    await _likes.DeleteManyAsync(l => l.PostId == postId);
+    await _comments.DeleteManyAsync(c => c.PostId == postId);
+    await _bookmarks.DeleteManyAsync(b => b.PostId == postId);
+
+    return true;
+}
+
     }
 }
+
+  

@@ -24,10 +24,13 @@ const Filter = ({ route, navigation }: Props) => {
   const [posts, setPosts] = useState<EventItem[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const categories = [
+    { label: 'Submission', value: 'Submission' },
     { label: 'Competition', value: 'Competition' },
-    { label: 'WorkShop', value: 'WorkShop' },
-    { label: 'Product Sale', value: 'Product Sale' },
-    { label: 'Work', value: 'Work' },
+    { label: 'Seminar', value: 'Seminar' },
+    { label: 'Promotion', value: 'Promotion' },
+    { label: 'Research', value: 'Research' },
+    { label: 'Interview', value: 'Interview' },
+    { label: 'Registration', value: 'Registration' },
     { label: 'Other', value: 'Other' },
   ];
 
