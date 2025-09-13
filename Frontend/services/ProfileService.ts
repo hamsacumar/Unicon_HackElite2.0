@@ -43,6 +43,18 @@ export interface Post {
   createdAt: string;
 }
 
+export interface Posts {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  startDate: string;
+  endDate: string;
+  imageUrl: string;
+  userId: string;
+  createdAt: string;
+}
+
 export const ProfileService = {
   getProfile: async (): Promise<Profile> => {
     return authGet<Profile>("/ProfileDetail/me");
@@ -52,8 +64,17 @@ export const ProfileService = {
     return authGet<Post[]>("/ProfileDetail/my-events");
   },
 
+  getBookmarkedPosts: async (): Promise<Posts[]> => {
+    return authGet<Post[]>("/ProfileDetail/my-bookmarks");
+  },
+
   getPostCount: async (): Promise<number> => {
     const posts = await authGet<Post[]>("/ProfileDetail/my-events");
     return posts.length; // simply return the number of posts
   },
+
+
 };
+
+
+

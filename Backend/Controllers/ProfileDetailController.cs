@@ -150,5 +150,24 @@ public async Task<IActionResult> GetProfileImageByUsername(string username)
     return Ok(new { ProfileImageUrl = imageUrl });
 }
 
+[HttpGet("my-bookmarks")]
+[Authorize]
+public async Task<IActionResult> GetMyBookmarks()
+{
+    var userId = User.Claims
+        .FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")
+        ?.Value;
+
+    if (string.IsNullOrEmpty(userId))
+        return Unauthorized("User ID not found in token.");
+
+    var bookmarkedPosts = await _profileService.GetBookmarkedPostsByUserIdAsync(userId);
+
+    if (bookmarkedPosts == null || !bookmarkedPosts.Any())
+        return NotFound("No bookmarked posts found.");
+
+    return Ok(bookmarkedPosts);
+}
+
     }
 }

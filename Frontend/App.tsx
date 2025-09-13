@@ -171,11 +171,6 @@ const AppStack = () => (
       options={{ title: "Settings and Activity" }}
     />
     <Stack.Screen
-      name="PostDetail"
-      component={PostDetail}
-      options={{ title: "PostDetail" }}
-    />
-    <Stack.Screen
       name="Filter"
       component={Filter}
       options={{ title: "Filter" }}
@@ -260,16 +255,6 @@ const AppStack = () => (
   component={AboutScreen}
   options={{ title: "About" }}
 />
-     <Stack.Screen
-      name="PostDetail"
-      component={PostDetail}
-      options={{ title: "EventTrix" }}
-    />
-     <Stack.Screen
-      name="PostDetail"
-      component={PostDetail}
-      options={{ title: "EventTrix" }}
-    />
     <Stack.Screen
       name="OrgPostDetail"
       component={OrgPostDetail}

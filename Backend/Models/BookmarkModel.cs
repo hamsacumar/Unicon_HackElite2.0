@@ -11,9 +11,11 @@ namespace Backend.Models
         public string Id { get; set; } = string.Empty;
 
         [BsonElement("postId")]
+        [BsonRepresentation(BsonType.ObjectId)]  // 🔑 ensures correct mapping
         public string PostId { get; set; } = string.Empty;
 
         [BsonElement("userId")]
+        [BsonRepresentation(BsonType.ObjectId)]  // 🔑 ensures correct mapping
         public string UserId { get; set; } = string.Empty;
 
         [BsonElement("createdAt")]
