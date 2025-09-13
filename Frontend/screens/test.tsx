@@ -13,9 +13,10 @@ type RootStackParamList = {
   // Add other screens here if needed
   InputPage: undefined;
   MessagePage: undefined;
- 
+  InboxScreen: { currentUserId: string };
   Login: undefined;
   Signup: undefined;
+  NotificationScreen: undefined;
 };
 
 // Type for navigation prop
@@ -81,9 +82,16 @@ const Test: React.FC = () => {
         title="Message Page"
         onPress={() => navigation.navigate("MessagePage")}
       />
-     
 
-      
+      {/* Navigate to InboxScreen with required params */}
+      <Button
+        title="InboxScreen"
+        onPress={() => navigation.navigate("InboxScreen", { currentUserId })}
+      />
+      <Button
+        title="NotificationScreen"
+        onPress={() => navigation.navigate("NotificationScreen")}
+      />
     </View>
   );
 };

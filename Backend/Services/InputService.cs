@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Backend.Services
 {
-    public class InputService
+    public class InputService : IInputService
     {
         private readonly IMongoCollection<EventModel> _events;
 
@@ -25,5 +25,9 @@ namespace Backend.Services
             await _events.InsertOneAsync(ev);
             return ev;
         }
+    }
+
+    public interface IInputService
+    {
     }
 }

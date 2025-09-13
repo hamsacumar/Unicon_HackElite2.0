@@ -14,15 +14,14 @@ export interface TestDataItem {
 }
 
 
-
 // Ensure BASE_URL has no trailing slash
-const BASE_URL = Constants.expoConfig?.extra?.apiUrl || 'http://10.10.8.238:5179';
+const BASE_URL = Constants.expoConfig?.extra?.apiUrl ;
 const API_BASE = `${BASE_URL.replace(/\/+$/, '')}`;
 
 // Create axios instance with base URL
 export const api = axios.create({
   baseURL: `${API_BASE}`,
-  timeout: 10000,
+  timeout: 30000, // Increased timeout for file uploads
   validateStatus: function (status) {
     return status >= 200 && status < 500;
   },
@@ -31,6 +30,20 @@ export const api = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+// Add request interceptor to handle file uploads
+api.interceptors.request.use(
+  (config) => {
+    // Don't set Content-Type for FormData, let the browser set it with the boundary
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
 // Add request interceptor to include auth toke
 api.interceptors.request.use(
@@ -129,7 +142,6 @@ const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
 
     // Get response as text first
     const responseText = await response.text();
-    console.log('Raw response text:', responseText);
     let responseData;
     
     // Try to parse as JSON, but don't fail if it's not JSON
@@ -279,7 +291,6 @@ export const signup = async (
     const responseText = await response.text();
     console.log('Raw response status:', response.status);
     console.log('Raw response headers:', JSON.stringify(Object.fromEntries(response.headers.entries())));
-    console.log('Raw response text:', responseText);
     
     let responseData;
     try {
@@ -327,7 +338,6 @@ export const verifyEmail = async (
     console.log('Raw verify email response status:', response.status);
     
     const responseText = await response.text();
-    console.log('Raw response text:', responseText);
     
     let responseData;
     try {
@@ -395,7 +405,6 @@ export const resendCode = async (email: string, purpose: 'signup' | 'reset-passw
     
     const responseText = await response.text().catch(() => '');
     console.log(`[API] Response: ${response.status} ${response.statusText}`);
-    console.log('Raw response text:', responseText);
 
     // For password reset flow - handle separately
     if (purpose === 'reset-password') {

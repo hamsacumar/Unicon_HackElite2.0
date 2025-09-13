@@ -5,6 +5,8 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Threading.Tasks;
 using System.IO;
+using Microsoft.AspNetCore.SignalR;
+using Hackelite2._0.Hubs;
 
 namespace Backend.Controllers
 {
@@ -13,12 +15,20 @@ namespace Backend.Controllers
     public class EventsController : ControllerBase
     {
         private readonly InputService _inputService;
+        private readonly INotificationService _notificationService;
+        private readonly IHubContext<NotificationHub> _hubContext;
         private readonly ILogger<EventsController> _logger;
         private readonly IWebHostEnvironment _env;
 
-        public EventsController(InputService inputService, ILogger<EventsController> logger, IWebHostEnvironment env)
+        public EventsController(
+            InputService inputService, 
+            INotificationService notificationService,
+            IHubContext<NotificationHub> hubContext,
+            ILogger<EventsController> logger, IWebHostEnvironment env)
         {
             _inputService = inputService;
+            _notificationService = notificationService;
+            _hubContext = hubContext;
             _logger = logger;
             _env = env;
         }
@@ -60,7 +70,7 @@ namespace Backend.Controllers
 
                 await _inputService.CreateAsync(ev);
 
-                return Ok(new { success = true, eventId = ev.Id, userId });
+                return Ok(new { success = true, eventId = ev.Id });
             }
             catch (Exception ex)
             {
@@ -70,7 +80,7 @@ namespace Backend.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult> Get()
+        public async Task<ActionResult<List<EventModel>>> Get()
         {
             try
             {
@@ -79,7 +89,7 @@ namespace Backend.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Get events failed");
+                _logger.LogError(ex, "Failed to get events");
                 return StatusCode(500, new { success = false, message = ex.Message });
             }
         }
