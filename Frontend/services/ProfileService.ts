@@ -37,6 +37,13 @@ export interface Post {
   userId: string;
   createdAt: string;
 }
+export interface Profile {
+  firstName: string;
+  lastName: string;
+  username: string;
+  description?: string;
+  profileImageUrl?: string | null;
+}
 
 export interface ProfileUpdateRequest {
   firstName?: string | null;
