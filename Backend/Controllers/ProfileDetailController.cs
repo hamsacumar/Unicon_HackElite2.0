@@ -2,6 +2,8 @@
 
 using Backend.Models;
 using Backend.Services;
+using Backend.DTOs;
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Linq;
@@ -157,7 +159,7 @@ public async Task<IActionResult> GetProfileImageByUsername(string username)
 }
 [HttpPut("me")]
 [Authorize]
-public async Task<IActionResult> UpdateMyProfile([FromBody] AppUser updatedProfile)
+public async Task<IActionResult> UpdateMyProfile([FromBody] ProfileUpdateRequest updatedProfile)
 {
     var userId = User.Claims
         .FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")
@@ -170,21 +172,22 @@ public async Task<IActionResult> UpdateMyProfile([FromBody] AppUser updatedProfi
     if (user == null)
         return NotFound("User not found.");
 
-    // Only update fields that are provided and not empty
     if (!string.IsNullOrEmpty(updatedProfile.FirstName))
         user.FirstName = updatedProfile.FirstName;
-    
+
     if (!string.IsNullOrEmpty(updatedProfile.LastName))
         user.LastName = updatedProfile.LastName;
-    
+
     if (!string.IsNullOrEmpty(updatedProfile.Username))
         user.Username = updatedProfile.Username;
-    
-    if (updatedProfile.Description != null) // Allow empty description but not null
+
+    if (updatedProfile.Description != null)
         user.Description = updatedProfile.Description;
-    
-    if (updatedProfile.ProfileImageUrl != null) // Allow null to remove image
+
+    if (updatedProfile.ProfileImageUrl != null)
         user.ProfileImageUrl = updatedProfile.ProfileImageUrl;
+
+    user.UpdatedAt = DateTime.UtcNow;
 
     await _profileService.UpdateUserAsync(userId, user);
 

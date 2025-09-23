@@ -66,10 +66,19 @@ namespace Backend.Services
             return user?.ProfileImageUrl;
         }
         
-        public async Task UpdateUserAsync(string userId, AppUser updatedUser)
+       public async Task UpdateUserAsync(string userId, AppUser updatedUser)
 {
-    await _userCollection.ReplaceOneAsync(u => u.Id == userId, updatedUser);
+    var update = Builders<AppUser>.Update
+        .Set(u => u.FirstName, updatedUser.FirstName)
+        .Set(u => u.LastName, updatedUser.LastName)
+        .Set(u => u.Username, updatedUser.Username)
+        .Set(u => u.Description, updatedUser.Description)
+        .Set(u => u.ProfileImageUrl, updatedUser.ProfileImageUrl)
+        .Set(u => u.UpdatedAt, DateTime.UtcNow);
+
+    await _userCollection.UpdateOneAsync(u => u.Id == userId, update);
 }
+
 
     }
 }

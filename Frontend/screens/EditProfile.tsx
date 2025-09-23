@@ -22,6 +22,7 @@ const API_URL = Constants.expoConfig?.extra?.apiUrl?.replace("/api", "");
 
 type RootStackParamList = {
   EditProfile: undefined;
+    ProfileSetup: undefined;
 };
 
 type OrgProfileNavigationProp = NativeStackNavigationProp<
@@ -117,11 +118,10 @@ const EditProfile: React.FC = () => {
               style={styles.profileImage}
             />
           </View>
-          <TouchableOpacity
-            onPress={() => Alert.alert("Upload flow not implemented")}
-          >
-            <Text style={styles.changePictureText}>Change profile picture</Text>
-          </TouchableOpacity>
+         <TouchableOpacity onPress={() => navigation.navigate("ProfileSetup")}>
+  <Text style={styles.changePictureText}>Change profile picture</Text>
+</TouchableOpacity>
+
         </View>
 
         <View style={styles.formSection}>
