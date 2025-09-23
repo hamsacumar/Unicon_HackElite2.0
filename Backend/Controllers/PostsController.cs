@@ -1,3 +1,5 @@
+//controllers/postscontroller.cs
+
  using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Backend.Models;
@@ -328,7 +330,23 @@ public async Task<IActionResult> GetCommentCount(string id)
     }
 } // end of GetCommentCount
 
+// -------------------- DELETE POST --------------------
+[HttpDelete("{id}")]
+public async Task<IActionResult> DeletePost(string id)
+{
+    var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+    if (string.IsNullOrEmpty(userId))
+        return Unauthorized(new { success = false, message = "User not logged in." });
+
+    var success = await _postService.DeletePostAsync(id, userId);
+    if (!success) 
+        return NotFound(new { success = false, message = "Post not found or not owned by user" });
+
+    return Ok(new { success = true, message = "Post deleted successfully" });
+}
+
+
 } // end of PostsController class
 } // end of namespace Backend.Controllers
 
-    
+

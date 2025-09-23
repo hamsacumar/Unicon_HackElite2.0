@@ -49,9 +49,9 @@ export default function LandingPage() {
     fetchData();
   }, []);
 
-  // Navigate to PostDetail screen when a post is clicked
+  // Navigate to LandingPostDetail screen when a post is clicked
   const handlePostPress = (item: EventItem) => {
-    navigation.navigate("PostDetail", { post: item });
+    navigation.navigate("LandingPostDetail", { post: item });
   };
 
   return (

@@ -175,7 +175,7 @@ api.interceptors.response.use(
 // -------------------- Messaging API --------------------
 export const sendMessage = async (receiverUsername: string, text: string) => {
   const senderId = await getCurrentUserId();
-  const res = await api.post("/Messages/send", {
+  const res = await api.post("/messages/send", {
     SenderId: senderId,
     ReceiverUsername: receiverUsername.trim(),
     Text: text.trim(),

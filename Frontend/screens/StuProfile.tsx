@@ -12,10 +12,13 @@ import {
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import RoleBasedBottomNav from "../component/rolebasedNav";
+import Constants from "expo-constants";
 
 import Ionicons from "react-native-vector-icons/Ionicons";
 
 import { ProfileService, Profile, Post } from '../services/ProfileService';
+
+const API_URL = Constants.expoConfig?.extra?.apiUrl?.replace("/api", "");
 
 // Define your stack param list
 type RootStackParamList = {
@@ -68,11 +71,21 @@ const StuProfile: React.FC = () => {
       {/* Fixed Profile Section */}
       <View style={styles.profileSection}>
         <View style={styles.profileHeader}>
-          <View style={styles.profileBorder}>
+<View style={styles.profileBorder}>
             <View style={styles.profileImage}>
               <Image
-                source={require("../assets/icon.png")}
+                source={{
+                  uri: profile?.profileImageUrl
+                    ? (profile.profileImageUrl.startsWith("http")
+                      ? profile.profileImageUrl
+                      : `${API_URL}${profile.profileImageUrl.startsWith("/") ? "" : "/"}${profile.profileImageUrl}`)
+                    : Image.resolveAssetSource(require("../assets/icon.png")).uri, // ✅ fallback
+                }}
                 style={styles.image}
+                resizeMode="cover"
+                onError={(e) =>
+                  console.log("Error loading profile image:", e.nativeEvent.error)
+                }
               />
             </View>
           </View>
@@ -114,23 +127,32 @@ const StuProfile: React.FC = () => {
 
       {/* Scrollable Posts Section */}
       <ScrollView style={styles.postsContainer} showsVerticalScrollIndicator={false}>
-              {posts.map((post) => (
-                <View key={post.id} style={styles.postCard}>
+              {posts.map((posts) => (
+                <View key={posts.id} style={styles.postCard}>
                 <View style={styles.postContent}>
                   <View style={styles.postTextContainer}>
-                    <Text style={styles.postTitle}>{post.title}</Text>
-                    <Text style={styles.postSubtitle}>{post.category}</Text>
+                    <Text style={styles.postTitle}>Workshops</Text>
+                    <Text style={styles.postSubtitle}>Seminar</Text>
                     <Text style={styles.postDescription} numberOfLines={4}>
-                      {post.description}
+                    🚨 *Workshop 02 | Happening Today!*🚨\n\nJoin us as *Mr. Sasindu Alahakoon, Senior Software Engineer at WSO2* guides you through  *Exploring AI Capabilities in Ballerina!*🌐\n\n🗓️ *Date: 11th of August 2025*\n🕖 *Time: 7.00 PM Onwards*\n💻 *Platform: Via Zoom*\n\n*Join the session live!*👇🏻\nhttps://bit.ly/innovate-with-ballerina-workshop-2\n\n_Don't let your moment slide away!_ 💪🏻\n\nCaption by: Senaya Bandara\nDesign by: Paramee Ekanayake\n\n-Inspired by PASSION to Transform beyond EXCELLENCE-\n#InnovateWithBallerina2025\n#IEEESBUOM\n#IEEECSUOM\n#TERM2425
                     </Text>
                   </View>
                   <View style={styles.postImageContainer}>
-                    {post.imageUrl ? (
+                    {posts.imageUrl ? (
                       <Image
-                        source={{ uri: post.imageUrl }}
-                        style={styles.postImage}
-                        resizeMode="cover"
-                      />
+                      source={{
+                        uri: posts.imageUrl
+                          ? (posts.imageUrl.startsWith("http")
+                              ? posts.imageUrl
+                              : `${API_URL}${posts.imageUrl.startsWith("/") ? "" : "/"}${posts.imageUrl}`)
+                          : Image.resolveAssetSource(require("../assets/icon.png")).uri, // fallback
+                      }}
+                      style={styles.postImage}
+                      resizeMode="cover"
+                      onError={(e) =>
+                        console.log("Error loading post image:", e.nativeEvent.error)
+                      }
+                    />
                     ) : (
                       <View style={[styles.postImage, { justifyContent: 'center', alignItems: 'center' }]}>
                         <Text style={styles.postImagePlaceholder}>No Image</Text>
