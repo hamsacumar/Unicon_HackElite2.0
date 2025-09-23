@@ -1,205 +1,86 @@
-import React, { useEffect, useState, useRef } from "react";
-import {
-  View,
-  Text,
-  FlatList,
-  StyleSheet,
-  ActivityIndicator,
-  TextInput,
-  TouchableOpacity,
-  KeyboardAvoidingView,
-  Platform,
-  Alert,
-} from "react-native";
-import { getConversation, sendMessage, getCurrentUserId } from "../services/api/api";
+import React, { useState } from "react";
+import { View, TextInput, TouchableOpacity, Text, StyleSheet, ActivityIndicator, Alert, Platform } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { sendMessage } from "../services/api/api";
 
-interface Message {
-  id: string;
-  senderId: string;
-  senderUsername: string;
-  receiverId: string;
-  receiverUsername: string;
-  text: string;
-  timestamp: string;
-}
-
-interface Props {
-  otherUserId: string;
-  otherUsername: string;
-}
-
-const Conversation: React.FC<Props> = ({ otherUserId, otherUsername }) => {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [loading, setLoading] = useState(true);
+const SendMessageForm: React.FC<{ onSent?: () => void }> = ({ onSent }) => {
+  const [receiverUsername, setReceiverUsername] = useState("");
   const [text, setText] = useState("");
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const flatListRef = useRef<FlatList>(null);
+  const handleSend = async () => {
+    const receiver = receiverUsername.trim();
+    const message = text.trim();
 
-// Fetch current user's ID on mount
-useEffect(() => {
-  const fetchCurrentUserId = async () => {
-    try {
-      const userId = await getCurrentUserId();
-      setCurrentUserId(userId);
-    } catch (err: any) {
-      console.error("Error fetching user:", err);
-      Alert.alert("Error", err.message || "Failed to get user info.");
+    if (!receiver || !message) {
+      Alert.alert("Error", "Please fill all fields.");
+      return;
     }
-  };
 
-  fetchCurrentUserId();
-}, []);
-
-  // Fetch conversation messages
-  const fetchConversationMessages = async () => {
-    if (!currentUserId) return;
+    setLoading(true);
     try {
-      setLoading(true);
-      const conversationData = await getConversation(otherUserId);
-      setMessages(conversationData);
+      await sendMessage(receiver, message);
+      setText("");
+      setReceiverUsername("");
+      Alert.alert("Success", `Message sent to @${receiver}!`);
+      onSent?.();
     } catch (err: any) {
-      console.error("Error fetching conversation:", err);
-      Alert.alert("Error", err.message || "Failed to load conversation.");
+      console.error("Send message error:", err);
+      Alert.alert("Error", err.message || "Failed to send message");
     } finally {
       setLoading(false);
     }
   };
 
-  // Polling for new messages every 10s
-  useEffect(() => {
-    if (!currentUserId) return;
-    fetchConversationMessages();
-    const interval = setInterval(fetchConversationMessages, 10000);
-    return () => clearInterval(interval);
-  }, [otherUserId, currentUserId]);
-
-  // Scroll to bottom when messages change
-  useEffect(() => {
-    flatListRef.current?.scrollToEnd({ animated: true });
-  }, [messages]);
-
-  // Send a new message
-  const handleSend = async () => {
-    const trimmedText = text.trim();
-    if (!trimmedText) return;
-
-    try {
-      await sendMessage(otherUsername, trimmedText);
-      setText("");
-      fetchConversationMessages();
-    } catch (err: any) {
-      console.error("Send message error:", err);
-      Alert.alert("Error", err.message || "Failed to send message.");
-    }
-  };
-
-  const renderItem = ({ item }: { item: Message }) => {
-    const isMine = item.senderId === currentUserId;
-    return (
-      <View
-        style={[styles.messageContainer, isMine ? styles.myMessage : styles.theirMessage]}
-      >
-        <Text style={[styles.messageText, isMine ? { color: "#fff" } : { color: "#000" }]}>
-          {item.text}
-        </Text>
-        <Text style={styles.timestamp}>
-          {new Date(item.timestamp).toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          })}
-        </Text>
-      </View>
-    );
-  };
-
-  if (loading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#007AFF" />
-      </View>
-    );
-  }
-
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0}
-    >
-      {messages.length === 0 ? (
-        <View style={styles.center}>
-          <Text>No messages yet</Text>
-        </View>
-      ) : (
-        <FlatList
-          ref={flatListRef}
-          data={messages}
-          renderItem={renderItem}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.flatListContainer}
-          onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-          onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
-        />
-      )}
-
+    <View style={styles.container}>
       <View style={styles.inputContainer}>
-        <TextInput
-          value={text}
-          onChangeText={setText}
-          placeholder="Type a message..."
-          style={styles.textInput}
-          multiline
-        />
-        <TouchableOpacity onPress={handleSend} style={styles.sendButton}>
-          <Text style={{ color: "#fff", fontWeight: "bold" }}>Send</Text>
-        </TouchableOpacity>
+        <View style={styles.usernameInputContainer}>
+          <Ionicons name="at" size={20} color="#8E8E93" style={styles.icon} />
+          <TextInput
+            placeholder="Username"
+            placeholderTextColor="#8E8E93"
+            value={receiverUsername}
+            onChangeText={setReceiverUsername}
+            style={styles.usernameInput}
+            editable={!loading}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+        </View>
+        <View style={styles.messageInputContainer}>
+          <TextInput
+            placeholder="Type a message..."
+            placeholderTextColor="#8E8E93"
+            value={text}
+            onChangeText={setText}
+            style={styles.messageInput}
+            multiline
+            editable={!loading}
+          />
+          <TouchableOpacity
+            onPress={handleSend}
+            style={[styles.sendButton, (!text.trim() || !receiverUsername.trim() || loading) && styles.sendButtonDisabled]}
+            disabled={!text.trim() || !receiverUsername.trim() || loading}
+          >
+            {loading ? <ActivityIndicator color="#fff" size="small" /> : <Ionicons name="send" size={20} color="#fff" />}
+          </TouchableOpacity>
+        </View>
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 };
 
-// Use the existing api instance for fetching the current user
-const fetchCurrentUser = async () => {
-  const res = await import("../services/api").then((mod) => mod.api.get("/account/me"));
-  return { id: res.data.Id };
-};
-
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f5f5f5" },
-  flatListContainer: { padding: 16, paddingBottom: 80 },
-  center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  messageContainer: { maxWidth: "80%", marginBottom: 12, padding: 10, borderRadius: 12 },
-  myMessage: { backgroundColor: "green", alignSelf: "flex-end" },
-  theirMessage: { backgroundColor: "#E5E5EA", alignSelf: "flex-start" },
-  messageText: { fontSize: 16 },
-  timestamp: { fontSize: 10, color: "#888", marginTop: 2, alignSelf: "flex-end" },
-  inputContainer: {
-    flexDirection: "row",
-    padding: 10,
-    borderTopWidth: 1,
-    borderColor: "#ccc",
-    backgroundColor: "#fff",
-    alignItems: "flex-end",
-  },
-  textInput: {
-    flex: 1,
-    backgroundColor: "#f2f2f7",
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    fontSize: 16,
-    maxHeight: 120,
-  },
-  sendButton: {
-    marginLeft: 8,
-    backgroundColor: "#FF5722",
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    justifyContent: "center",
-    alignItems: "center",
-  },
+  container: { padding: 16, backgroundColor: "#fff", borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#e0e0e0" },
+  inputContainer: { gap: 12 },
+  usernameInputContainer: { flexDirection: "row", alignItems: "center", backgroundColor: "#F2F2F7", borderRadius: 10, paddingHorizontal: 12, height: 44 },
+  icon: { marginRight: 8 },
+  usernameInput: { flex: 1, fontSize: 16, color: "#000", padding: 0, paddingVertical: 12 },
+  messageInputContainer: { flexDirection: "row", alignItems: "flex-end", gap: 8 },
+  messageInput: { flex: 1, backgroundColor: "#F2F2F7", borderRadius: 20, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12, maxHeight: 120, fontSize: 16, textAlignVertical: "top", ...Platform.select({ ios: { paddingTop: 12 }, android: { textAlignVertical: "center" } }) },
+  sendButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#007AFF", justifyContent: "center", alignItems: "center", marginBottom: 4 },
+  sendButtonDisabled: { backgroundColor: "#C7C7CC" },
 });
 
-export default Conversation;
+export default SendMessageForm;
