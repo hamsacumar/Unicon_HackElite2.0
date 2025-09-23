@@ -23,8 +23,18 @@ import { useFocusEffect } from '@react-navigation/native';
 
 type NotificationScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Notification'>;
 
-// Helper function to get the correct API URL
-const API_URL = Constants.expoConfig?.extra?.apiUrl?.replace('/api', '');
+// Helper function to get the correct API URL with fallbacks
+const API_URL = (Constants.expoConfig?.extra?.apiUrl?.replace('/api', ''))
+  || (process.env.EXPO_PUBLIC_API_URL?.replace('/api', ''))
+  || '';
+
+// Normalize relative URLs (e.g., /uploads/xyz.jpg) to absolute using API base
+const toAbsolute = (base?: string, path?: string) => {
+  if (!path) return undefined as unknown as string;
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+  if (!base) return path; // fallback if base not configured
+  return `${base}${path.startsWith('/') ? path : `/${path}`}`;
+};
 
 interface Notification {
   id: string;
@@ -40,10 +50,14 @@ interface Notification {
   postId?: string;
   referenceId?: string;
   fromUserId?: string;
-  fromUserName?: string;
-  fromUserAvatar?: string;
+  fromUserName?: string; // mapped from authorName or organizerName
+  fromUserAvatar?: string; // mapped from authorAvatarUrl or organizerAvatarUrl
   organizerId?: string;
   organizerName?: string;
+  organizerAvatarUrl?: string;
+  authorName?: string;
+  authorAvatarUrl?: string;
+  postImageUrl?: string;
   content?: string;
   actionUrl?: string;
 }
@@ -54,7 +68,9 @@ const NotificationScreen: React.FC<{ navigation: NotificationScreenNavigationPro
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
-  const [failedImageLoads, setFailedImageLoads] = useState<Record<string, boolean>>({});
+  // Track avatar and thumbnail failures separately
+  const [failedAvatarLoads, setFailedAvatarLoads] = useState<Record<string, boolean>>({});
+  const [failedThumbLoads, setFailedThumbLoads] = useState<Record<string, boolean>>({});
 
   const API_BASE_URL = API_URL;
 
@@ -63,7 +79,7 @@ const NotificationScreen: React.FC<{ navigation: NotificationScreenNavigationPro
       if (!token) return;
 
       setRefreshing(true);
-      console.log('Fetching notifications...');
+      console.log('Fetching notifications...', { API_BASE_URL });
       const response = await fetch(`${API_BASE_URL}/api/notifications`, {
         method: 'GET',
         headers: {
@@ -73,9 +89,79 @@ const NotificationScreen: React.FC<{ navigation: NotificationScreenNavigationPro
       });
 
       const responseData = await response.json();
-      const notificationsArray = Array.isArray(responseData?.data) ? responseData.data : [];
-      
-      setNotifications(notificationsArray);
+      const rawArray = Array.isArray(responseData?.data) ? responseData.data : [];
+      if (rawArray.length > 0) {
+        const sampleRaw = rawArray[0];
+        console.log('Sample raw notification', {
+          id: sampleRaw.id || sampleRaw._id,
+          organizerName: sampleRaw.organizerName,
+          organizerAvatarUrl: sampleRaw.organizerAvatarUrl,
+          postImageUrl: sampleRaw.postImageUrl,
+          type: sampleRaw.type,
+          category: sampleRaw.category,
+        });
+      }
+      // Map backend fields to UI-friendly shape and ensure absolute URLs for images
+      const mapped: Notification[] = rawArray.map((n: any) => {
+        // Choose a single coherent source for both name and avatar to avoid mismatches
+        // Priority: organizer -> author -> explicit fromUser -> fallback title
+        let nameSource: string | undefined;
+        let avatarSource: string | undefined;
+
+        if (n.organizerName || n.organizerAvatarUrl) {
+          nameSource = n.organizerName ?? n.authorName ?? n.fromUserName;
+          avatarSource = n.organizerAvatarUrl ??  n.fromUserAvatar;
+        } else if (n.authorName || n.authorAvatarUrl) {
+          nameSource = n.authorName ?? n.fromUserName ?? n.organizerName;
+          avatarSource = n.authorAvatarUrl ?? n.fromUserAvatar ?? n.organizerAvatarUrl;
+        } else if (n.fromUserName || n.fromUserAvatar) {
+          nameSource = n.fromUserName ?? n.authorName ?? n.organizerName;
+          avatarSource = n.fromUserAvatar ?? n.authorAvatarUrl ?? n.organizerAvatarUrl;
+        }
+
+        // If it's a post/promotion-style notification, force organizer as the primary identity when available
+        const isPostLike = (n.type === 'post' || n.type === 'like' || n.type === 'comment' || n.category === 'Promotion');
+
+        if (isPostLike && (n.organizerName || n.organizerAvatarUrl)) {
+          nameSource = n.organizerName ?? nameSource;
+          avatarSource = n.organizerAvatarUrl ?? avatarSource;
+        }
+
+        const primaryName = (nameSource || n.organizerName || n.authorName || n.fromUserName || n.title || 'Someone');
+        const postImageUrl = toAbsolute(API_BASE_URL, n.postImageUrl);
+
+        // Also normalize and keep the explicit organizer/author avatar fields absolute for any direct UI usage
+        const organizerAvatarUrl = toAbsolute(API_BASE_URL, n.organizerAvatarUrl);
+        const authorAvatarUrl = toAbsolute(API_BASE_URL, n.authorAvatarUrl);
+
+        const baseMapped = {
+          ...n,
+          fromUserName: primaryName,
+          organizerAvatarUrl,
+          authorAvatarUrl,
+          postImageUrl,
+        } as Notification;
+
+        // For post/promotion/like/comment, prefer organizer's name for display
+        if (isPostLike && n.organizerName) {
+          baseMapped.fromUserName = n.organizerName;
+        }
+
+        return baseMapped;
+      });
+      if (mapped.length > 0) {
+        const sample = mapped[0];
+        console.log('Sample mapped notification', {
+          id: sample.id,
+          type: sample.type,
+          category: sample.category,
+          organizerName: sample.organizerName,
+          organizerAvatarUrl: sample.organizerAvatarUrl,
+          fromUserName: sample.fromUserName,
+          postImageUrl: sample.postImageUrl,
+        });
+      }
+      setNotifications(mapped);
     } catch (error) {
       console.error('Error fetching notifications:', error);
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
@@ -132,31 +218,47 @@ const NotificationScreen: React.FC<{ navigation: NotificationScreenNavigationPro
     // Mark as read
     markAsRead(notification.id);
 
-    // Handle navigation based on notification type
-    if (notification.category === 'event' && notification.eventId) {
-      console.log('Processing event notification');
-      console.log('Event ID:', notification.eventId);
-      
-      navigation.navigate('EventDetail', {
-        eventId: notification.eventId,
-      } as any);
-    } else if (notification.type === 'post' && notification.referenceId) {
-      console.log('Processing post notification');
-      console.log('Reference ID:', notification.referenceId);
-      
-      navigation.navigate('PostDetail', {
-        focusComments: false,
-        postId: notification.referenceId,
-      } as any);
-    } else if (notification.type === 'message' && notification.fromUserId && user) {
-      console.log('Processing message notification');
-      
+    // Prefer server-provided actionUrl for navigation
+    if (notification.actionUrl) {
+      try {
+        const [path, qs] = notification.actionUrl.split('?');
+        const segments = path.split('/').filter(Boolean);
+        const params = qs ? Object.fromEntries(new URLSearchParams(qs)) : {} as any;
+
+        if (segments[0] === 'posts' && segments[1]) {
+          navigation.navigate('PostDetail', { postId: segments[1], ...params } as any);
+          return;
+        }
+        if (segments[0] === 'messages') {
+          navigation.navigate('Messages' as any);
+          return;
+        }
+        if (segments[0] === 'events' && segments[1]) {
+          navigation.navigate('EventDetail', { eventId: segments[1], ...params } as any);
+          return;
+        }
+      } catch (e) {
+        console.warn('Failed to parse actionUrl:', notification.actionUrl, e);
+      }
+    }
+
+    // Fallbacks based on category/type
+    if ((notification.category === 'event' || notification.type === 'event') && notification.eventId) {
+      navigation.navigate('EventDetail', { eventId: notification.eventId } as any);
+      return;
+    }
+    if ((notification.category === 'post' || ['post','like','comment'].includes(notification.type || '')) && notification.referenceId) {
+      navigation.navigate('PostDetail', { postId: notification.referenceId } as any);
+      return;
+    }
+    if ((notification.category === 'message' || notification.type === 'message') && notification.fromUserId && user) {
       navigation.navigate('Chat', {
         currentUserId: user?.id ?? '',
         otherUserId: notification.fromUserId ?? '',
         currentUsername: user?.username ?? 'Current User',
         otherUsername: notification.fromUserName ?? 'User',
-      });
+      } as any);
+      return;
     }
   }, [markAsRead, navigation, user]);
 
@@ -207,14 +309,25 @@ const NotificationScreen: React.FC<{ navigation: NotificationScreenNavigationPro
     }
   };
 
-  const handleImageError = (notificationId: string) => {
-    setFailedImageLoads(prev => ({ ...prev, [notificationId]: true }));
+  const handleAvatarError = (notificationId: string) => {
+    setFailedAvatarLoads(prev => ({ ...prev, [notificationId]: true }));
+  };
+
+  const handleThumbError = (notificationId: string) => {
+    setFailedThumbLoads(prev => ({ ...prev, [notificationId]: true }));
   };
 
   const renderNotificationItem = ({ item, index }: { item: Notification; index: number }) => {
     const icon = getNotificationIcon(item.type, item.category);
-    const hasAvatar = item.fromUserAvatar && !failedImageLoads[item.id];
-    
+    const avatarUri = ((item.organizerAvatarUrl || '').startsWith('http')
+      ? (item.organizerAvatarUrl as string)
+      : (item.organizerAvatarUrl ? `${API_URL}${item.organizerAvatarUrl}` : '')) as string;
+    const hasAvatar = !!(avatarUri && !failedAvatarLoads[item.id]);
+    const thumbUri = ((item.postImageUrl || '').startsWith('http')
+      ? (item.postImageUrl as string)
+      : (item.postImageUrl ? `${API_URL}${item.postImageUrl}` : '')) as string;
+    const hasThumbnail = !!(thumbUri && !failedThumbLoads[item.id]);
+
     return (
       <TouchableOpacity
         style={[
@@ -229,14 +342,17 @@ const NotificationScreen: React.FC<{ navigation: NotificationScreenNavigationPro
         <View style={styles.avatarContainer}>
           {hasAvatar ? (
             <Image 
-              source={{ uri: item.fromUserAvatar }} 
+              source={{ uri: avatarUri }} 
               style={styles.avatar}
-              onError={() => handleImageError(item.id)}
+              onError={() => {
+                console.warn('Avatar image failed to load', { id: item.id, avatarUri });
+                handleAvatarError(item.id);
+              }}
             />
           ) : (
-            <View style={[styles.defaultAvatar, { backgroundColor: icon.color }]}>
+            <View style={[styles.defaultAvatar, { backgroundColor: icon.color }]}> 
               <Text style={styles.defaultAvatarText}>
-                {(item.fromUserName || item.organizerName || item.title).charAt(0).toUpperCase()}
+                {(item.organizerName || item.fromUserName || item.title).charAt(0).toUpperCase()}
               </Text>
             </View>
           )}
@@ -277,13 +393,24 @@ const NotificationScreen: React.FC<{ navigation: NotificationScreenNavigationPro
 
         {(item.type === 'like' || item.type === 'comment' || item.type === 'post') && (
           <View style={styles.postThumbnail}>
-            <View style={styles.placeholderImage}>
-              <Ionicons 
-                name={item.category === 'event' ? 'calendar' : 'image-outline'} 
-                size={20} 
-                color="#ccc" 
+            {hasThumbnail ? (
+              <Image
+                source={{ uri: thumbUri }}
+                style={styles.thumbnailImage}
+                onError={() => {
+                  console.warn('Post image failed to load', { id: item.id, thumbUri });
+                  handleThumbError(item.id);
+                }}
               />
-            </View>
+            ) : (
+              <View style={styles.placeholderImage}>
+                <Ionicons
+                  name={item.category === 'event' ? 'calendar' : 'image-outline'}
+                  size={20}
+                  color="#ccc"
+                />
+              </View>
+            )}
           </View>
         )}
       </TouchableOpacity>
@@ -608,6 +735,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#e0e0e0',
+  },
+  thumbnailImage: {
+    width: 44,
+    height: 44,
+    borderRadius: 8,
+    backgroundColor: '#f0f0f0',
   },
   emptyContainer: {
     flex: 1,
