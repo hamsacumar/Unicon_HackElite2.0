@@ -39,12 +39,13 @@ export interface Post {
 }
 
 export interface ProfileUpdateRequest {
-  FirstName?: string;
-  LastName?: string;
-  Username?: string;
-  Description?: string;
-  ProfileImageUrl?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  username?: string | null;
+  description?: string | null;
+  profileImageUrl?: string | null;
 }
+
 
 export interface ProfileResponse {
   firstName: string;

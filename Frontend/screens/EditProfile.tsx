@@ -15,7 +15,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useNavigation } from "@react-navigation/native";
 import RoleBasedBottomNav from "../component/rolebasedNav";
 import { updateProfile, ProfileService } from "../services/ProfileService";
-import type { ProfileResponse } from "../services/ProfileService";
+import type { ProfileResponse, ProfileUpdateRequest } from "../services/ProfileService";
 import Constants from "expo-constants";
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl?.replace("/api", "");
@@ -58,17 +58,18 @@ const EditProfile: React.FC = () => {
   }, []);
 
   const handleSave = async () => {
-    const payload = {
-      FirstName: firstName || "",
-      LastName: lastName || "",
-      Username: username || "",
-      Description: bio || "",
-      ProfileImageUrl: profileImageUrl
-        ? profileImageUrl.startsWith("http")
-          ? profileImageUrl
-          : `${API_URL}${profileImageUrl}`
-        : null,
-    };
+   const payload: ProfileUpdateRequest = {
+  firstName: firstName.trim() || null,
+  lastName: lastName.trim() || null,
+  username: username.trim() || null,
+  description: bio.trim() || "", // allow empty string
+  profileImageUrl: profileImageUrl
+    ? profileImageUrl.startsWith("http")
+      ? profileImageUrl
+      : `${API_URL}${profileImageUrl}`
+    : null,
+};
+
 
     console.log("Updating profile with:", payload);
 

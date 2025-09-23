@@ -170,17 +170,32 @@ public async Task<IActionResult> UpdateMyProfile([FromBody] AppUser updatedProfi
     if (user == null)
         return NotFound("User not found.");
 
-    // Update fields
-    user.FirstName = updatedProfile.FirstName;
-    user.LastName = updatedProfile.LastName;
-    user.Username = updatedProfile.Username;
-    user.Description = updatedProfile.Description;
-    if (!string.IsNullOrEmpty(updatedProfile.ProfileImageUrl))
+    // Only update fields that are provided and not empty
+    if (!string.IsNullOrEmpty(updatedProfile.FirstName))
+        user.FirstName = updatedProfile.FirstName;
+    
+    if (!string.IsNullOrEmpty(updatedProfile.LastName))
+        user.LastName = updatedProfile.LastName;
+    
+    if (!string.IsNullOrEmpty(updatedProfile.Username))
+        user.Username = updatedProfile.Username;
+    
+    if (updatedProfile.Description != null) // Allow empty description but not null
+        user.Description = updatedProfile.Description;
+    
+    if (updatedProfile.ProfileImageUrl != null) // Allow null to remove image
         user.ProfileImageUrl = updatedProfile.ProfileImageUrl;
 
     await _profileService.UpdateUserAsync(userId, user);
 
-    return Ok(user);
+    return Ok(new
+    {
+        FirstName = user.FirstName,
+        LastName = user.LastName,
+        Username = user.Username,
+        Description = user.Description,
+        ProfileImageUrl = user.ProfileImageUrl
+    });
 }
 
 
