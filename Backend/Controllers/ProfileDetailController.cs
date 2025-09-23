@@ -1,3 +1,6 @@
+//controllers/ProfileDetailController.cs
+
+using Backend.Models;
 using Backend.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -17,28 +20,31 @@ namespace Backend.Controllers
             _profileService = profileService;
         }
 
-        [HttpGet("me")]
-        [Authorize]
-        public async Task<IActionResult> GetMyProfile()
-        {
-            var userId = User.Claims
-                .FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")
-                ?.Value;
+       [HttpGet("me")]
+[Authorize]
+public async Task<IActionResult> GetMyProfile()
+{
+    var userId = User.Claims
+        .FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")
+        ?.Value;
 
-            if (string.IsNullOrEmpty(userId))
-                return Unauthorized("User ID not found in token.");
+    if (string.IsNullOrEmpty(userId))
+        return Unauthorized("User ID not found in token.");
 
-            var user = await _profileService.GetUserByIdAsync(userId);
-            if (user == null)
-                return NotFound("User not found.");
+    var user = await _profileService.GetUserByIdAsync(userId);
+    if (user == null)
+        return NotFound("User not found.");
 
-            return Ok(new
-            {
-                user.Username,
-                user.Description,
-                ProfileImageUrl = user.ProfileImageUrl
-            });
-        }
+    return Ok(new
+    {
+        FirstName = user.FirstName,
+        LastName = user.LastName,
+        Username = user.Username,
+        Description = user.Description,
+        ProfileImageUrl = user.ProfileImageUrl
+    });
+}
+
 
         [HttpGet("my-events")]
         [Authorize]
@@ -149,6 +155,35 @@ public async Task<IActionResult> GetProfileImageByUsername(string username)
 
     return Ok(new { ProfileImageUrl = imageUrl });
 }
+[HttpPut("me")]
+[Authorize]
+public async Task<IActionResult> UpdateMyProfile([FromBody] AppUser updatedProfile)
+{
+    var userId = User.Claims
+        .FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")
+        ?.Value;
+
+    if (string.IsNullOrEmpty(userId))
+        return Unauthorized("User ID not found in token.");
+
+    var user = await _profileService.GetUserByIdAsync(userId);
+    if (user == null)
+        return NotFound("User not found.");
+
+    // Update fields
+    user.FirstName = updatedProfile.FirstName;
+    user.LastName = updatedProfile.LastName;
+    user.Username = updatedProfile.Username;
+    user.Description = updatedProfile.Description;
+    if (!string.IsNullOrEmpty(updatedProfile.ProfileImageUrl))
+        user.ProfileImageUrl = updatedProfile.ProfileImageUrl;
+
+    await _profileService.UpdateUserAsync(userId, user);
+
+    return Ok(user);
+}
+
 
     }
 }
+

@@ -29,6 +29,7 @@ export interface ProfileResponse {
   lastName: string;
   description: string;
   username: string;
+  profileImageUrl?: string | null;
 }
 
 export interface ProfileUpdateRequest {
@@ -36,6 +37,7 @@ export interface ProfileUpdateRequest {
   lastName?: string;
   description?: string;
   username?: string;
+  profileImageUrl?: string | null;
 }
 
 // -------------------- Constants --------------------

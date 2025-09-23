@@ -8,7 +8,7 @@ const api = axios.create({
 
 // Helper to get token
 async function getToken(): Promise<string | null> {
-  return await SecureStore.getItemAsync("accessToken"); // adjust key if different
+  return await SecureStore.getItemAsync("accessToken");
 }
 
 // Add Authorization header
@@ -25,12 +25,7 @@ async function authGet<T>(url: string): Promise<T> {
   return response.data;
 }
 
-export interface Profile {
-  username: string;
-  description: string;
-  profileImageUrl?: string | null;
-}
-
+// ----------------- Interfaces -----------------
 export interface Post {
   id: string;
   title: string;
@@ -43,9 +38,26 @@ export interface Post {
   createdAt: string;
 }
 
+export interface ProfileUpdateRequest {
+  FirstName?: string;
+  LastName?: string;
+  Username?: string;
+  Description?: string;
+  ProfileImageUrl?: string | null;
+}
+
+export interface ProfileResponse {
+  firstName: string;
+  lastName: string;
+  username: string;
+  description: string;
+  profileImageUrl?: string | null;
+}
+
+// ----------------- Services -----------------
 export const ProfileService = {
-  getProfile: async (): Promise<Profile> => {
-    return authGet<Profile>("/ProfileDetail/me");
+  getProfile: async (): Promise<ProfileResponse> => {
+    return authGet<ProfileResponse>("/ProfileDetail/me");
   },
 
   getPosts: async (): Promise<Post[]> => {
@@ -54,6 +66,23 @@ export const ProfileService = {
 
   getPostCount: async (): Promise<number> => {
     const posts = await authGet<Post[]>("/ProfileDetail/my-events");
-    return posts.length; // simply return the number of posts
+    return posts.length;
   },
+};
+
+export const updateProfile = async (
+  data: ProfileUpdateRequest
+): Promise<ProfileResponse | null> => {
+  const token = await SecureStore.getItemAsync("accessToken");
+  if (!token) return null;
+
+  try {
+    const response = await api.put<ProfileResponse>("/ProfileDetail/me", data, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error updating profile:", error);
+    return null;
+  }
 };

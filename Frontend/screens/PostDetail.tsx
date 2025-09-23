@@ -175,7 +175,7 @@ useFocusEffect(
               <TouchableOpacity style={styles.userRow} onPress={() => handleUserPress(post.userId)} activeOpacity={0.7}>
                 <Image
   source={{
-    uri: post.userImage
+    uri: post.userImage && post.userImage !== "string"
       ? (post.userImage.startsWith("http")
           ? post.userImage
           : `${API_URL}${post.userImage.startsWith("/") ? "" : "/"}${post.userImage}`)

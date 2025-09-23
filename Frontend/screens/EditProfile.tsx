@@ -14,12 +14,11 @@ import {
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useNavigation } from "@react-navigation/native";
 import RoleBasedBottomNav from "../component/rolebasedNav";
-import {
-  getProfile,
-  updateProfile,
-  ProfileResponse,
-  ProfileUpdateRequest,
-} from "../services/api/api";
+import { updateProfile, ProfileService } from "../services/ProfileService";
+import type { ProfileResponse } from "../services/ProfileService";
+import Constants from "expo-constants";
+
+const API_URL = Constants.expoConfig?.extra?.apiUrl?.replace("/api", "");
 
 type RootStackParamList = {
   EditProfile: undefined;
@@ -37,35 +36,50 @@ const EditProfile: React.FC = () => {
   const [lastName, setLastName] = useState("");
   const [bio, setBio] = useState("");
   const [username, setUsername] = useState("");
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadProfile = async () => {
-      const profile = await getProfile();
-      if (profile) {
+      try {
+        const profile: ProfileResponse = await ProfileService.getProfile();
         setFirstName(profile.firstName || "");
         setLastName(profile.lastName || "");
         setBio(profile.description || "");
         setUsername(profile.username || "");
+        setProfileImageUrl(profile.profileImageUrl || null);
+      } catch (error) {
+        console.error("Error loading profile:", error);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
     loadProfile();
   }, []);
 
   const handleSave = async () => {
-    const updated: ProfileResponse | null = await updateProfile({
-      firstName,
-      lastName,
-      description: bio,
-      username,
-    } as ProfileUpdateRequest);
+    const payload = {
+      FirstName: firstName || "",
+      LastName: lastName || "",
+      Username: username || "",
+      Description: bio || "",
+      ProfileImageUrl: profileImageUrl
+        ? profileImageUrl.startsWith("http")
+          ? profileImageUrl
+          : `${API_URL}${profileImageUrl}`
+        : null,
+    };
+
+    console.log("Updating profile with:", payload);
+
+    const updated = await updateProfile(payload);
 
     if (updated) {
-      setFirstName(updated.firstName);
-      setLastName(updated.lastName);
-      setBio(updated.description);
-      setUsername(updated.username);
+      setFirstName(updated.firstName || "");
+      setLastName(updated.lastName || "");
+      setBio(updated.description || "");
+      setUsername(updated.username || "");
+      setProfileImageUrl(updated.profileImageUrl || null);
 
       Alert.alert("Success", "Profile updated successfully");
     } else {
@@ -86,79 +100,36 @@ const EditProfile: React.FC = () => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor="#FF5722" barStyle="light-content" />
-
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Profile Picture */}
         <View style={styles.profilePictureSection}>
           <View style={styles.profileImageContainer}>
             <Image
-              source={require("../assets/icon.png")}
+              source={
+                profileImageUrl
+                  ? {
+                      uri: profileImageUrl.startsWith("http")
+                        ? profileImageUrl
+                        : `${API_URL}${profileImageUrl}`,
+                    }
+                  : require("../assets/icon.png")
+              }
               style={styles.profileImage}
             />
           </View>
-          <TouchableOpacity>
-            <Text style={styles.changePictureText}>
-              Change profile picture
-            </Text>
+          <TouchableOpacity
+            onPress={() => Alert.alert("Upload flow not implemented")}
+          >
+            <Text style={styles.changePictureText}>Change profile picture</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Form Fields */}
         <View style={styles.formSection}>
-          {/* First Name */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>First Name</Text>
-            <View style={styles.inputContainer}>
-              <TextInput
-                style={styles.textInput}
-                value={firstName}
-                onChangeText={setFirstName}
-                placeholder="Enter first name"
-              />
-            </View>
-          </View>
-
-          {/* Last Name */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Last Name</Text>
-            <View style={styles.inputContainer}>
-              <TextInput
-                style={styles.textInput}
-                value={lastName}
-                onChangeText={setLastName}
-                placeholder="Enter last name"
-              />
-            </View>
-          </View>
-
-          {/* Username */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Username</Text>
-            <View style={styles.inputContainer}>
-              <TextInput
-                style={styles.textInput}
-                value={username}
-                onChangeText={setUsername}
-                placeholder="Enter username"
-              />
-            </View>
-          </View>
-
-          {/* Bio */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Bio</Text>
-            <View style={styles.inputContainer}>
-              <TextInput
-                style={styles.textInput}
-                value={bio}
-                onChangeText={setBio}
-                placeholder="Enter bio"
-              />
-            </View>
-          </View>
+          <InputField label="First Name" value={firstName} onChange={setFirstName} />
+          <InputField label="Last Name" value={lastName} onChange={setLastName} />
+          <InputField label="Username" value={username} onChange={setUsername} />
+          <InputField label="Bio" value={bio} onChange={setBio} />
         </View>
 
-        {/* Save Button */}
         <View style={styles.saveButtonContainer}>
           <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
             <Text style={styles.saveButtonText}>Save</Text>
@@ -170,6 +141,28 @@ const EditProfile: React.FC = () => {
     </SafeAreaView>
   );
 };
+
+const InputField = ({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (text: string) => void;
+}) => (
+  <View style={styles.inputGroup}>
+    <Text style={styles.label}>{label}</Text>
+    <View style={styles.inputContainer}>
+      <TextInput
+        style={styles.textInput}
+        value={value}
+        onChangeText={onChange}
+        placeholder={`Enter ${label.toLowerCase()}`}
+      />
+    </View>
+  </View>
+);
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#FFFFFF" },
