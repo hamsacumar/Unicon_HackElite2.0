@@ -66,6 +66,157 @@ namespace Backend.Services
             }
         }
 
+        /// <summary>
+        /// Check if the user is subscribed (active) to a title-based configuration for an organizer/title
+        /// </summary>
+        public async Task<bool> IsTitleSubscribedAsync(string userId, string organizerId, string title)
+        {
+            if (string.IsNullOrEmpty(userId))
+                throw new ArgumentException("User ID cannot be null or empty", nameof(userId));
+            if (string.IsNullOrEmpty(organizerId))
+                throw new ArgumentException("Organizer ID cannot be null or empty", nameof(organizerId));
+            if (string.IsNullOrEmpty(title))
+                throw new ArgumentException("Title cannot be null or empty", nameof(title));
+
+            try
+            {
+                var normTitle = title.Trim();
+                var filter = Builders<Subscription>.Filter.And(
+                    Builders<Subscription>.Filter.Eq(s => s.UserId, userId),
+                    Builders<Subscription>.Filter.Eq(s => s.OrganizerId, organizerId),
+                    Builders<Subscription>.Filter.Eq(s => s.Title, normTitle),
+                    Builders<Subscription>.Filter.Eq(s => s.IsActive, true)
+                );
+                var count = await _subscriptions.CountDocumentsAsync(filter);
+                return count > 0;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error checking title subscription for user {UserId}", userId);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Disable title-based notifications configured for an organizer/title pair
+        /// </summary>
+        public async Task<bool> UnsubscribeTitleAsync(string userId, string title, string organizerId)
+        {
+            if (string.IsNullOrEmpty(userId))
+                throw new ArgumentException("User ID cannot be null or empty", nameof(userId));
+            if (string.IsNullOrEmpty(title))
+                throw new ArgumentException("Title cannot be null or empty", nameof(title));
+            if (string.IsNullOrEmpty(organizerId))
+                throw new ArgumentException("Organizer ID cannot be null or empty", nameof(organizerId));
+
+            try
+            {
+                var normTitle = title.Trim();
+                var filter = Builders<Subscription>.Filter.And(
+                    Builders<Subscription>.Filter.Eq(s => s.UserId, userId),
+                    Builders<Subscription>.Filter.Eq(s => s.OrganizerId, organizerId),
+                    Builders<Subscription>.Filter.Eq(s => s.Title, normTitle)
+                );
+
+                var update = Builders<Subscription>.Update
+                    .Set(s => s.IsActive, false)
+                    .Set(s => s.UpdatedAt, DateTime.UtcNow);
+
+                var result = await _subscriptions.UpdateOneAsync(filter, update);
+                _logger.LogInformation("Title unsubscribe for user {UserId}, organizer {OrganizerId}, title '{Title}'. Matched: {Matched}", userId, organizerId, title, result.MatchedCount);
+                return result.MatchedCount > 0;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error unsubscribing title-based notifications for user {UserId}", userId);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Configure notifications for future posts from an organizer that match a specific title.
+        /// This does not subscribe to the organizer generally and does not require a specific postId.
+        /// </summary>
+        public async Task SubscribeToTitleAsync(string userId, string title, string organizerId, string? category = null)
+        {
+            if (string.IsNullOrEmpty(userId))
+                throw new ArgumentException("User ID cannot be null or empty", nameof(userId));
+            if (string.IsNullOrEmpty(title))
+                throw new ArgumentException("Title cannot be null or empty", nameof(title));
+            if (string.IsNullOrEmpty(organizerId))
+                throw new ArgumentException("Organizer ID cannot be null or empty", nameof(organizerId));
+
+            try
+            {
+                var normTitle = title.Trim();
+                // Check if a title-based subscription already exists (independent of PostId)
+                var existing = await _subscriptions.Find(s =>
+                    s.UserId == userId &&
+                    s.OrganizerId == organizerId &&
+                    s.Title == normTitle).FirstOrDefaultAsync();
+
+                if (existing != null)
+                {
+                    if (!existing.IsActive)
+                    {
+                        var update = Builders<Subscription>.Update
+                            .Set(s => s.IsActive, true)
+                            .Set(s => s.UpdatedAt, DateTime.UtcNow);
+                        await _subscriptions.UpdateOneAsync(s => s.Id == existing.Id, update);
+                    }
+                    return;
+                }
+
+                var subscription = new Subscription
+                {
+                    UserId = userId,
+                    OrganizerId = organizerId,
+                    // Use synthetic PostId to avoid uniqueness conflict on (UserId, OrganizerId, PostId)
+                    PostId = $"title:{normTitle}",
+                    Title = normTitle,
+                    Category = category,
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                await _subscriptions.InsertOneAsync(subscription);
+                _logger.LogInformation("User {UserId} configured title-based notifications '{Title}' for organizer {OrganizerId}", userId, title, organizerId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error configuring title-based notifications for user {UserId}", userId);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Disable all active subscriptions for the given user
+        /// </summary>
+        public async Task UnsubscribeAllForUserAsync(string userId)
+        {
+            if (string.IsNullOrEmpty(userId))
+                throw new ArgumentException("User ID cannot be null or empty", nameof(userId));
+
+            try
+            {
+                var filter = Builders<Subscription>.Filter.And(
+                    Builders<Subscription>.Filter.Eq(s => s.UserId, userId),
+                    Builders<Subscription>.Filter.Eq(s => s.IsActive, true)
+                );
+                var update = Builders<Subscription>.Update
+                    .Set(s => s.IsActive, false)
+                    .Set(s => s.UpdatedAt, DateTime.UtcNow);
+
+                var result = await _subscriptions.UpdateManyAsync(filter, update);
+                _logger.LogInformation("Unsubscribed {Count} subscriptions for user {UserId}", result.ModifiedCount, userId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error unsubscribing all subscriptions for user {UserId}", userId);
+                throw;
+            }
+        }
+
         // --------------------
         // Notification Operations
         // --------------------

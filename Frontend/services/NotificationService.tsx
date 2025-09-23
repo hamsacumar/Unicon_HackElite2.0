@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as SecureStore from "expo-secure-store";
 import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
 
@@ -35,8 +36,121 @@ class NotificationService {
   private static instance: NotificationService;
 
   private constructor() {
-    this.baseUrl = process.env.EXPO_PUBLIC_API_URL || "http://localhost:5000";
+    // Prefer Expo-configured API URL (should include '/api')
+    const cfgUrl = Constants.expoConfig?.extra?.apiUrl;
+    const envUrl = process.env.EXPO_PUBLIC_API_URL;
+    const fallback = "http://localhost:5000/api"; // fallback for dev simulators only
+    this.baseUrl = (cfgUrl || envUrl || fallback).replace(/\/+$/, "");
+    console.log("[NotificationService] Base URL:", this.baseUrl);
     this.initializeNotifications();
+  }
+
+  // Disable all subscriptions for current user (use on logout)
+  async unsubscribeAll(): Promise<boolean> {
+    try {
+      const headers = await this.getAuthHeaders();
+      const base = this.baseUrl.replace(/\/+$/, "");
+      const hasApi = /\/api$/i.test(base);
+      const url = `${base}${hasApi ? '' : '/api'}/notifications/unsubscribe-all`;
+      const maskedAuth = headers.Authorization ? headers.Authorization.slice(0, 16) + "..." : "";
+      console.log("[NotificationService] unsubscribeAll ->", {
+        url,
+        hasAuth: !!headers.Authorization,
+        authPrefix: maskedAuth,
+      });
+      const response = await fetch(url, {
+        method: "POST",
+        headers,
+      });
+      if (response.ok) {
+        const result = await response.json();
+        return result.success;
+      }
+      throw new Error(`Failed to unsubscribe all: ${response.status}`);
+    } catch (error) {
+      console.error("Error unsubscribing all:", error);
+      return false;
+    }
+  }
+
+  // Configure title-based notifications for an organizer (no postId, not a general organizer subscribe)
+  async configureTitle(
+    organizerId: string,
+    title: string,
+    category?: string
+  ): Promise<boolean> {
+    try {
+      const headers = await this.getAuthHeaders();
+      const base = this.baseUrl.replace(/\/+$/, "");
+      const hasApi = /\/api$/i.test(base);
+      const url = `${base}${hasApi ? '' : '/api'}/notifications/subscribe`;
+      const maskedAuth = headers.Authorization ? headers.Authorization.slice(0, 16) + "..." : "";
+      console.log("[NotificationService] configureTitle ->", {
+        url,
+        organizerId,
+        title,
+        category,
+        hasAuth: !!headers.Authorization,
+        authPrefix: maskedAuth,
+      });
+      const response = await fetch(
+        url,
+        {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            organizerId,
+            title,
+            category,
+          }),
+        }
+      );
+
+      if (response.ok) {
+        const result = await response.json();
+        return result.success;
+      } else {
+        throw new Error(`Failed to configure title notifications: ${response.status}`);
+      }
+    } catch (error) {
+      console.error("Error configuring title notifications:", error);
+      throw error;
+    }
+  }
+
+  // Remove title-based notifications configuration
+  async unsubscribeTitle(
+    organizerId: string,
+    title: string
+  ): Promise<boolean> {
+    try {
+      const headers = await this.getAuthHeaders();
+      const base = this.baseUrl.replace(/\/+$/, "");
+      const hasApi = /\/api$/i.test(base);
+      const url = `${base}${hasApi ? '' : '/api'}/notifications/unsubscribe-title`;
+      const maskedAuth = headers.Authorization ? headers.Authorization.slice(0, 16) + "..." : "";
+      console.log("[NotificationService] unsubscribeTitle ->", {
+        url,
+        organizerId,
+        title,
+        hasAuth: !!headers.Authorization,
+        authPrefix: maskedAuth,
+      });
+      const response = await fetch(url, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ organizerId, title }),
+      });
+      if (response.ok) {
+        const result = await response.json();
+        return result.success;
+      } else {
+        throw new Error(`Failed to unsubscribe title notifications: ${response.status}`);
+      }
+    } catch (error) {
+      console.error("Error unsubscribing title notifications:", error);
+      throw error;
+    }
   }
 
   static getInstance(): NotificationService {
@@ -81,7 +195,13 @@ class NotificationService {
   }
 
   private async getAuthHeaders(): Promise<{ [key: string]: string }> {
-    const token = await AsyncStorage.getItem("userToken");
+    // Prefer SecureStore (used elsewhere in the app), then fall back to AsyncStorage
+    const secureToken = await SecureStore.getItemAsync("accessToken");
+    const token =
+      secureToken ||
+      (await AsyncStorage.getItem("accessToken")) ||
+      (await AsyncStorage.getItem("token")) ||
+      (await AsyncStorage.getItem("userToken"));
     return {
       "Content-Type": "application/json",
       Authorization: token ? `Bearer ${token}` : "",

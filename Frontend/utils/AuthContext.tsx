@@ -1,128 +1,114 @@
-import React, {
-  createContext,
-  useState,
-  useEffect,
-  ReactNode,
-  useContext,
-} from "react";
+import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import * as SecureStore from "expo-secure-store";
+import { Alert } from "react-native";
 import Constants from "expo-constants";
-import Toast from "react-native-toast-message";
-import { saveToken, clearToken } from "../services/navService";
 
-const BASE_URL = Constants.expoConfig?.extra?.backendUrl;
-
-interface User {
+type AuthUser = {
   id?: string;
-  username: string;
-  email: string;
-  role: string;
+  username?: string;
+  email?: string;
+  role?: string;
   isEmailVerified?: boolean;
-}
+};
 
-interface AuthContextType {
-  token: string | null;
-  user: User | null;
+type LoginPayload = {
+  accessToken: string;
+  userId?: string;
+  username?: string;
+  email?: string;
+  role?: string;
+  isEmailVerified?: boolean;
+};
+
+type AuthContextType = {
   isLoading: boolean;
-  login: (data: {
-    accessToken: string;
-    username: string;
-    email: string;
-    role: string;
-  }) => Promise<void>;
+  token: string | null;
+  user: AuthUser | null;
+  login: (data: LoginPayload) => Promise<void>;
   logout: () => Promise<void>;
-}
+};
 
-export const AuthContext = createContext<AuthContextType | undefined>(
-  undefined
-);
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [token, setToken] = useState<string | null>(null);
-  const [user, setUser] = useState<User | null>(null);
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
+  const [token, setToken] = useState<string | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
 
+  // On mount, hydrate token and try to get basic user profile if available
   useEffect(() => {
-    const loadAuth = async () => {
-      setIsLoading(true);
-      const savedToken = await SecureStore.getItemAsync("accessToken");
-      console.log("Saved token:", savedToken);
-      if (savedToken) {
-        try {
-          // First try to get user info using the token
-          const response = await fetch(`${BASE_URL}/api/account/me`, {
-            headers: { 
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${savedToken}` 
-            },
-          });
-          
-          if (response.ok) {
-            const data = await response.json();
-            setToken(savedToken);
-            setUser({
-              id: data.Id,
-              username: data.Username,
-              email: data.Email,
-              role: data.Role,
-              isEmailVerified: data.IsEmailVerified
-            });
-          } else {
-            console.warn('Failed to fetch user info, logging out');
-            await logout();
+    const init = async () => {
+      try {
+        const storedToken = await SecureStore.getItemAsync("accessToken");
+        if (storedToken) {
+          setToken(storedToken);
+          // Optionally, try to hydrate a minimal user from storage if you save it
+          const storedUserJson = await SecureStore.getItemAsync("userProfile");
+          if (storedUserJson) {
+            setUser(JSON.parse(storedUserJson));
           }
-        } catch (error) {
-          console.error('Error loading auth:', error);
-          await logout();
-        } finally {
-          setIsLoading(false);
         }
-      } else {
+      } catch (e) {
+        console.warn("[Auth] Failed to hydrate token:", e);
+      } finally {
         setIsLoading(false);
       }
     };
-    loadAuth();
+    init();
   }, []);
 
-  const login = async (data: {
-    accessToken: string;
-    username: string;
-    email: string;
-    role: string;
-    userId?: string;
-    isEmailVerified?: boolean;
-  }) => {
-    // Save token using our navService
-    await saveToken(data.accessToken);
-    setToken(data.accessToken);
-    setUser({ 
-      username: data.username, 
-      email: data.email, 
-      role: data.role,
-      id: data.userId,
-      isEmailVerified: data.isEmailVerified || false
-    });
+  const login = async (data: LoginPayload) => {
+    try {
+      if (!data?.accessToken) throw new Error("Missing access token in login payload");
+      setIsLoading(true);
+
+      // Persist token
+      await SecureStore.setItemAsync("accessToken", data.accessToken);
+      setToken(data.accessToken);
+
+      // Build and persist a minimal user profile for quick hydration
+      const nextUser: AuthUser = {
+        id: data.userId,
+        username: data.username,
+        email: data.email,
+        role: data.role,
+        isEmailVerified: data.isEmailVerified,
+      };
+      setUser(nextUser);
+      await SecureStore.setItemAsync("userProfile", JSON.stringify(nextUser));
+    } catch (e) {
+      console.error("[Auth] login error:", e);
+      Alert.alert("Login Error", e instanceof Error ? e.message : "Unknown error");
+      throw e;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const logout = async () => {
-    await clearToken();
-    setToken(null);
-    setUser(null);
-    Toast.show({ type: "success", text1: "Logged out" });
+    try {
+      setIsLoading(true);
+      await SecureStore.deleteItemAsync("accessToken");
+      await SecureStore.deleteItemAsync("userProfile");
+      setToken(null);
+      setUser(null);
+    } catch (e) {
+      console.error("[Auth] logout error:", e);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  return (
-    <AuthContext.Provider value={{ token, user, isLoading, login, logout }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  const value = useMemo<AuthContextType>(() => ({ isLoading, token, user, login, logout }), [isLoading, token, user]);
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-// Add this custom hook for safe context access
-export const useAuth = (): AuthContextType => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
+export function useAuth() {
+  const ctx = useContext(AuthContext);
+  if (!ctx) {
     throw new Error("useAuth must be used within an AuthProvider");
   }
-  return context;
-};
+  return ctx;
+}
+

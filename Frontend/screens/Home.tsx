@@ -202,6 +202,10 @@ export default function Home() {
                       )
                     );
                   }}
+                  organizerId={item.userId}
+                  organizerName={item.username}
+                  postTitle={item.title}
+                  category={item.category}
                 />
 
                 {/* Inline Comment Section */}

@@ -39,8 +39,9 @@ type Props = {
 };
 
 export default function PostDetail({ route, navigation }: Props) {
-  const { post: initialPost } = route.params;
-  const postId = initialPost?.id;
+  // Accept either a full post object or just a postId via route params
+  const { post: initialPost, postId: routePostId } = (route.params || {}) as any;
+  const postId = (initialPost?.id as string | undefined) ?? (routePostId as string | undefined);
 
   // ---------- State ----------
   const [post, setPost] = useState<EventItem | null>(initialPost || null);
@@ -68,7 +69,11 @@ useFocusEffect(
 
   // ---------- Fetch post details ----------
   useEffect(() => {
-    if (!postId) return;
+    if (!postId) {
+      // If no postId was provided via route and no initialPost, stop loading and show error UI
+      setIsLoading(false);
+      return;
+    }
 
     const fetchPost = async () => {
       try {
@@ -147,6 +152,16 @@ useFocusEffect(
     );
   }
 
+  // If there is still no postId, we cannot proceed
+  if (!postId) {
+    return (
+      <View style={styles.errorContainer}>
+        <Ionicons name="alert-circle-outline" size={48} color="#e74c3c" />
+        <Text style={styles.errorText}>Invalid post link</Text>
+      </View>
+    );
+  }
+
   if (!post) {
     return (
       <View style={styles.errorContainer}>
@@ -221,18 +236,22 @@ useFocusEffect(
               </View>
 
               {/* Post Actions */}
-<PostActions
-  postId={postId}
-  userId={userId}
-  initialLikeCount={likeCount}
-  initialCommentCount={commentCount}
-  initialIsLiked={userId ? isLiked : false}
-  initialIsBookmarked={userId ? isBookmarkedPost : false}
-  onLikeUpdate={handleLikeUpdate}
-  onBookmarkToggle={handleBookmarkToggle}
-  onCommentPress={handleCommentPress} // toggle comments
-  disabled={!userId} // 👈 add this
-/>
+              <PostActions
+                postId={postId}
+                userId={userId}
+                initialLikeCount={likeCount}
+                initialCommentCount={commentCount}
+                initialIsLiked={userId ? isLiked : false}
+                initialIsBookmarked={userId ? isBookmarkedPost : false}
+                onLikeUpdate={handleLikeUpdate}
+                onBookmarkToggle={handleBookmarkToggle}
+                onCommentPress={handleCommentPress} // toggle comments
+                disabled={!userId}
+                organizerId={post.userId}
+                organizerName={post.username}
+                postTitle={post.title}
+                category={post.category}
+              />
 
             </>
           }
@@ -260,15 +279,6 @@ useFocusEffect(
   />
 )}
 
-
-
-        {/* Bottom Nav for unauthenticated users */}
-        {!userId && (
-          <BottomNav
-            onPressLogin={() => navigation.navigate("Login")}
-            onPressRegister={() => navigation.navigate("Signup")}
-          />
-        )}
       </View>
     </KeyboardAvoidingView>
   );
