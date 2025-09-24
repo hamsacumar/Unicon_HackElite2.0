@@ -31,6 +31,8 @@ type Props = {
   onLikeUpdate?: (likeCount: number, isLiked: boolean) => void;
   onBookmarkToggle?: (bookmarked: boolean) => void;
   disabled?: boolean; 
+    commentCount: number; // ✅ add this
+
 };
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "Login">;

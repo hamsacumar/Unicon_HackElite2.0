@@ -67,43 +67,54 @@ export default function CommentSection({
   };
 
   const handleAddComment = async () => {
-    if (!userId) {
-      Alert.alert("Login Required", "Please login to add a comment");
-      return;
-    }
-    if (!text.trim() || isSubmitting) return;
+  if (!userId) {
+    Alert.alert("Login Required", "Please login to add a comment");
+    return;
+  }
+  if (!text.trim() || isSubmitting) return;
 
-    const tempComment: Comment = {
-      id: `temp-${Date.now()}`,
-      postId,
-      userId,
-      username: "You",
-      text,
-      createdAt: new Date().toISOString(),
-    };
-
-    setComments([tempComment, ...comments]);
-    setCommentCount(commentCount + 1);
-    setText("");
-    onCommentAdd?.(commentCount + 1);
-
-    try {
-      setIsSubmitting(true);
-      const res = await addComment(postId, { text: tempComment.text });
-      if (res?.success && res.comment) {
-        setComments([
-          res.comment,
-          ...comments.filter((c) => c.id !== tempComment.id),
-        ]);
-      }
-    } catch (error) {
-      console.error("Error adding comment:", error);
-      setComments(comments.filter((c) => c.id !== tempComment.id));
-      setCommentCount(commentCount - 1);
-    } finally {
-      setIsSubmitting(false);
-    }
+  const tempComment: Comment = {
+    id: `temp-${Date.now()}`,
+    postId,
+    userId,
+    username: "You",
+    text,
+    createdAt: new Date().toISOString(),
   };
+
+  // Optimistic update
+  setComments((prev) => [tempComment, ...prev]);
+  setCommentCount((prevCount) => {
+    const newCount = prevCount + 1;
+    // call parent callback here safely
+    onCommentAdd?.(newCount);
+    return newCount;
+  });
+
+  setText("");
+
+  try {
+    setIsSubmitting(true);
+    const res = await addComment(postId, { text: tempComment.text });
+    if (res?.success && res.comment) {
+      setComments((prev) => [
+        res.comment,
+        ...prev.filter((c) => c.id !== tempComment.id),
+      ]);
+    }
+  } catch (error) {
+    console.error("Error adding comment:", error);
+    setComments((prev) => prev.filter((c) => c.id !== tempComment.id));
+    setCommentCount((prevCount) => {
+      const newCount = prevCount - 1;
+      onCommentAdd?.(newCount);
+      return newCount;
+    });
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
 
   if (!visible) return null;
 
