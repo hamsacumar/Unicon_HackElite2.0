@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -11,7 +11,15 @@ import {
   Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { addComment, getComments, getCommentCount, Comment } from "../services/eventService";
+import {
+  addComment,
+  getComments,
+  getCommentCount,
+  Comment,
+} from "../services/eventService";
+import Constants from "expo-constants";
+
+const API_URL = Constants.expoConfig?.extra?.apiUrl?.replace("/api", "");
 
 type Props<T = any> = {
   postId: string;
@@ -59,52 +67,68 @@ export default function CommentSection({
   };
 
   const handleAddComment = async () => {
-    if (!userId) {
-      Alert.alert("Login Required", "Please login to add a comment");
-      return;
-    }
-    if (!text.trim() || isSubmitting) return;
+  if (!userId) {
+    Alert.alert("Login Required", "Please login to add a comment");
+    return;
+  }
+  if (!text.trim() || isSubmitting) return;
 
-    const tempComment: Comment = {
-      id: `temp-${Date.now()}`,
-      postId,
-      userId,
-      username: "You",
-      text,
-      createdAt: new Date().toISOString(),
-    };
-
-    setComments([tempComment, ...comments]);
-    setCommentCount(commentCount + 1);
-    setText("");
-    onCommentAdd?.(commentCount + 1);
-
-    try {
-      setIsSubmitting(true);
-      const res = await addComment(postId, { text: tempComment.text });
-      if (res?.success && res.comment) {
-        setComments([res.comment, ...comments.filter(c => c.id !== tempComment.id)]);
-      }
-    } catch (error) {
-      console.error("Error adding comment:", error);
-      setComments(comments.filter(c => c.id !== tempComment.id));
-      setCommentCount(commentCount - 1);
-    } finally {
-      setIsSubmitting(false);
-    }
+  const tempComment: Comment = {
+    id: `temp-${Date.now()}`,
+    postId,
+    userId,
+    username: "You",
+    text,
+    createdAt: new Date().toISOString(),
   };
 
+  // Optimistic update
+  setComments((prev) => [tempComment, ...prev]);
+  setCommentCount((prevCount) => {
+    const newCount = prevCount + 1;
+    // call parent callback here safely
+    onCommentAdd?.(newCount);
+    return newCount;
+  });
+
+  setText("");
+
+  try {
+    setIsSubmitting(true);
+    const res = await addComment(postId, { text: tempComment.text });
+    if (res?.success && res.comment) {
+      setComments((prev) => [
+        res.comment,
+        ...prev.filter((c) => c.id !== tempComment.id),
+      ]);
+    }
+  } catch (error) {
+    console.error("Error adding comment:", error);
+    setComments((prev) => prev.filter((c) => c.id !== tempComment.id));
+    setCommentCount((prevCount) => {
+      const newCount = prevCount - 1;
+      onCommentAdd?.(newCount);
+      return newCount;
+    });
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
+
   if (!visible) return null;
-if (!userId) {
-  return (
-    <View style={{ padding: 16, alignItems: "center" }}>
-      <Ionicons name="lock-closed-outline" size={40} color="#ccc" />
-      <Text style={{ color: "#666", marginTop: 8 }}>
-        Please login to view and add comments
-      </Text>
-    </View>
-  );
-}
+
+  if (!userId) {
+    return (
+      <View style={{ padding: 16, alignItems: "center" }}>
+        <Ionicons name="lock-closed-outline" size={40} color="#ccc" />
+        <Text style={{ color: "#666", marginTop: 8 }}>
+          Please login to view and add comments
+        </Text>
+      </View>
+    );
+  }
+
   return (
     <View style={{ paddingVertical: 10 }}>
       {isLoading ? (
@@ -121,17 +145,38 @@ if (!userId) {
           renderItem={({ item }) => (
             <View style={styles.commentContainer}>
               <View style={styles.commentHeader}>
-                {item.userImage ? (
-                  <Image source={{ uri: item.userImage }} style={styles.avatar} />
+                {item.userImage && item.userImage !== "string" ? (
+                  <Image
+                    source={{
+                      uri: item.userImage.startsWith("http")
+                        ? item.userImage
+                        : `${API_URL}${item.userImage}`,
+                    }}
+                    style={styles.avatar}
+                    onError={(e) => {
+                      console.log("Error loading profile image:", e.nativeEvent.error);
+                    }}
+                  />
                 ) : (
                   <View style={[styles.avatar, styles.avatarPlaceholder]}>
-                    <Text style={styles.avatarText}>{item.username?.charAt(0)?.toUpperCase() || "U"}</Text>
+                    <Text style={styles.avatarText}>
+                      {item.username?.charAt(0)?.toUpperCase() || "U"}
+                    </Text>
                   </View>
                 )}
                 <View style={styles.commentContent}>
-                  <Text style={styles.commentAuthor}>{item.username || "Anonymous"}</Text>
+                  <Text style={styles.commentAuthor}>
+                    {item.username || "Anonymous"}
+                  </Text>
                   <Text style={styles.commentText}>{item.text}</Text>
-                  <Text style={styles.commentTime}>{item.createdAt ? new Date(item.createdAt).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'}) : "Just now"}</Text>
+                  <Text style={styles.commentTime}>
+                    {item.createdAt
+                      ? new Date(item.createdAt).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })
+                      : "Just now"}
+                  </Text>
                 </View>
               </View>
             </View>
@@ -162,19 +207,63 @@ if (!userId) {
 }
 
 const styles = StyleSheet.create({
-  commentContainer: { backgroundColor: "#f8f9fa", borderRadius: 12, padding: 12, marginBottom: 8 },
+  commentContainer: {
+    backgroundColor: "#f8f9fa",
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 8,
+  },
   commentHeader: { flexDirection: "row", alignItems: "flex-start" },
-  avatar: { width: 36, height: 36, borderRadius: 18, marginRight: 12, justifyContent: "center", alignItems: "center", backgroundColor: "#e0e0e0" },
+  avatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    marginRight: 12,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#e0e0e0",
+  },
   avatarPlaceholder: { backgroundColor: "#e74c3c" },
   avatarText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
   commentContent: { flex: 1 },
-  commentAuthor: { fontWeight: "600", fontSize: 14, color: "#333", marginBottom: 4 },
+  commentAuthor: {
+    fontWeight: "600",
+    fontSize: 14,
+    color: "#333",
+    marginBottom: 4,
+  },
   commentText: { fontSize: 14, color: "#333", lineHeight: 20 },
   commentTime: { fontSize: 12, color: "#999", marginTop: 4 },
-  inputContainer: { flexDirection: "row", alignItems: "center", borderTopWidth: 1, borderTopColor: "#eee", paddingVertical: 8, paddingHorizontal: 12, backgroundColor: "#fff", marginTop: 10 },
-  input: { flex: 1, backgroundColor: "#f5f5f5", borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10, fontSize: 14, color: "#333", maxHeight: 120, marginRight: 8 },
+  inputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderTopWidth: 1,
+    borderTopColor: "#eee",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: "#fff",
+    marginTop: 10,
+  },
+  input: {
+    flex: 1,
+    backgroundColor: "#f5f5f5",
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: "#333",
+    maxHeight: 120,
+    marginRight: 8,
+  },
   disabledInput: { backgroundColor: "#f9f9f9", color: "#999" },
-  sendButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#e74c3c", justifyContent: "center", alignItems: "center" },
+  sendButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#e74c3c",
+    justifyContent: "center",
+    alignItems: "center",
+  },
   sendButtonDisabled: { backgroundColor: "#ccc" },
   emptyState: { justifyContent: "center", alignItems: "center", marginTop: 16 },
   emptyText: { fontSize: 14, color: "#999", marginTop: 8 },

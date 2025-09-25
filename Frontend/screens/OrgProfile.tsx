@@ -1,3 +1,5 @@
+//org profile screen
+
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -8,6 +10,7 @@ import {
   Image,
   SafeAreaView,
   StatusBar,
+   RefreshControl, 
 } from 'react-native';
 import Constants from "expo-constants";
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -18,6 +21,7 @@ import Ionicons from "react-native-vector-icons/Ionicons";
 
 import { ProfileService, Profile, Post } from '../services/ProfileService';
 
+import { Share } from "react-native";
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl?.replace("/api", "");
 
@@ -41,6 +45,30 @@ const OrgProfile: React.FC = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [postCount, setPostCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false); // ✅ state for refresh
+
+
+const onShareProfile = async () => {
+  try {
+            if (!refreshing) setLoading(true); // only show big loader on first load
+
+      const result = await Share.share({
+        message: `Check out ${profile?.username}'s profile: https://yourapp.com/user/${profile?.username}`,
+      });
+      if (result.action === Share.sharedAction) {
+        if (result.activityType) {
+          // shared with activity type
+        } else {
+          // shared
+        }
+      } else if (result.action === Share.dismissedAction) {
+        // dismissed
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
 
   useEffect(() => {
     const fetchData = async () => {
@@ -57,6 +85,8 @@ const OrgProfile: React.FC = () => {
         console.error("Error fetching profile or posts:", error);
       } finally {
         setLoading(false);
+              setRefreshing(false); // ✅ stop refresh spinner
+
       }
     };
 
@@ -127,9 +157,13 @@ const OrgProfile: React.FC = () => {
               Edit profile
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.shareButton}>
-            <Text style={styles.buttonText}>Share profile</Text>
-          </TouchableOpacity>
+          {/* ✅ Hook the share handler here */}
+        <TouchableOpacity
+          style={styles.shareButton}
+          onPress={onShareProfile}
+        >
+          <Text style={styles.buttonText}>Share profile</Text>
+        </TouchableOpacity>
         </View>
 
         <View style={styles.tabContainer}>
@@ -145,7 +179,32 @@ const OrgProfile: React.FC = () => {
       </View>
 
       {/* Scrollable Posts Section */}
-      <ScrollView style={styles.postsContainer} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.postsContainer} showsVerticalScrollIndicator={false}
+        refreshControl={
+    <RefreshControl
+      refreshing={refreshing}
+      onRefresh={() => {
+        setRefreshing(true);
+        // re-run the same logic as in useEffect
+        (async () => {
+          try {
+            const profileData = await ProfileService.getProfile();
+            const postsData = await ProfileService.getPosts();
+            setProfile(profileData);
+            setPosts(postsData);
+
+            const count = await ProfileService.getPostCount();
+            setPostCount(count);
+          } catch (error) {
+            console.error("Error refreshing profile or posts:", error);
+          } finally {
+            setRefreshing(false); // stop spinner
+          }
+        })();
+      }}
+    />
+  }
+>
         {posts.map((post) => (
           <TouchableOpacity
             key={post.id}

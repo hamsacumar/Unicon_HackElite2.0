@@ -12,12 +12,12 @@ import {
 } from "react-native";
 import { RouteProp } from "@react-navigation/native";
 import { RootStackParamList } from "../App";
-import { getEventById, EventItem } from "../services/eventService";
 import { Ionicons } from "@expo/vector-icons";
 import { format } from "date-fns";
 import Constants from "expo-constants";
 import BottomNav from "../component/bottomNav";
 import PostText from "../component/PostText";
+import { getEventById, getLikeCount, getCommentCount, EventItem } from "../services/eventService";
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl?.replace("/api", "");
 
@@ -38,25 +38,33 @@ export default function LandingPostDetail({ route, navigation }: Props) {
   const [isLoading, setIsLoading] = useState(true);
 
   // ---------- Fetch post details ----------
-  useEffect(() => {
-    if (!postId) return;
+ useEffect(() => {
+  if (!postId) return;
 
-    const fetchPost = async () => {
-      try {
-        setIsLoading(true);
-        const postData = await getEventById(postId);
-        if (postData) {
-          setPost(postData);
-        }
-      } catch (error) {
-        console.error("Error fetching post:", error);
-      } finally {
-        setIsLoading(false);
+  const fetchPost = async () => {
+    try {
+      setIsLoading(true);
+      const postData = await getEventById(postId);
+
+      if (postData) {
+        // fetch counts for this post
+        const [likeCount, commentCount] = await Promise.all([
+          getLikeCount(postData.id),
+          getCommentCount(postData.id),
+        ]);
+
+        setPost({ ...postData, likeCount, commentCount });
       }
-    };
+    } catch (error) {
+      console.error("Error fetching post:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    fetchPost();
-  }, [postId]);
+  fetchPost();
+}, [postId]);
+
 
   // ---------- Render loading / error ----------
   if (isLoading) {
@@ -89,7 +97,7 @@ export default function LandingPostDetail({ route, navigation }: Props) {
             <View style={styles.userRow}>
               <Image
                 source={{
-                  uri: post.userImage
+                  uri: post.userImage && post.userImage !== "string"
                     ? (post.userImage.startsWith("http")
                         ? post.userImage
                         : `${API_URL}${post.userImage}`)

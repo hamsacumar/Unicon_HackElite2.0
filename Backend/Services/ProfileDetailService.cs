@@ -65,5 +65,20 @@ namespace Backend.Services
             var user = await _userCollection.Find(u => u.Username == username).FirstOrDefaultAsync();
             return user?.ProfileImageUrl;
         }
+        
+       public async Task UpdateUserAsync(string userId, AppUser updatedUser)
+{
+    var update = Builders<AppUser>.Update
+        .Set(u => u.FirstName, updatedUser.FirstName)
+        .Set(u => u.LastName, updatedUser.LastName)
+        .Set(u => u.Username, updatedUser.Username)
+        .Set(u => u.Description, updatedUser.Description)
+        .Set(u => u.ProfileImageUrl, updatedUser.ProfileImageUrl)
+        .Set(u => u.UpdatedAt, DateTime.UtcNow);
+
+    await _userCollection.UpdateOneAsync(u => u.Id == userId, update);
+}
+
+
     }
 }
