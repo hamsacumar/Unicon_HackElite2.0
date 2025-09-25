@@ -20,7 +20,6 @@ import { ProfileService, Profile, Posts } from '../services/ProfileService';
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl?.replace("/api", "");
 
-const API_URL = Constants.expoConfig?.extra?.apiUrl?.replace("/api", "");
 
 // Define your stack param list
 type RootStackParamList = {
