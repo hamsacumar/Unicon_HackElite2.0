@@ -1,4 +1,9 @@
+//controllers/ProfileDetailController.cs
+
+using Backend.Models;
 using Backend.Services;
+using Backend.DTOs;
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Linq;
@@ -17,28 +22,31 @@ namespace Backend.Controllers
             _profileService = profileService;
         }
 
-        [HttpGet("me")]
-        [Authorize]
-        public async Task<IActionResult> GetMyProfile()
-        {
-            var userId = User.Claims
-                .FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")
-                ?.Value;
+       [HttpGet("me")]
+[Authorize]
+public async Task<IActionResult> GetMyProfile()
+{
+    var userId = User.Claims
+        .FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")
+        ?.Value;
 
-            if (string.IsNullOrEmpty(userId))
-                return Unauthorized("User ID not found in token.");
+    if (string.IsNullOrEmpty(userId))
+        return Unauthorized("User ID not found in token.");
 
-            var user = await _profileService.GetUserByIdAsync(userId);
-            if (user == null)
-                return NotFound("User not found.");
+    var user = await _profileService.GetUserByIdAsync(userId);
+    if (user == null)
+        return NotFound("User not found.");
 
-            return Ok(new
-            {
-                user.Username,
-                user.Description,
-                ProfileImageUrl = user.ProfileImageUrl
-            });
-        }
+    return Ok(new
+    {
+        FirstName = user.FirstName,
+        LastName = user.LastName,
+        Username = user.Username,
+        Description = user.Description,
+        ProfileImageUrl = user.ProfileImageUrl
+    });
+}
+
 
         [HttpGet("my-events")]
         [Authorize]
@@ -149,6 +157,50 @@ public async Task<IActionResult> GetProfileImageByUsername(string username)
 
     return Ok(new { ProfileImageUrl = imageUrl });
 }
+[HttpPut("me")]
+[Authorize]
+public async Task<IActionResult> UpdateMyProfile([FromBody] ProfileUpdateRequest updatedProfile)
+{
+    var userId = User.Claims
+        .FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")
+        ?.Value;
+
+    if (string.IsNullOrEmpty(userId))
+        return Unauthorized("User ID not found in token.");
+
+    var user = await _profileService.GetUserByIdAsync(userId);
+    if (user == null)
+        return NotFound("User not found.");
+
+    if (!string.IsNullOrEmpty(updatedProfile.FirstName))
+        user.FirstName = updatedProfile.FirstName;
+
+    if (!string.IsNullOrEmpty(updatedProfile.LastName))
+        user.LastName = updatedProfile.LastName;
+
+    if (!string.IsNullOrEmpty(updatedProfile.Username))
+        user.Username = updatedProfile.Username;
+
+    if (updatedProfile.Description != null)
+        user.Description = updatedProfile.Description;
+
+    if (updatedProfile.ProfileImageUrl != null)
+        user.ProfileImageUrl = updatedProfile.ProfileImageUrl;
+
+    user.UpdatedAt = DateTime.UtcNow;
+
+    await _profileService.UpdateUserAsync(userId, user);
+
+    return Ok(new
+    {
+        FirstName = user.FirstName,
+        LastName = user.LastName,
+        Username = user.Username,
+        Description = user.Description,
+        ProfileImageUrl = user.ProfileImageUrl
+    });
+}
+
 
 [HttpGet("my-bookmarks")]
 [Authorize]
@@ -171,3 +223,4 @@ public async Task<IActionResult> GetMyBookmarks()
 
     }
 }
+

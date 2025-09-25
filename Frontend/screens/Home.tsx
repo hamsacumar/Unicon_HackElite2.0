@@ -119,7 +119,7 @@ export default function Home() {
                 <View style={styles.userRow}>
                   <Image
                     source={{
-                      uri: item.userImage
+                      uri: item.userImage && item.userImage !== "string"
                         ? item.userImage.startsWith("http")
                           ? item.userImage
                           : `${API_URL}${item.userImage}`
@@ -184,7 +184,7 @@ export default function Home() {
                   postId={item.id}
                   userId={userId}
                   initialLikeCount={item.likeCount || 0}
-                  initialCommentCount={item.commentCount || 0}
+  commentCount={item.commentCount || 0} // pass the current count
                   initialIsBookmarked={item.isBookmarked}
                   onCommentPress={() => {
                     setEvents((prev) =>

@@ -21,7 +21,6 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../App";
 import { useAuth } from "../utils/AuthContext";
 
-
 type ProfileSetupScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
   "ProfileSetup"

@@ -22,7 +22,7 @@ import { getEventById, EventItem, isBookmarked as fetchIsBookmarked } from "../s
 import { Ionicons } from "@expo/vector-icons";
 import { format } from 'date-fns';
 import Constants from "expo-constants";
-import BottomNav from "../component/bottomNav";
+import RoleBasedBottomNav  from "../component/rolebasedNav"
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import PostText from "../component/PostText";
 import { useFocusEffect } from '@react-navigation/native';
@@ -36,6 +36,7 @@ type PostDetailNavigationProp = any;
 type Props = {
   route: PostDetailRouteProp;
   navigation: PostDetailNavigationProp;
+  
 };
 
 export default function PostDetail({ route, navigation }: Props) {
@@ -175,7 +176,7 @@ useFocusEffect(
               <TouchableOpacity style={styles.userRow} onPress={() => handleUserPress(post.userId)} activeOpacity={0.7}>
                 <Image
   source={{
-    uri: post.userImage
+    uri: post.userImage && post.userImage !== "string"
       ? (post.userImage.startsWith("http")
           ? post.userImage
           : `${API_URL}${post.userImage.startsWith("/") ? "" : "/"}${post.userImage}`)
@@ -223,7 +224,8 @@ useFocusEffect(
               {/* Post Actions */}
 <PostActions
   postId={postId}
-  userId={userId}
+                userId={userId}
+                
   initialLikeCount={likeCount}
   initialCommentCount={commentCount}
   initialIsLiked={userId ? isLiked : false}
@@ -231,7 +233,9 @@ useFocusEffect(
   onLikeUpdate={handleLikeUpdate}
   onBookmarkToggle={handleBookmarkToggle}
   onCommentPress={handleCommentPress} // toggle comments
-  disabled={!userId} // 👈 add this
+                disabled={!userId} // 👈 add this
+                  commentCount={commentCount}   // ✅ add this
+
 />
 
             </>
@@ -262,13 +266,9 @@ useFocusEffect(
 
 
 
-        {/* Bottom Nav for unauthenticated users */}
-        {!userId && (
-          <BottomNav
-            onPressLogin={() => navigation.navigate("Login")}
-            onPressRegister={() => navigation.navigate("Signup")}
-          />
-        )}
+        
+<RoleBasedBottomNav navigation={navigation} />
+            
       </View>
     </KeyboardAvoidingView>
   );

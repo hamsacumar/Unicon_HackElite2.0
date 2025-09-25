@@ -363,34 +363,7 @@ public async Task<long> GetCommentCountAsync(string postId)
             await _bookmarks.DeleteOneAsync(b => b.PostId == postId && b.UserId == userId);
         }
 
-        // ✅ This must be INSIDE the class
-        public async Task<List<BsonDocument>> GetBookmarksByUserAsync(string userId)
-        {
-            var pipeline = new[]
-            {
-                new BsonDocument("$match", new BsonDocument("UserId", userId)),
-                new BsonDocument("$lookup", new BsonDocument
-                {
-                    { "from", "Posts" },
-                    { "localField", "PostId" },
-                    { "foreignField", "_id" },
-                    { "as", "Post" }
-                }),
-                new BsonDocument("$unwind", "$Post"),
-                new BsonDocument("$lookup", new BsonDocument
-                {
-                    { "from", "Users" },
-                    { "localField", "Post.UserId" },
-                    { "foreignField", "_id" },
-                    { "as", "Post.User" }
-                }),
-                new BsonDocument("$unwind", "$Post.User"),
-                new BsonDocument("$replaceRoot", new BsonDocument("newRoot", "$Post"))
-            };
-
-            return await _bookmarks.Aggregate<BsonDocument>(pipeline).ToListAsync();
-        }
-
+     
 
 
     
@@ -411,6 +384,93 @@ public async Task<bool> DeletePostAsync(string postId, string userId)
 
     return true;
 }
+
+// ================================
+// Bookmarks
+// ==================================
+public async Task<List<EventDto>> GetBookmarksByUserAsync(string userId)
+{
+    _logger.LogInformation($"[GetBookmarksByUserAsync] Fetching bookmarks for user: {userId}");
+
+    // Try to parse userId as ObjectId
+    ObjectId objectUserId;
+    bool isObjectId = ObjectId.TryParse(userId, out objectUserId);
+
+    // Build filter: works for both string and ObjectId storage
+    var matchStage = isObjectId
+        ? new BsonDocument("$match", new BsonDocument("userId", objectUserId))
+        : new BsonDocument("$match", new BsonDocument("userId", userId));
+
+  var pipeline = new List<BsonDocument>
+{
+    new BsonDocument("$match", new BsonDocument("userId", userId)),
+
+    // Convert postId string -> ObjectId for lookup
+    new BsonDocument("$addFields", new BsonDocument
+    {
+        { "postIdObjectId", new BsonDocument("$convert", new BsonDocument
+            {
+                { "input", "$postId" },
+                { "to", "objectId" },
+                { "onError", BsonNull.Value },
+                { "onNull", BsonNull.Value }
+            })
+        }
+    }),
+
+    // Lookup event data
+    new BsonDocument("$lookup", new BsonDocument
+    {
+        { "from", "events" },
+        { "localField", "postIdObjectId" },
+        { "foreignField", "_id" },
+        { "as", "eventData" }
+    }),
+
+    new BsonDocument("$unwind", "$eventData"),
+    new BsonDocument("$sort", new BsonDocument("createdAt", -1)),
+
+    // Lookup user who created the event
+    new BsonDocument("$lookup", new BsonDocument
+    {
+        { "from", "Users" },
+        { "localField", "eventData.userId" },
+        { "foreignField", "_id" },
+        { "as", "userData" }
+    }),
+    new BsonDocument("$unwind", "$userData"),
+
+    new BsonDocument("$project", new BsonDocument
+    {
+        { "id", new BsonDocument("$toString", "$eventData._id") },
+        { "title", "$eventData.title" },
+        { "description", "$eventData.description" },
+        { "category", "$eventData.category" },
+        { "imageUrl", "$eventData.imageUrl" },
+        { "userId", new BsonDocument("$toString", "$userData._id") },
+        { "username", "$userData.Username" },
+        { "userImage", "$userData.ProfileImageUrl" }
+    })
+};
+
+
+    var bookmarks = await _bookmarks.Aggregate<BsonDocument>(pipeline).ToListAsync();
+
+    // Map results to DTOs
+    return bookmarks.Select(b => new EventDto
+    {
+        Id = b["id"].AsString,
+        Title = b["title"].AsString,
+        Description = b["description"].AsString,
+        Category = b["category"].AsString,
+        ImageUrl = b["imageUrl"].AsString,
+        UserId = b["userId"].AsString,
+        Username = b["username"].AsString,
+        UserImage = b["userImage"].AsString
+    }).ToList();
+}
+
+
 
     }
 }
