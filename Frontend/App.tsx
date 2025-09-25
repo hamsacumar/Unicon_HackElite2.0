@@ -110,7 +110,7 @@ const AppStack = () => (
       }) => ({
         title: "EventTrix",
         headerRight: () => (
-          <View style={{ flexDirection: "row" }}>
+          <View style={{ flexDirection: 'row' }}>
             <TouchableOpacity
               onPress={() => navigation.navigate("MessagePage")}
               style={{ marginRight: 15 }}
