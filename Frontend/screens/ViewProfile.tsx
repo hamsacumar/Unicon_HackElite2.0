@@ -10,15 +10,19 @@ import {
   ViewStyle,
   TextStyle,
   ActivityIndicator,
-  FlatList
+  FlatList,
 } from "react-native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import RoleBasedBottomNav from "../component/rolebasedNav";
 import Ionicons from "react-native-vector-icons/Ionicons";
-import Constants from 'expo-constants';
+import Constants from "expo-constants";
 
-import { UserProfileService, UserProfile, UserEvent } from "../services/UserProfileService";
+import {
+  UserProfileService,
+  UserProfile,
+  UserEvent,
+} from "../services/UserProfileService";
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl?.replace("/api", "");
 
@@ -49,14 +53,17 @@ const ViewProfile: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const profileData = await UserProfileService.getProfileByUsername(username);
+        const profileData =
+          await UserProfileService.getProfileByUsername(username);
         setProfile(profileData);
 
-        const postsData = await UserProfileService.getEventsByUsername(username);
+        const postsData =
+          await UserProfileService.getEventsByUsername(username);
         setPosts(postsData);
 
-        const postCount = await UserProfileService.getPostCountByUsername(username);
-        setProfile(prev => prev ? { ...prev, postCount } : null);
+        const postCount =
+          await UserProfileService.getPostCountByUsername(username);
+        setProfile((prev) => (prev ? { ...prev, postCount } : null));
       } catch (error) {
         console.error("Error fetching user profile/events:", error);
       } finally {
@@ -91,10 +98,14 @@ const ViewProfile: React.FC = () => {
                     : "https://cdn-icons-png.flaticon.com/512/3135/3135715.png", // fallback
                 }}
                 style={styles.image}
-                onError={(e) => console.log("Error loading profile image:", e.nativeEvent.error)}
+                onError={(e) =>
+                  console.log(
+                    "Error loading profile image:",
+                    e.nativeEvent.error
+                  )
+                }
               />
             </View>
-
           </View>
 
           <View style={styles.profileInfo}>
@@ -114,7 +125,6 @@ const ViewProfile: React.FC = () => {
               </View>
             </View>
           </View>
-
         </View>
 
         <Text style={styles.trustText}>{profile?.description}</Text>
@@ -123,16 +133,18 @@ const ViewProfile: React.FC = () => {
           <TouchableOpacity
             style={[
               styles.editButton,
-              isSubscribed && styles.editButtonPressed
+              isSubscribed && styles.editButtonPressed,
             ]}
             activeOpacity={0.7}
             onPress={() => setIsSubscribed(!isSubscribed)}
           >
-            <Text style={[
-              styles.buttonText,
-              isSubscribed && styles.buttonTextPressed
-            ]}>
-              {isSubscribed ? 'Subscribed' : 'Subscribe'}
+            <Text
+              style={[
+                styles.buttonText,
+                isSubscribed && styles.buttonTextPressed,
+              ]}
+            >
+              {isSubscribed ? "Subscribed" : "Subscribe"}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -141,7 +153,6 @@ const ViewProfile: React.FC = () => {
           >
             <Text style={styles.shareButtonText}>Mail</Text>
           </TouchableOpacity>
-
         </View>
 
         <View style={styles.tabContainer}>
@@ -155,9 +166,11 @@ const ViewProfile: React.FC = () => {
         </View>
       </View>
 
-
       {/* Events Section */}
-      <ScrollView style={styles.postsContainer} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.postsContainer}
+        showsVerticalScrollIndicator={false}
+      >
         {posts.map((post) => (
           <TouchableOpacity
             key={post.id}
@@ -185,7 +198,10 @@ const ViewProfile: React.FC = () => {
                   style={styles.postImage}
                   resizeMode="cover"
                   onError={(e) =>
-                    console.log("Error loading post image:", e.nativeEvent.error)
+                    console.log(
+                      "Error loading post image:",
+                      e.nativeEvent.error
+                    )
                   }
                 />
               </View>
@@ -199,50 +215,49 @@ const ViewProfile: React.FC = () => {
   );
 };
 
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#FF5722',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#FF5722",
     paddingHorizontal: 16,
     paddingVertical: 12,
     height: 56,
   },
   backArrow: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   menuButton: {
     padding: 4,
   },
   menuIcon: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 18,
   },
   profileSection: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     paddingHorizontal: 16,
     paddingTop: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    borderBottomColor: "#E0E0E0",
   },
   profileHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
     marginBottom: 12,
   },
   profileImageContainer: {
     marginRight: 16,
   },
   profileBorder: {
-    width: 86,              // 80 (image) + 3*2 (border)
+    width: 86, // 80 (image) + 3*2 (border)
     height: 86,
     borderRadius: 43,
     borderWidth: 3,
@@ -254,7 +269,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    overflow: "hidden",     // clips the image into a circle
+    overflow: "hidden", // clips the image into a circle
     backgroundColor: "#FF5722",
   },
   image: {
@@ -268,75 +283,75 @@ const styles = StyleSheet.create({
   },
   profileName: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#000000',
+    fontWeight: "bold",
+    color: "#000000",
     marginTop: 5,
     marginBottom: 8,
   },
   statsContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 40,
   },
   statItem: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   statNumber: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#000000',
+    fontWeight: "bold",
+    color: "#000000",
   },
   statLabel: {
     fontSize: 12,
-    color: '#666666',
+    color: "#666666",
   },
   trustText: {
     fontSize: 14,
-    color: '#666666',
+    color: "#666666",
     marginTop: 5,
     marginBottom: 16,
   },
   buttonContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginBottom: 16,
   },
   editButton: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: '#FF5722',
+    borderColor: "#FF5722",
     paddingVertical: 12,
     borderRadius: 6,
     marginRight: 8,
-    alignItems: 'center',
+    alignItems: "center",
   },
   editButtonPressed: {
-    backgroundColor: '#FF5722',
+    backgroundColor: "#FF5722",
   },
   shareButton: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     flex: 1,
-    backgroundColor: '#FF5722',
+    backgroundColor: "#FF5722",
     paddingVertical: 12,
     borderRadius: 6,
     marginLeft: 8,
-    alignItems: 'center',
+    alignItems: "center",
   },
   buttonText: {
-    color: '#FF5722',
+    color: "#FF5722",
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   buttonTextPressed: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
   },
   shareButtonText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   tabContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
     gap: 40,
     marginBottom: 16,
   },
@@ -347,26 +362,26 @@ const styles = StyleSheet.create({
   },
   activeTab: {
     borderBottomWidth: 2,
-    borderBottomColor: '#FF5722',
+    borderBottomColor: "#FF5722",
   },
   tabIcon: {
     fontSize: 18,
-    color: '#666666',
+    color: "#666666",
   },
   postsContainer: {
     flex: 1,
     paddingHorizontal: 16,
   },
   postCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     marginVertical: 8,
     padding: 12,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: "#E0E0E0",
   },
   postContent: {
-    flexDirection: 'row',
+    flexDirection: "row",
   },
   postTextContainer: {
     flex: 1,
@@ -374,18 +389,18 @@ const styles = StyleSheet.create({
   },
   postTitle: {
     fontSize: 14,
-    fontWeight: 'bold',
-    color: '#000000',
+    fontWeight: "bold",
+    color: "#000000",
     marginBottom: 4,
   },
   postSubtitle: {
     fontSize: 14,
-    color: '#000000',
+    color: "#000000",
     marginBottom: 8,
   },
   postDescription: {
     fontSize: 12,
-    color: '#666666',
+    color: "#666666",
     lineHeight: 16,
   },
   postImageContainer: {
@@ -395,20 +410,18 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   postImage: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#2E7D32',
+    width: "100%",
+    height: "100%",
+    backgroundColor: "#2E7D32",
     borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   postImagePlaceholder: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
 });
 
 export default ViewProfile;
-
-

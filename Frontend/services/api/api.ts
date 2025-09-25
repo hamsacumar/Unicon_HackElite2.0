@@ -41,10 +41,12 @@ export interface ProfileUpdateRequest {
 }
 
 // -------------------- Constants --------------------
-const API_BASE = Constants.expoConfig?.extra?.apiUrl || "http://localhost:5000/api";
+const API_BASE =
+  Constants.expoConfig?.extra?.apiUrl || "http://localhost:5000/api";
 const TOKEN_KEY = "accessToken";
 const USER_ID_KEY = "userId";
-const USER_ID_CLAIM = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier";
+const USER_ID_CLAIM =
+  "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier";
 
 // -------------------- Secure Storage --------------------
 const storage = {
@@ -91,7 +93,8 @@ export const setAuthToken = async (token: string) => {
       decoded[USER_ID_CLAIM] ||
       null;
 
-    if (!currentUserId) console.warn("[Auth] Could not extract userId from token");
+    if (!currentUserId)
+      console.warn("[Auth] Could not extract userId from token");
 
     await storage.set(TOKEN_KEY, token);
     if (currentUserId) await storage.set(USER_ID_KEY, currentUserId);
@@ -191,9 +194,13 @@ export const getInbox = async (): Promise<Message[]> => {
   return res.data?.data || [];
 };
 
-export const getConversation = async (otherUserId: string): Promise<Message[]> => {
+export const getConversation = async (
+  otherUserId: string
+): Promise<Message[]> => {
   const currentUserId = await getCurrentUserId();
-  const res = await api.get(`/Messages/conversation/${currentUserId}/${otherUserId}`);
+  const res = await api.get(
+    `/Messages/conversation/${currentUserId}/${otherUserId}`
+  );
   return res.data?.data || [];
 };
 

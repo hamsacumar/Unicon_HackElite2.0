@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import * as SecureStore from "expo-secure-store";
 import { Alert } from "react-native";
 import Constants from "expo-constants";
@@ -28,9 +34,13 @@ type AuthContextType = {
   logout: () => Promise<void>;
 };
 
-export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(
+  undefined
+);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [isLoading, setIsLoading] = useState(true);
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -59,7 +69,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (data: LoginPayload) => {
     try {
-      if (!data?.accessToken) throw new Error("Missing access token in login payload");
+      if (!data?.accessToken)
+        throw new Error("Missing access token in login payload");
       setIsLoading(true);
 
       // Persist token
@@ -78,7 +89,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await SecureStore.setItemAsync("userProfile", JSON.stringify(nextUser));
     } catch (e) {
       console.error("[Auth] login error:", e);
-      Alert.alert("Login Error", e instanceof Error ? e.message : "Unknown error");
+      Alert.alert(
+        "Login Error",
+        e instanceof Error ? e.message : "Unknown error"
+      );
       throw e;
     } finally {
       setIsLoading(false);
@@ -99,7 +113,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const value = useMemo<AuthContextType>(() => ({ isLoading, token, user, login, logout }), [isLoading, token, user]);
+  const value = useMemo<AuthContextType>(
+    () => ({ isLoading, token, user, login, logout }),
+    [isLoading, token, user]
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
@@ -111,4 +128,3 @@ export function useAuth() {
   }
   return ctx;
 }
-

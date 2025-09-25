@@ -15,7 +15,8 @@ import {
   checkIfLiked,
   getCommentCount,
   toggleBookmark,
-isBookmarked as fetchIsBookmarked,} from "../services/eventService";
+  isBookmarked as fetchIsBookmarked,
+} from "../services/eventService";
 import { useNavigation } from "@react-navigation/native";
 import { RootStackParamList } from "../App";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -30,7 +31,7 @@ type Props = {
   onCommentPress?: () => void;
   onLikeUpdate?: (likeCount: number, isLiked: boolean) => void;
   onBookmarkToggle?: (bookmarked: boolean) => void;
-  disabled?: boolean; 
+  disabled?: boolean;
   // Notification configuration inputs
   organizerId: string;
   organizerName: string;
@@ -222,7 +223,6 @@ const PostActions: React.FC<Props> = ({
           color="#333"
         />
       </View>
-
     </View>
   );
 };

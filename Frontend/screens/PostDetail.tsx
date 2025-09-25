@@ -1,11 +1,11 @@
 // screens/PostDetail.tsx
 
 import React, { useState, useEffect, useRef } from "react";
-import { 
-  View, 
-  Text, 
-  Image, 
-  StyleSheet, 
+import {
+  View,
+  Text,
+  Image,
+  StyleSheet,
   ActivityIndicator,
   RefreshControl,
   TouchableOpacity,
@@ -18,15 +18,18 @@ import { RouteProp } from "@react-navigation/native";
 import { RootStackParamList } from "../App";
 import PostActions from "../component/PostActions";
 import CommentSection from "../component/CommentSection";
-import { getEventById, EventItem, isBookmarked as fetchIsBookmarked } from "../services/eventService";
+import {
+  getEventById,
+  EventItem,
+  isBookmarked as fetchIsBookmarked,
+} from "../services/eventService";
 import { Ionicons } from "@expo/vector-icons";
-import { format } from 'date-fns';
+import { format } from "date-fns";
 import Constants from "expo-constants";
-import RoleBasedBottomNav  from "../component/rolebasedNav"
+import RoleBasedBottomNav from "../component/rolebasedNav";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import PostText from "../component/PostText";
-import { useFocusEffect } from '@react-navigation/native';
-
+import { useFocusEffect } from "@react-navigation/native";
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl?.replace("/api", "");
 
@@ -36,13 +39,15 @@ type PostDetailNavigationProp = any;
 type Props = {
   route: PostDetailRouteProp;
   navigation: PostDetailNavigationProp;
-  
 };
 
 export default function PostDetail({ route, navigation }: Props) {
   // Accept either a full post object or just a postId via route params
-  const { post: initialPost, postId: routePostId } = (route.params || {}) as any;
-  const postId = (initialPost?.id as string | undefined) ?? (routePostId as string | undefined);
+  const { post: initialPost, postId: routePostId } = (route.params ||
+    {}) as any;
+  const postId =
+    (initialPost?.id as string | undefined) ??
+    (routePostId as string | undefined);
 
   // ---------- State ----------
   const [post, setPost] = useState<EventItem | null>(initialPost || null);
@@ -57,16 +62,15 @@ export default function PostDetail({ route, navigation }: Props) {
 
   // Ref for FlatList to scroll to comments
   const flatListRef = useRef<FlatList>(null);
-useFocusEffect(
-  React.useCallback(() => {
-    const fetchUser = async () => {
-      const id = await AsyncStorage.getItem("userId");
-      setUserId(id || null);
-    };
-    fetchUser();
-  }, [])
-);
-  
+  useFocusEffect(
+    React.useCallback(() => {
+      const fetchUser = async () => {
+        const id = await AsyncStorage.getItem("userId");
+        setUserId(id || null);
+      };
+      fetchUser();
+    }, [])
+  );
 
   // ---------- Fetch post details ----------
   useEffect(() => {
@@ -111,7 +115,7 @@ useFocusEffect(
       return;
     }
 
-    setShowComments(prev => {
+    setShowComments((prev) => {
       // Scroll to comment section when opening
       if (!prev) {
         setTimeout(() => {
@@ -139,10 +143,12 @@ useFocusEffect(
   const handleCommentAdd = (count: number) => setCommentCount(count);
 
   // Update bookmark
-  const handleBookmarkToggle = (bookmarked: boolean) => setIsBookmarkedPost(bookmarked);
+  const handleBookmarkToggle = (bookmarked: boolean) =>
+    setIsBookmarkedPost(bookmarked);
 
   // Navigate to user profile
-  const handleUserPress = (id: string) => navigation.navigate("ViewProfile", { userId: id });
+  const handleUserPress = (id: string) =>
+    navigation.navigate("ViewProfile", { userId: id });
 
   // ---------- Render loading / error ----------
   if (isLoading) {
@@ -175,10 +181,12 @@ useFocusEffect(
   // ---------- Main Render ----------
   return (
     <KeyboardAvoidingView
-       style={{ flex: 1 }}
-  behavior={Platform.OS === "ios" ? "padding" : undefined}
-  keyboardVerticalOffset={Platform.OS === "ios" ? Constants.statusBarHeight + 80 : 0}
->
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      keyboardVerticalOffset={
+        Platform.OS === "ios" ? Constants.statusBarHeight + 80 : 0
+      }
+    >
       <View style={styles.container}>
         <FlatList
           ref={flatListRef}
@@ -188,22 +196,29 @@ useFocusEffect(
           ListHeaderComponent={
             <>
               {/* User Profile Row */}
-              <TouchableOpacity style={styles.userRow} onPress={() => handleUserPress(post.userId)} activeOpacity={0.7}>
+              <TouchableOpacity
+                style={styles.userRow}
+                onPress={() => handleUserPress(post.userId)}
+                activeOpacity={0.7}
+              >
                 <Image
-  source={{
-    uri: post.userImage && post.userImage !== "string"
-      ? (post.userImage.startsWith("http")
-          ? post.userImage
-          : `${API_URL}${post.userImage.startsWith("/") ? "" : "/"}${post.userImage}`)
-      : "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
-  }}
-  style={styles.avatar}
-/>
- 
+                  source={{
+                    uri:
+                      post.userImage && post.userImage !== "string"
+                        ? post.userImage.startsWith("http")
+                          ? post.userImage
+                          : `${API_URL}${post.userImage.startsWith("/") ? "" : "/"}${post.userImage}`
+                        : "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
+                  }}
+                  style={styles.avatar}
+                />
+
                 <View>
                   <Text style={styles.username}>{post.username}</Text>
                   <Text style={styles.timestamp}>
-                    {post.date ? format(new Date(post.date), 'MMM d, yyyy') : 'Recent'}
+                    {post.date
+                      ? format(new Date(post.date), "MMM d, yyyy")
+                      : "Recent"}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -212,7 +227,10 @@ useFocusEffect(
               <View style={styles.contentContainer}>
                 <Text style={styles.category}>{post.category}</Text>
                 <Text style={styles.title}>{post.title}</Text>
-                <PostText content={post.description} style={styles.description} />
+                <PostText
+                  content={post.description}
+                  style={styles.description}
+                />
                 {post.imageUrl && (
                   <Image
                     source={{
@@ -229,10 +247,10 @@ useFocusEffect(
               {/* Stats */}
               <View style={styles.statsContainer}>
                 <Text style={styles.statsText}>
-                  {likeCount} {likeCount === 1 ? 'like' : 'likes'}
+                  {likeCount} {likeCount === 1 ? "like" : "likes"}
                 </Text>
                 <Text style={[styles.statsText, { marginLeft: 16 }]}>
-                  {commentCount} {commentCount === 1 ? 'comment' : 'comments'}
+                  {commentCount} {commentCount === 1 ? "comment" : "comments"}
                 </Text>
               </View>
 
@@ -253,7 +271,6 @@ useFocusEffect(
                 postTitle={post.title}
                 category={post.category}
               />
-
             </>
           }
           refreshControl={
@@ -268,23 +285,19 @@ useFocusEffect(
           contentContainerStyle={{ paddingBottom: showComments ? 300 : 80 }}
         />
 
-      {/* Comment Section */}
-{showComments && (
-  <CommentSection
-    postId={postId}
-    userId={userId}
-    onCommentAdd={handleCommentAdd}
-    initialComments={[]}
-    initialCommentCount={commentCount}
-    visible={showComments}
-  />
-)}
+        {/* Comment Section */}
+        {showComments && (
+          <CommentSection
+            postId={postId}
+            userId={userId}
+            onCommentAdd={handleCommentAdd}
+            initialComments={[]}
+            initialCommentCount={commentCount}
+            visible={showComments}
+          />
+        )}
 
-
-
-        
-<RoleBasedBottomNav navigation={navigation} />
-            
+        <RoleBasedBottomNav navigation={navigation} />
       </View>
     </KeyboardAvoidingView>
   );
@@ -294,19 +307,72 @@ useFocusEffect(
 // Styles
 // ====================
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' },
-  errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20, backgroundColor: '#fff' },
-  errorText: { marginTop: 16, fontSize: 16, color: '#666' },
-  userRow: { flexDirection: 'row', alignItems: 'center', padding: 16, paddingBottom: 8 },
-  avatar: { width: 40, height: 40, borderRadius: 20, marginRight: 12, backgroundColor: '#f0f0f0' },
-  username: { fontWeight: '600', fontSize: 15, color: '#333' },
-  timestamp: { fontSize: 12, color: '#999', marginTop: 2 },
+  container: { flex: 1, backgroundColor: "#fff" },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#fff",
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+    backgroundColor: "#fff",
+  },
+  errorText: { marginTop: 16, fontSize: 16, color: "#666" },
+  userRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 16,
+    paddingBottom: 8,
+  },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 12,
+    backgroundColor: "#f0f0f0",
+  },
+  username: { fontWeight: "600", fontSize: 15, color: "#333" },
+  timestamp: { fontSize: 12, color: "#999", marginTop: 2 },
   contentContainer: { paddingHorizontal: 16, paddingBottom: 12 },
-  category: { fontSize: 12, fontWeight: '600', color: '#e74c3c', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 },
-  title: { fontSize: 20, fontWeight: '700', color: '#222', marginBottom: 8, lineHeight: 26 },
-  description: { fontSize: 15, color: '#444', lineHeight: 22, marginBottom: 12 },
-  postImage: { width: '100%', height: 280, borderRadius: 8, marginTop: 8, backgroundColor: '#f5f5f5' },
-  statsContainer: { flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 8, borderTopWidth: 1, borderBottomWidth: 1, borderColor: '#f0f0f0' },
-  statsText: { fontSize: 14, color: '#666' },
+  category: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#e74c3c",
+    marginBottom: 4,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#222",
+    marginBottom: 8,
+    lineHeight: 26,
+  },
+  description: {
+    fontSize: 15,
+    color: "#444",
+    lineHeight: 22,
+    marginBottom: 12,
+  },
+  postImage: {
+    width: "100%",
+    height: 280,
+    borderRadius: 8,
+    marginTop: 8,
+    backgroundColor: "#f5f5f5",
+  },
+  statsContainer: {
+    flexDirection: "row",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: "#f0f0f0",
+  },
+  statsText: { fontSize: 14, color: "#666" },
 });

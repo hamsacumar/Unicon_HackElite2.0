@@ -71,7 +71,10 @@ const NotificationConfigButton: React.FC<NotificationConfigButtonProps> = ({
   const unsubscribeTitleForOrganizer = async () => {
     try {
       if (!postTitle) {
-        Alert.alert("Missing Title", "Cannot disable configuration without a post title.");
+        Alert.alert(
+          "Missing Title",
+          "Cannot disable configuration without a post title."
+        );
         return;
       }
       setIsConfiguring(true);
@@ -82,13 +85,18 @@ const NotificationConfigButton: React.FC<NotificationConfigButtonProps> = ({
       if (success) {
         setIsConfigured(false);
         // remove persisted state
-        try { await AsyncStorage.removeItem(keyFor(currentUserId)); } catch {}
+        try {
+          await AsyncStorage.removeItem(keyFor(currentUserId));
+        } catch {}
         Alert.alert(
           "Notifications disabled",
           `You will no longer receive future posts from ${organizerName} related to "${postTitle}"`
         );
       } else {
-        Alert.alert("Action failed", "No existing configuration found to disable.");
+        Alert.alert(
+          "Action failed",
+          "No existing configuration found to disable."
+        );
       }
     } catch (e) {
       Alert.alert("Error", e instanceof Error ? e.message : "Unknown error");
@@ -104,7 +112,10 @@ const NotificationConfigButton: React.FC<NotificationConfigButtonProps> = ({
   const configureTitleForOrganizer = async () => {
     try {
       if (!postTitle) {
-        Alert.alert("Missing Title", "Cannot enable configuration without a post title.");
+        Alert.alert(
+          "Missing Title",
+          "Cannot enable configuration without a post title."
+        );
         return;
       }
       setIsConfiguring(true);
@@ -116,13 +127,18 @@ const NotificationConfigButton: React.FC<NotificationConfigButtonProps> = ({
       if (success) {
         setIsConfigured(true);
         // persist locally so logout/login retains icon state
-        try { await AsyncStorage.setItem(keyFor(currentUserId), "1"); } catch {}
+        try {
+          await AsyncStorage.setItem(keyFor(currentUserId), "1");
+        } catch {}
         Alert.alert(
           "Notifications enabled",
           `You'll receive future posts from ${organizerName} related to "${postTitle}"`
         );
       } else {
-        Alert.alert("Action failed", "Could not enable notifications. Please try again.");
+        Alert.alert(
+          "Action failed",
+          "Could not enable notifications. Please try again."
+        );
       }
     } catch (e) {
       Alert.alert("Error", e instanceof Error ? e.message : "Unknown error");

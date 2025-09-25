@@ -51,8 +51,10 @@ class NotificationService {
       const headers = await this.getAuthHeaders();
       const base = this.baseUrl.replace(/\/+$/, "");
       const hasApi = /\/api$/i.test(base);
-      const url = `${base}${hasApi ? '' : '/api'}/notifications/unsubscribe-all`;
-      const maskedAuth = headers.Authorization ? headers.Authorization.slice(0, 16) + "..." : "";
+      const url = `${base}${hasApi ? "" : "/api"}/notifications/unsubscribe-all`;
+      const maskedAuth = headers.Authorization
+        ? headers.Authorization.slice(0, 16) + "..."
+        : "";
       console.log("[NotificationService] unsubscribeAll ->", {
         url,
         hasAuth: !!headers.Authorization,
@@ -83,8 +85,10 @@ class NotificationService {
       const headers = await this.getAuthHeaders();
       const base = this.baseUrl.replace(/\/+$/, "");
       const hasApi = /\/api$/i.test(base);
-      const url = `${base}${hasApi ? '' : '/api'}/notifications/subscribe`;
-      const maskedAuth = headers.Authorization ? headers.Authorization.slice(0, 16) + "..." : "";
+      const url = `${base}${hasApi ? "" : "/api"}/notifications/subscribe`;
+      const maskedAuth = headers.Authorization
+        ? headers.Authorization.slice(0, 16) + "..."
+        : "";
       console.log("[NotificationService] configureTitle ->", {
         url,
         organizerId,
@@ -93,24 +97,23 @@ class NotificationService {
         hasAuth: !!headers.Authorization,
         authPrefix: maskedAuth,
       });
-      const response = await fetch(
-        url,
-        {
-          method: "POST",
-          headers,
-          body: JSON.stringify({
-            organizerId,
-            title,
-            category,
-          }),
-        }
-      );
+      const response = await fetch(url, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          organizerId,
+          title,
+          category,
+        }),
+      });
 
       if (response.ok) {
         const result = await response.json();
         return result.success;
       } else {
-        throw new Error(`Failed to configure title notifications: ${response.status}`);
+        throw new Error(
+          `Failed to configure title notifications: ${response.status}`
+        );
       }
     } catch (error) {
       console.error("Error configuring title notifications:", error);
@@ -119,16 +122,15 @@ class NotificationService {
   }
 
   // Remove title-based notifications configuration
-  async unsubscribeTitle(
-    organizerId: string,
-    title: string
-  ): Promise<boolean> {
+  async unsubscribeTitle(organizerId: string, title: string): Promise<boolean> {
     try {
       const headers = await this.getAuthHeaders();
       const base = this.baseUrl.replace(/\/+$/, "");
       const hasApi = /\/api$/i.test(base);
-      const url = `${base}${hasApi ? '' : '/api'}/notifications/unsubscribe-title`;
-      const maskedAuth = headers.Authorization ? headers.Authorization.slice(0, 16) + "..." : "";
+      const url = `${base}${hasApi ? "" : "/api"}/notifications/unsubscribe-title`;
+      const maskedAuth = headers.Authorization
+        ? headers.Authorization.slice(0, 16) + "..."
+        : "";
       console.log("[NotificationService] unsubscribeTitle ->", {
         url,
         organizerId,
@@ -145,7 +147,9 @@ class NotificationService {
         const result = await response.json();
         return result.success;
       } else {
-        throw new Error(`Failed to unsubscribe title notifications: ${response.status}`);
+        throw new Error(
+          `Failed to unsubscribe title notifications: ${response.status}`
+        );
       }
     } catch (error) {
       console.error("Error unsubscribing title notifications:", error);
@@ -162,15 +166,14 @@ class NotificationService {
 
   private async initializeNotifications() {
     // Configure notification behavior
-   Notifications.setNotificationHandler({
-     handleNotification: async () => ({
-       shouldShowBanner: true, // replaces shouldShowAlert
-       shouldShowList: true, // new required property
-       shouldPlaySound: true,
-       shouldSetBadge: true,
-     }),
-   });
-
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowBanner: true, // replaces shouldShowAlert
+        shouldShowList: true, // new required property
+        shouldPlaySound: true,
+        shouldSetBadge: true,
+      }),
+    });
 
     // Request permissions
     await this.requestPermissions();

@@ -30,9 +30,7 @@ const RoleBasedBottomNav: React.FC<Props> = ({ navigation }) => {
       </View>
     );
   }
-  
 
-  
   if (role === "Organizer") {
     return (
       <Org_BottomNav
@@ -44,7 +42,7 @@ const RoleBasedBottomNav: React.FC<Props> = ({ navigation }) => {
       />
     );
   }
-  
+
   if (role === "Student") {
     return (
       <Stu_BottomNav
@@ -55,12 +53,15 @@ const RoleBasedBottomNav: React.FC<Props> = ({ navigation }) => {
       />
     );
   }
-  
+
   // fallback UI
   return (
     <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
       <Text>Unable to determine role. Please login again.</Text>
-      <Button title="Go to Login" onPress={() => navigation.navigate("Login")} />
+      <Button
+        title="Go to Login"
+        onPress={() => navigation.navigate("Login")}
+      />
     </View>
   );
 };

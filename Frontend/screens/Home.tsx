@@ -119,11 +119,12 @@ export default function Home() {
                 <View style={styles.userRow}>
                   <Image
                     source={{
-                      uri: item.userImage && item.userImage !== "string"
-                        ? item.userImage.startsWith("http")
-                          ? item.userImage
-                          : `${API_URL}${item.userImage}`
-                        : "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
+                      uri:
+                        item.userImage && item.userImage !== "string"
+                          ? item.userImage.startsWith("http")
+                            ? item.userImage
+                            : `${API_URL}${item.userImage}`
+                          : "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
                     }}
                     style={styles.avatar}
                   />
@@ -184,7 +185,6 @@ export default function Home() {
                   postId={item.id}
                   userId={userId}
                   initialLikeCount={item.likeCount || 0}
-  commentCount={item.commentCount || 0} // pass the current count
                   initialIsBookmarked={item.isBookmarked}
                   onCommentPress={() => {
                     setEvents((prev) =>
@@ -218,7 +218,9 @@ export default function Home() {
                   onCommentAdd={(newCount) => {
                     setEvents((prev) =>
                       prev.map((ev) =>
-                        ev.id === item.id ? { ...ev, commentCount: newCount } : ev
+                        ev.id === item.id
+                          ? { ...ev, commentCount: newCount }
+                          : ev
                       )
                     );
                   }}

@@ -8,7 +8,7 @@ const api = axios.create({
 export interface UserProfile {
   username: string;
   description: string;
-  profileImageUrl?: string; 
+  profileImageUrl?: string;
   postCount?: number;
 }
 
@@ -27,7 +27,9 @@ export interface UserEvent {
 export const UserProfileService = {
   getProfileByUsername: async (username: string): Promise<UserProfile> => {
     const encodedUsername = encodeURIComponent(username);
-    const response = await api.get(`/ProfileDetail/description/${encodedUsername}`);
+    const response = await api.get(
+      `/ProfileDetail/description/${encodedUsername}`
+    );
     return response.data;
   },
 
@@ -44,8 +46,4 @@ export const UserProfileService = {
     );
     return response.data.postCount;
   },
-
-  
-
-  
 };

@@ -93,7 +93,11 @@ const Inbox: React.FC<Props> = ({ onSelectConversation }) => {
         </View>
       ) : (
         <View style={styles.toolbar}>
-          <Button title="Delete" onPress={() => setDeleteMode(true)} color= "#FF5722"/>
+          <Button
+            title="Delete"
+            onPress={() => setDeleteMode(true)}
+            color="#FF5722"
+          />
         </View>
       )}
 
