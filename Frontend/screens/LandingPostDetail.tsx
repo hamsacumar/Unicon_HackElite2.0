@@ -89,7 +89,7 @@ export default function LandingPostDetail({ route, navigation }: Props) {
             <View style={styles.userRow}>
               <Image
                 source={{
-                  uri: post.userImage
+                  uri: post.userImage && post.userImage !== "string"
                     ? (post.userImage.startsWith("http")
                         ? post.userImage
                         : `${API_URL}${post.userImage}`)

@@ -119,7 +119,7 @@ export default function Home() {
                 <View style={styles.userRow}>
                   <Image
                     source={{
-                      uri: item.userImage
+                      uri: item.userImage && item.userImage !== "string"
                         ? item.userImage.startsWith("http")
                           ? item.userImage
                           : `${API_URL}${item.userImage}`

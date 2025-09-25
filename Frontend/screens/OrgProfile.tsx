@@ -1,3 +1,5 @@
+//org profile screen
+
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -18,6 +20,7 @@ import Ionicons from "react-native-vector-icons/Ionicons";
 
 import { ProfileService, Profile, Post } from '../services/ProfileService';
 
+import { Share } from "react-native";
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl?.replace("/api", "");
 
@@ -41,6 +44,27 @@ const OrgProfile: React.FC = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [postCount, setPostCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
+
+
+const onShareProfile = async () => {
+    try {
+      const result = await Share.share({
+        message: `Check out ${profile?.username}'s profile: https://yourapp.com/user/${profile?.username}`,
+      });
+      if (result.action === Share.sharedAction) {
+        if (result.activityType) {
+          // shared with activity type
+        } else {
+          // shared
+        }
+      } else if (result.action === Share.dismissedAction) {
+        // dismissed
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
 
   useEffect(() => {
     const fetchData = async () => {
@@ -127,9 +151,13 @@ const OrgProfile: React.FC = () => {
               Edit profile
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.shareButton}>
-            <Text style={styles.buttonText}>Share profile</Text>
-          </TouchableOpacity>
+          {/* ✅ Hook the share handler here */}
+        <TouchableOpacity
+          style={styles.shareButton}
+          onPress={onShareProfile}
+        >
+          <Text style={styles.buttonText}>Share profile</Text>
+        </TouchableOpacity>
         </View>
 
         <View style={styles.tabContainer}>

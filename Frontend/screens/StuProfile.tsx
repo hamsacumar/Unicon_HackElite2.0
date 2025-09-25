@@ -17,12 +17,14 @@ import Constants from "expo-constants";
 import Ionicons from "react-native-vector-icons/Ionicons";
 
 import { ProfileService, Profile, Post } from '../services/ProfileService';
+import { Share } from "react-native";
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl?.replace("/api", "");
 
 // Define your stack param list
 type RootStackParamList = {
   StuProfile: undefined;
+  EditProfile: { profile: Profile }; // add this
   // Add other screens here if needed
 };
 
@@ -38,6 +40,26 @@ const StuProfile: React.FC = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
     const [posts, setPosts] = useState<Post[]>([]);
     const [loading, setLoading] = useState(true);
+  
+  
+   const onShareProfile = async () => {
+    try {
+      const result = await Share.share({
+        message: `Check out ${profile?.username}'s profile: https://yourapp.com/user/${profile?.username}`,
+      });
+      if (result.action === Share.sharedAction) {
+        if (result.activityType) {
+          // shared with activity type
+        } else {
+          // shared
+        }
+      } else if (result.action === Share.dismissedAction) {
+        // dismissed
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
   
     useEffect(() => {
       const fetchData = async () => {
@@ -105,12 +127,25 @@ const StuProfile: React.FC = () => {
         
 
         <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.editButton}>
-            <Text style={styles.buttonText}>Edit profile</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.shareButton}>
-            <Text style={styles.buttonText}>Share profile</Text>
-          </TouchableOpacity>
+          <TouchableOpacity
+  style={styles.editButton}
+  onPress={() => {
+    if (profile) {
+      navigation.navigate("EditProfile", { profile });
+    }
+  }}
+>
+  <Text style={styles.buttonText}>Edit profile</Text>
+</TouchableOpacity>
+
+
+         {/* ✅ Hook the share handler here */}
+        <TouchableOpacity
+          style={styles.shareButton}
+          onPress={onShareProfile}
+        >
+          <Text style={styles.buttonText}>Share profile</Text>
+        </TouchableOpacity>
         </View>
 
         <View style={styles.tabContainer}>
