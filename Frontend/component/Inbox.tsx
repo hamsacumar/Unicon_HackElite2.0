@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { getInbox, deleteMessages, Message } from "../services/api/api";
 
+
 interface Props {
   onSelectConversation: (otherUserId: string, otherUsername: string) => void;
 }
@@ -27,7 +28,8 @@ const Inbox: React.FC<Props> = ({ onSelectConversation }) => {
     try {
       setLoading(true);
       setError(null);
-      const inboxData = await getInbox();
+      const userId = await getCurrentUserId();
+      const inboxData = await getInbox(userId);
       setMessages(inboxData);
     } catch (err: any) {
       console.error("Error fetching inbox:", err);
@@ -93,7 +95,7 @@ const Inbox: React.FC<Props> = ({ onSelectConversation }) => {
         </View>
       ) : (
         <View style={styles.toolbar}>
-          <Button title="Delete" onPress={() => setDeleteMode(true)} color= "#FF5722"/>
+          <Button title="Delete Mode" onPress={() => setDeleteMode(true)} />
         </View>
       )}
 

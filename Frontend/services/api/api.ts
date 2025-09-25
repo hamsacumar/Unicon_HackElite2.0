@@ -8,6 +8,7 @@ export interface Message {
   receiverId: string;
   text: string;
   status: string;
+  timestamp: string;
 }
 
 const BASE_URL = Constants.expoConfig?.extra?.apiUrl as string;
@@ -30,8 +31,11 @@ export const markSeen = async (messageId: string) => {
 };
 
 export const getInbox = async (userId: string): Promise<Message[]> => {
-  const res = await axios.get<Message[]>(
-    `${BASE_URL}/Messages/inbox/${userId}`
-  );
+  const res = await axios.get<Message[]>(`${BASE_URL}/Messages/inbox/${userId}`);
+  return res.data;
+};
+
+export const deleteMessages = async (ids: string[]) => {
+  const res = await axios.post(`${BASE_URL}/Messages/delete`, { ids });
   return res.data;
 };
