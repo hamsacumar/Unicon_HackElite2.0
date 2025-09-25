@@ -65,6 +65,7 @@ namespace Backend.Controllers
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Error testing Mongo connection");
                 return StatusCode(500, new 
                 { 
                     success = false, 
@@ -72,6 +73,37 @@ namespace Backend.Controllers
                     details = ex.ToString(),
                     connectionString = _configuration["MongoDbSettings:ConnectionString"]
                 });
+            }
+        }
+
+        /// <summary>
+        /// Check if the authenticated user has an active title-based configuration for an organizer/title
+        /// </summary>
+        [HttpGet("is-title-configured")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> IsTitleConfigured([FromQuery] string organizerId, [FromQuery] string title)
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Unauthorized(new ApiResponse<object>(false, "User not authenticated", null));
+                }
+
+                if (string.IsNullOrEmpty(organizerId) || string.IsNullOrEmpty(title))
+                {
+                    return BadRequest(new ApiResponse<object>(false, "OrganizerId and Title are required", null));
+                }
+
+                var isConfigured = await _notificationService.IsTitleSubscribedAsync(userId, organizerId, title);
+                return Ok(new ApiResponse<object>(true, "OK", new { isConfigured }));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error checking title configuration");
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new ApiResponse<object>(false, "An error occurred while checking title configuration", null));
             }
         }
         
@@ -162,6 +194,95 @@ namespace Backend.Controllers
                 }
 
                 var notifications = await _notificationService.GetByUserAsync(userId, limit, unreadOnly);
+
+                // Read-time enrichment for older notifications missing organizer/author/post image
+                var db = _mongoDatabase;
+                var users = db.GetCollection<AppUser>("Users");
+                var events = db.GetCollection<EventModel>("events");
+
+                foreach (var n in notifications)
+                {
+                    try
+                    {
+                        // Enrich organizer via explicit OrganizerId or fallback to post owner
+                        if (string.IsNullOrEmpty(n.OrganizerName))
+                        {
+                            AppUser? organizerUser = null;
+                            if (!string.IsNullOrEmpty(n.OrganizerId))
+                            {
+                                organizerUser = await users.Find(u => u.Id == n.OrganizerId).FirstOrDefaultAsync();
+                            }
+                            if (organizerUser == null && !string.IsNullOrEmpty(n.ReferenceId))
+                            {
+                                var ev = await events.Find(e => e.Id == n.ReferenceId).FirstOrDefaultAsync();
+                                if (ev != null && !string.IsNullOrEmpty(ev.UserId))
+                                {
+                                    organizerUser = await users.Find(u => u.Id == ev.UserId).FirstOrDefaultAsync();
+                                    n.OrganizerId ??= ev.UserId;
+                                }
+                            }
+                            if (organizerUser != null)
+                            {
+                                n.OrganizerName = string.IsNullOrWhiteSpace(organizerUser.Username)
+                                    ? (string.Join(" ", new[] { organizerUser.FirstName, organizerUser.LastName }.Where(s => !string.IsNullOrWhiteSpace(s)))?.Trim())
+                                    : organizerUser.Username;
+                                n.OrganizerAvatarUrl = organizerUser.ProfileImageUrl;
+                            }
+                        }
+
+                        // Ensure author fields are present when FromUserId exists
+                        if (string.IsNullOrEmpty(n.AuthorName) && !string.IsNullOrEmpty(n.FromUserId))
+                        {
+                            var author = await users.Find(u => u.Id == n.FromUserId).FirstOrDefaultAsync();
+                            if (author != null)
+                            {
+                                n.AuthorName = string.IsNullOrWhiteSpace(author.Username)
+                                    ? (string.Join(" ", new[] { author.FirstName, author.LastName }.Where(s => !string.IsNullOrWhiteSpace(s)))?.Trim())
+                                    : author.Username;
+                                n.AuthorAvatarUrl = author.ProfileImageUrl;
+                            }
+                        }
+
+                        // Ensure post image is present using referenceId (post/event id)
+                        if (string.IsNullOrEmpty(n.PostImageUrl) && !string.IsNullOrEmpty(n.ReferenceId))
+                        {
+                            var ev = await events.Find(e => e.Id == n.ReferenceId).FirstOrDefaultAsync();
+                            if (ev != null)
+                            {
+                                n.PostImageUrl = ev.ImageUrl;
+                            }
+                        }
+
+                        // Make media URLs absolute
+                        string BaseUrl()
+                        {
+                            var request = HttpContext?.Request;
+                            if (request == null) return string.Empty;
+                            return $"{request.Scheme}://{request.Host.Value}";
+                        }
+                        string MakeAbsolute(string? url)
+                        {
+                            if (string.IsNullOrWhiteSpace(url)) return url ?? string.Empty;
+                            if (url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+                                url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+                            {
+                                return url;
+                            }
+                            var baseUrl = BaseUrl();
+                            if (string.IsNullOrEmpty(baseUrl)) return url;
+                            return url.StartsWith("/") ? baseUrl + url : baseUrl + "/" + url;
+                        }
+
+                        n.OrganizerAvatarUrl = MakeAbsolute(n.OrganizerAvatarUrl);
+                        n.PostImageUrl = MakeAbsolute(n.PostImageUrl);
+                        n.AuthorAvatarUrl = MakeAbsolute(n.AuthorAvatarUrl);
+                    }
+                    catch (Exception enrichEx)
+                    {
+                        _logger.LogDebug(enrichEx, "Read-time notification enrichment failed for {NotificationId}", n.Id);
+                    }
+                }
+
                 return Ok(new ApiResponse<IEnumerable<Notification>>(true, "Notifications retrieved successfully", notifications));
             }
             catch (Exception ex)
@@ -388,6 +509,16 @@ namespace Backend.Controllers
                         request.OrganizerId, 
                         request.Category);
                 }
+                else if (!string.IsNullOrEmpty(request.Title))
+                {
+                    // Configure title-based notifications for this organizer (no general organizer subscription)
+                    await _notificationService.SubscribeToTitleAsync(
+                        userId,
+                        request.Title,
+                        request.OrganizerId,
+                        request.Category
+                    );
+                }
                 else
                 {
                     // General subscription to organizer
@@ -401,6 +532,38 @@ namespace Backend.Controllers
                 _logger.LogError(ex, "Error subscribing to notifications");
                 return StatusCode(StatusCodes.Status500InternalServerError, 
                     new ApiResponse<object>(false, "An error occurred while subscribing to notifications", null));
+            }
+        }
+
+        /// <summary>
+        /// Disable title-based notifications configured for an organizer/title pair for the authenticated user
+        /// </summary>
+        [HttpPost("unsubscribe-title")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> UnsubscribeTitle([FromBody] SubscribeRequest request)
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Unauthorized(new ApiResponse<object>(false, "User not authenticated", null));
+                }
+
+                if (request == null || string.IsNullOrEmpty(request.OrganizerId) || string.IsNullOrEmpty(request.Title))
+                {
+                    return BadRequest(new ApiResponse<object>(false, "OrganizerId and Title are required", null));
+                }
+
+                var ok = await _notificationService.UnsubscribeTitleAsync(userId, request.Title!, request.OrganizerId);
+                return Ok(new ApiResponse<object>(ok, ok ? "Unsubscribed from title notifications" : "No matching subscription found", null));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error unsubscribing title notifications");
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new ApiResponse<object>(false, "An error occurred while unsubscribing title notifications", null));
             }
         }
 

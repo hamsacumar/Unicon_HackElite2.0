@@ -8,13 +8,15 @@ import {
   Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import NotificationConfigButton from "./NotificationConfigButton";
 import {
   likePost,
   getLikeCount,
   checkIfLiked,
   getCommentCount,
   toggleBookmark,
-isBookmarked as fetchIsBookmarked,} from "../services/eventService";
+  isBookmarked as fetchIsBookmarked,
+} from "../services/eventService";
 import { useNavigation } from "@react-navigation/native";
 import { RootStackParamList } from "../App";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -29,9 +31,12 @@ type Props = {
   onCommentPress?: () => void;
   onLikeUpdate?: (likeCount: number, isLiked: boolean) => void;
   onBookmarkToggle?: (bookmarked: boolean) => void;
-  disabled?: boolean; 
-    commentCount: number; // ✅ add this
-
+  disabled?: boolean;
+  // Notification configuration inputs
+  organizerId: string;
+  organizerName: string;
+  postTitle: string;
+  category?: string;
 };
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "Login">;
@@ -46,12 +51,15 @@ const PostActions: React.FC<Props> = ({
   onCommentPress,
   onLikeUpdate,
   onBookmarkToggle,
-  disabled = false, 
-  
+  disabled = false,
+  organizerId,
+  organizerName,
+  postTitle,
+  category,
 }) => {
   const navigation = useNavigation<NavigationProp>();
 
-const isAuthenticated = !!userId && !disabled;
+  const isAuthenticated = !!userId && !disabled;
   const [likeCount, setLikeCount] = useState(initialLikeCount);
   const [commentCount, setCommentCount] = useState(initialCommentCount);
   const [isLiked, setIsLiked] = useState(initialIsLiked);
@@ -76,7 +84,8 @@ const isAuthenticated = !!userId && !disabled;
         if (isAuthenticated && userId) {
           const [liked, bookmarkedRes] = await Promise.all([
             checkIfLiked(postId, userId),
-fetchIsBookmarked(postId),          ]);
+            fetchIsBookmarked(postId),
+          ]);
           setIsLiked(liked);
           setIsBookmarked(!!bookmarkedRes);
           onLikeUpdate?.(likeRes, liked);
@@ -203,16 +212,17 @@ fetchIsBookmarked(postId),          ]);
           />
         </TouchableOpacity>
 
-        {/* configure Button */}
-<TouchableOpacity
-  style={styles.actionButton}
-  onPress={() => Alert.alert("configure enabled")}
->
-  <Ionicons name="settings-outline" size={22} color="#333" />
-</TouchableOpacity>
+        {/* Configure title-based notifications for this organizer */}
+        <NotificationConfigButton
+          postId={postId}
+          postTitle={postTitle}
+          organizerId={organizerId}
+          organizerName={organizerName}
+          category={category}
+          size={22}
+          color="#333"
+        />
       </View>
-
-     
     </View>
   );
 };

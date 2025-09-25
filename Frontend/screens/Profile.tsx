@@ -31,17 +31,11 @@ const RoleBasedBottomNav: React.FC<Props> = ({ navigation }) => {
   }
 
   if (role === "Organizer") {
-    return (
-      <OrgProfile
-      />
-    );
+    return <OrgProfile />;
   }
 
   if (role === "Student") {
-    return (
-      <StuProfile
-      />
-    );
+    return <StuProfile />;
   }
 
   return null;

@@ -53,14 +53,8 @@ const Test: React.FC = () => {
           </Text>
         )}
       />
-      <Button
-        title="Login"
-        onPress={() => navigation.navigate("Login")}
-      />
-      <Button
-        title="Signup"
-        onPress={() => navigation.navigate("Signup")}
-      />
+      <Button title="Login" onPress={() => navigation.navigate("Login")} />
+      <Button title="Signup" onPress={() => navigation.navigate("Signup")} />
       <Button
         title="OrgProfile"
         onPress={() => navigation.navigate("OrgProfile")}
@@ -77,7 +71,7 @@ const Test: React.FC = () => {
       />
 
       {/* Navigate to Chat with required params */}
-   
+
       <Button
         title="Message Page"
         onPress={() => navigation.navigate("MessagePage")}

@@ -57,6 +57,12 @@ namespace Backend.Models
         public string? OrganizerName { get; set; }
 
         /// <summary>
+        /// The avatar URL of the organizer (if applicable)
+        /// </summary>
+        [BsonElement("organizerAvatarUrl")]
+        public string? OrganizerAvatarUrl { get; set; }
+
+        /// <summary>
         /// The ID of the related event (if applicable)
         /// </summary>
         [BsonElement("eventId")]
@@ -123,5 +129,24 @@ namespace Backend.Models
         [Url]
         [BsonElement("actionUrl")]
         public string? ActionUrl { get; set; }
+
+        // -------- Visual enrichment fields for Instagram-like notifications --------
+        /// <summary>
+        /// Display name of the user who triggered the notification (author)
+        /// </summary>
+        [BsonElement("authorName")]
+        public string? AuthorName { get; set; }
+
+        /// <summary>
+        /// Avatar URL of the author (FromUserId)
+        /// </summary>
+        [BsonElement("authorAvatarUrl")]
+        public string? AuthorAvatarUrl { get; set; }
+
+        /// <summary>
+        /// Preview image URL for the related post/event
+        /// </summary>
+        [BsonElement("postImageUrl")]
+        public string? PostImageUrl { get; set; }
     }
 }

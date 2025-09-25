@@ -1,9 +1,9 @@
-import React from 'react';
-import { View } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import type { StackNavigationProp } from '@react-navigation/stack';
-import SignupForm from '../../component/forms/SignupForm';
-import { globalStyles } from '../../styles/globalStyles';
+import React from "react";
+import { View } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import type { StackNavigationProp } from "@react-navigation/stack";
+import SignupForm from "../../component/forms/SignupForm";
+import { globalStyles } from "../../styles/globalStyles";
 
 type RootStackParamList = {
   Login: undefined;
@@ -12,33 +12,36 @@ type RootStackParamList = {
   ResetPassword: undefined;
   OrgSettings: undefined;
   OrgProfile: undefined;
-  ClassifyAccount: { 
+  ClassifyAccount: {
     email: string;
     userId: string;
     message?: string;
   };
-  VerifyCode: { 
-    email: string; 
+  VerifyCode: {
+    email: string;
     userId: string;
-    purpose: 'signup' | 'reset-password';
+    purpose: "signup" | "reset-password";
   };
 };
 
-type SignupScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Signup'>;
+type SignupScreenNavigationProp = StackNavigationProp<
+  RootStackParamList,
+  "Signup"
+>;
 
 const SignupScreen = () => {
   const navigation = useNavigation<SignupScreenNavigationProp>();
 
   const handleSuccess = (email: string, userId: string) => {
-    navigation.navigate('VerifyCode', {
+    navigation.navigate("VerifyCode", {
       email,
       userId,
-      purpose: 'signup'
+      purpose: "signup",
     });
   };
 
   const handleLoginNavigation = () => {
-    navigation.navigate('Login');
+    navigation.navigate("Login");
   };
 
   return (

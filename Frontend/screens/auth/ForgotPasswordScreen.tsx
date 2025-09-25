@@ -1,9 +1,9 @@
-import React from 'react';
-import { View } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import type { StackNavigationProp } from '@react-navigation/stack';
-import ForgotPasswordForm from '../../component/forms/ForgotPasswordForm';
-import { globalStyles } from '../../styles/globalStyles';
+import React from "react";
+import { View } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import type { StackNavigationProp } from "@react-navigation/stack";
+import ForgotPasswordForm from "../../component/forms/ForgotPasswordForm";
+import { globalStyles } from "../../styles/globalStyles";
 
 type RootStackParamList = {
   Login: undefined;
@@ -20,15 +20,15 @@ const ForgotPasswordScreen = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
 
   const handleSuccess = (email: string) => {
-    navigation.navigate('VerifyCode', {
-      userId: '',
+    navigation.navigate("VerifyCode", {
+      userId: "",
       email,
-      purpose: 'reset-password'
+      purpose: "reset-password",
     });
   };
 
   const handleBackToLogin = () => {
-    navigation.navigate('Login');
+    navigation.navigate("Login");
   };
 
   return (

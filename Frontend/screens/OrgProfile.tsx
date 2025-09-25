@@ -1,6 +1,6 @@
 //org profile screen
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -10,16 +10,16 @@ import {
   Image,
   SafeAreaView,
   StatusBar,
-   RefreshControl, 
-} from 'react-native';
+  RefreshControl,
+} from "react-native";
 import Constants from "expo-constants";
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useNavigation } from "@react-navigation/native";
 import RoleBasedBottomNav from "../component/rolebasedNav";
 
 import Ionicons from "react-native-vector-icons/Ionicons";
 
-import { ProfileService, Profile, Post } from '../services/ProfileService';
+import { ProfileService, Profile, Post } from "../services/ProfileService";
 
 import { Share } from "react-native";
 
@@ -35,7 +35,7 @@ type RootStackParamList = {
 // Define the type for navigation prop
 type OrgProfileNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
-  'OrgProfile'
+  "OrgProfile"
 >;
 
 const OrgProfile: React.FC = () => {
@@ -47,10 +47,9 @@ const OrgProfile: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false); // ✅ state for refresh
 
-
-const onShareProfile = async () => {
-  try {
-            if (!refreshing) setLoading(true); // only show big loader on first load
+  const onShareProfile = async () => {
+    try {
+      if (!refreshing) setLoading(true); // only show big loader on first load
 
       const result = await Share.share({
         message: `Check out ${profile?.username}'s profile: https://yourapp.com/user/${profile?.username}`,
@@ -69,7 +68,6 @@ const onShareProfile = async () => {
     }
   };
 
-
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -80,13 +78,11 @@ const onShareProfile = async () => {
 
         const count = await ProfileService.getPostCount();
         setPostCount(count);
-
       } catch (error) {
         console.error("Error fetching profile or posts:", error);
       } finally {
         setLoading(false);
-              setRefreshing(false); // ✅ stop refresh spinner
-
+        setRefreshing(false); // ✅ stop refresh spinner
       }
     };
 
@@ -96,14 +92,13 @@ const onShareProfile = async () => {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <Text style={{ textAlign: 'center', marginTop: 50 }}>Loading...</Text>
+        <Text style={{ textAlign: "center", marginTop: 50 }}>Loading...</Text>
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={styles.container}>
-
       {/* Fixed Profile Section */}
       <View style={styles.profileSection}>
         <View style={styles.profileHeader}>
@@ -112,20 +107,23 @@ const onShareProfile = async () => {
               <Image
                 source={{
                   uri: profile?.profileImageUrl
-                    ? (profile.profileImageUrl.startsWith("http")
+                    ? profile.profileImageUrl.startsWith("http")
                       ? profile.profileImageUrl
-                      : `${API_URL}${profile.profileImageUrl.startsWith("/") ? "" : "/"}${profile.profileImageUrl}`)
-                    : Image.resolveAssetSource(require("../assets/icon.png")).uri, // ✅ fallback
+                      : `${API_URL}${profile.profileImageUrl.startsWith("/") ? "" : "/"}${profile.profileImageUrl}`
+                    : Image.resolveAssetSource(require("../assets/icon.png"))
+                        .uri, // ✅ fallback
                 }}
                 style={styles.image}
                 resizeMode="cover"
                 onError={(e) =>
-                  console.log("Error loading profile image:", e.nativeEvent.error)
+                  console.log(
+                    "Error loading profile image:",
+                    e.nativeEvent.error
+                  )
                 }
               />
             </View>
           </View>
-
 
           <View style={styles.profileInfo}>
             <Text style={styles.profileName}>{profile?.username}</Text>
@@ -149,21 +147,16 @@ const onShareProfile = async () => {
         <Text style={styles.trustText}>{profile?.description}</Text>
 
         <View style={styles.buttonContainer}>
-          <TouchableOpacity 
-          style={styles.editButton}
-          onPress={() => navigation.navigate('EditProfile')}>
-            <Text
-              style={styles.buttonText}>
-              Edit profile
-            </Text>
+          <TouchableOpacity
+            style={styles.editButton}
+            onPress={() => navigation.navigate("EditProfile")}
+          >
+            <Text style={styles.buttonText}>Edit profile</Text>
           </TouchableOpacity>
           {/* ✅ Hook the share handler here */}
-        <TouchableOpacity
-          style={styles.shareButton}
-          onPress={onShareProfile}
-        >
-          <Text style={styles.buttonText}>Share profile</Text>
-        </TouchableOpacity>
+          <TouchableOpacity style={styles.shareButton} onPress={onShareProfile}>
+            <Text style={styles.buttonText}>Share profile</Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.tabContainer}>
@@ -175,36 +168,37 @@ const onShareProfile = async () => {
             <Ionicons name="play-outline" size={24} color="#666666" />
           </TouchableOpacity>
         </View>
-
       </View>
 
       {/* Scrollable Posts Section */}
-      <ScrollView style={styles.postsContainer} showsVerticalScrollIndicator={false}
+      <ScrollView
+        style={styles.postsContainer}
+        showsVerticalScrollIndicator={false}
         refreshControl={
-    <RefreshControl
-      refreshing={refreshing}
-      onRefresh={() => {
-        setRefreshing(true);
-        // re-run the same logic as in useEffect
-        (async () => {
-          try {
-            const profileData = await ProfileService.getProfile();
-            const postsData = await ProfileService.getPosts();
-            setProfile(profileData);
-            setPosts(postsData);
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => {
+              setRefreshing(true);
+              // re-run the same logic as in useEffect
+              (async () => {
+                try {
+                  const profileData = await ProfileService.getProfile();
+                  const postsData = await ProfileService.getPosts();
+                  setProfile(profileData);
+                  setPosts(postsData);
 
-            const count = await ProfileService.getPostCount();
-            setPostCount(count);
-          } catch (error) {
-            console.error("Error refreshing profile or posts:", error);
-          } finally {
-            setRefreshing(false); // stop spinner
-          }
-        })();
-      }}
-    />
-  }
->
+                  const count = await ProfileService.getPostCount();
+                  setPostCount(count);
+                } catch (error) {
+                  console.error("Error refreshing profile or posts:", error);
+                } finally {
+                  setRefreshing(false); // stop spinner
+                }
+              })();
+            }}
+          />
+        }
+      >
         {posts.map((post) => (
           <TouchableOpacity
             key={post.id}
@@ -232,7 +226,10 @@ const onShareProfile = async () => {
                   style={styles.postImage}
                   resizeMode="cover"
                   onError={(e) =>
-                    console.log("Error loading post image:", e.nativeEvent.error)
+                    console.log(
+                      "Error loading post image:",
+                      e.nativeEvent.error
+                    )
                   }
                 />
               </View>
@@ -241,10 +238,7 @@ const onShareProfile = async () => {
         ))}
       </ScrollView>
 
-
-
       <RoleBasedBottomNav navigation={navigation} />
-
     </SafeAreaView>
   );
 };
@@ -252,46 +246,46 @@ const onShareProfile = async () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#FF5722',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#FF5722",
     paddingHorizontal: 16,
     paddingVertical: 12,
     height: 56,
   },
   backArrow: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   menuButton: {
     padding: 4,
   },
   menuIcon: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 18,
   },
   profileSection: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     paddingHorizontal: 16,
     paddingTop: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    borderBottomColor: "#E0E0E0",
   },
   profileHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
     marginBottom: 12,
   },
   profileImageContainer: {
     marginRight: 16,
   },
   profileBorder: {
-    width: 86,              // 80 (image) + 3*2 (border)
+    width: 86, // 80 (image) + 3*2 (border)
     height: 86,
     borderRadius: 43,
     borderWidth: 3,
@@ -303,7 +297,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    overflow: "hidden",     // clips the image into a circle
+    overflow: "hidden", // clips the image into a circle
     backgroundColor: "#FF5722",
   },
   image: {
@@ -317,61 +311,61 @@ const styles = StyleSheet.create({
   },
   profileName: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#000000',
+    fontWeight: "bold",
+    color: "#000000",
     marginTop: 5,
     marginBottom: 8,
   },
   statsContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 40,
   },
   statItem: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   statNumber: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#000000',
+    fontWeight: "bold",
+    color: "#000000",
   },
   statLabel: {
     fontSize: 12,
-    color: '#666666',
+    color: "#666666",
   },
   trustText: {
     fontSize: 14,
-    color: '#666666',
+    color: "#666666",
     marginTop: 5,
     marginBottom: 16,
   },
   buttonContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginBottom: 16,
   },
   editButton: {
     flex: 1,
-    backgroundColor: '#FF5722',
+    backgroundColor: "#FF5722",
     paddingVertical: 12,
     borderRadius: 6,
     marginRight: 8,
-    alignItems: 'center',
+    alignItems: "center",
   },
   shareButton: {
     flex: 1,
-    backgroundColor: '#FF5722',
+    backgroundColor: "#FF5722",
     paddingVertical: 12,
     borderRadius: 6,
     marginLeft: 8,
-    alignItems: 'center',
+    alignItems: "center",
   },
   buttonText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   tabContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
     gap: 40,
     marginBottom: 16,
   },
@@ -382,26 +376,26 @@ const styles = StyleSheet.create({
   },
   activeTab: {
     borderBottomWidth: 2,
-    borderBottomColor: '#FF5722',
+    borderBottomColor: "#FF5722",
   },
   tabIcon: {
     fontSize: 18,
-    color: '#666666',
+    color: "#666666",
   },
   postsContainer: {
     flex: 1,
     paddingHorizontal: 16,
   },
   postCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     marginVertical: 8,
     padding: 12,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: "#E0E0E0",
   },
   postContent: {
-    flexDirection: 'row',
+    flexDirection: "row",
   },
   postTextContainer: {
     flex: 1,
@@ -409,18 +403,18 @@ const styles = StyleSheet.create({
   },
   postTitle: {
     fontSize: 14,
-    fontWeight: 'bold',
-    color: '#000000',
+    fontWeight: "bold",
+    color: "#000000",
     marginBottom: 4,
   },
   postSubtitle: {
     fontSize: 14,
-    color: '#000000',
+    color: "#000000",
     marginBottom: 8,
   },
   postDescription: {
     fontSize: 12,
-    color: '#666666',
+    color: "#666666",
     lineHeight: 16,
   },
   postImageContainer: {
@@ -430,17 +424,17 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   postImage: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#2E7D32',
+    width: "100%",
+    height: "100%",
+    backgroundColor: "#2E7D32",
     borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   postImagePlaceholder: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
 });
 

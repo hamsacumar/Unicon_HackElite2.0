@@ -27,10 +27,7 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
         title="About"
         onPress={() => navigation.navigate("About")}
       />
-      <SettingsButton
-        title="Logout"
-        onPress={handleLogout}
-      />
+      <SettingsButton title="Logout" onPress={handleLogout} />
     </ScrollView>
   );
 };

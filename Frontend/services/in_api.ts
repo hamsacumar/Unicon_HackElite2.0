@@ -1,7 +1,11 @@
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 import Constants from "expo-constants";
-import axios, { AxiosError, AxiosHeaders, InternalAxiosRequestConfig } from "axios";
+import axios, {
+  AxiosError,
+  AxiosHeaders,
+  InternalAxiosRequestConfig,
+} from "axios";
 
 const api = axios.create({
   baseURL: Constants.expoConfig?.extra?.apiUrl,

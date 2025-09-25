@@ -53,7 +53,6 @@ export interface ProfileUpdateRequest {
   profileImageUrl?: string | null;
 }
 
-
 export interface ProfileResponse {
   firstName: string;
   lastName: string;

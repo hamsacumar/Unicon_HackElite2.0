@@ -1,5 +1,14 @@
 import React, { useState } from "react";
-import { View, TextInput, TouchableOpacity, Text, StyleSheet, ActivityIndicator, Alert, Platform } from "react-native";
+import {
+  View,
+  TextInput,
+  TouchableOpacity,
+  Text,
+  StyleSheet,
+  ActivityIndicator,
+  Alert,
+  Platform,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { sendMessage } from "../services/api/api";
 
@@ -60,10 +69,18 @@ const SendMessageForm: React.FC<{ onSent?: () => void }> = ({ onSent }) => {
           />
           <TouchableOpacity
             onPress={handleSend}
-            style={[styles.sendButton, (!text.trim() || !receiverUsername.trim() || loading) && styles.sendButtonDisabled]}
+            style={[
+              styles.sendButton,
+              (!text.trim() || !receiverUsername.trim() || loading) &&
+                styles.sendButtonDisabled,
+            ]}
             disabled={!text.trim() || !receiverUsername.trim() || loading}
           >
-            {loading ? <ActivityIndicator color="#fff" size="small" /> : <Ionicons name="send" size={20} color="#fff" />}
+            {loading ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <Ionicons name="send" size={20} color="#fff" />
+            )}
           </TouchableOpacity>
         </View>
       </View>
@@ -72,14 +89,58 @@ const SendMessageForm: React.FC<{ onSent?: () => void }> = ({ onSent }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { padding: 16, backgroundColor: "#fff", borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#e0e0e0" },
+  container: {
+    padding: 16,
+    backgroundColor: "#fff",
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "#e0e0e0",
+  },
   inputContainer: { gap: 12 },
-  usernameInputContainer: { flexDirection: "row", alignItems: "center", backgroundColor: "#F2F2F7", borderRadius: 10, paddingHorizontal: 12, height: 44 },
+  usernameInputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F2F2F7",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    height: 44,
+  },
   icon: { marginRight: 8 },
-  usernameInput: { flex: 1, fontSize: 16, color: "#000", padding: 0, paddingVertical: 12 },
-  messageInputContainer: { flexDirection: "row", alignItems: "flex-end", gap: 8 },
-  messageInput: { flex: 1, backgroundColor: "#F2F2F7", borderRadius: 20, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12, maxHeight: 120, fontSize: 16, textAlignVertical: "top", ...Platform.select({ ios: { paddingTop: 12 }, android: { textAlignVertical: "center" } }) },
-  sendButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#007AFF", justifyContent: "center", alignItems: "center", marginBottom: 4 },
+  usernameInput: {
+    flex: 1,
+    fontSize: 16,
+    color: "#000",
+    padding: 0,
+    paddingVertical: 12,
+  },
+  messageInputContainer: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: 8,
+  },
+  messageInput: {
+    flex: 1,
+    backgroundColor: "#F2F2F7",
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 12,
+    maxHeight: 120,
+    fontSize: 16,
+    textAlignVertical: "top",
+    ...Platform.select({
+      ios: { paddingTop: 12 },
+      android: { textAlignVertical: "center" },
+    }),
+  },
+  sendButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#007AFF",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 4,
+  },
   sendButtonDisabled: { backgroundColor: "#C7C7CC" },
 });
 

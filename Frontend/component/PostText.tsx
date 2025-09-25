@@ -5,8 +5,8 @@ import { Text, Linking } from "react-native";
 import Hyperlink from "react-native-hyperlink";
 
 type PostTextProps = {
-    content: string;
-    style?: any;
+  content: string;
+  style?: any;
 };
 
 const PostText: React.FC<PostTextProps> = ({ content }) => {
