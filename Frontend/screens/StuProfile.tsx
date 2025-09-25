@@ -114,6 +114,7 @@ const StuProfile: React.FC = () => {
             </View>
           </View>
 
+          {/* ✅ profile info beside image */}
           <View style={styles.profileInfo}>
             <Text style={styles.profileName}>{profile?.username}</Text>
             <View style={styles.statsContainer}>
@@ -122,9 +123,11 @@ const StuProfile: React.FC = () => {
                 <Text style={styles.statLabel}>subscribed</Text>
               </View>
             </View>
-            <Text style={styles.trustText}>{profile?.description}</Text>
           </View>
         </View>
+
+        {/* ✅ description comes under profile */}
+        <Text style={styles.trustText}>{profile?.description}</Text>
 
         {/* ================= Buttons ================= */}
         <View style={styles.buttonContainer}>
@@ -313,7 +316,7 @@ const styles = StyleSheet.create({
   statItem: { alignItems: "center" },
   statNumber: { fontSize: 18, fontWeight: "bold", color: "#000000" },
   statLabel: { fontSize: 12, color: "#666666" },
-  trustText: { fontSize: 14, color: "#666666", marginTop: 5, marginBottom: 16 },
+  trustText: { fontSize: 14, color: "#666666", marginTop: 4, marginBottom: 16, paddingLeft: 4 }, // ✅ under name & stats
   buttonContainer: { flexDirection: "row", marginBottom: 16 },
   editButton: {
     flex: 1,
