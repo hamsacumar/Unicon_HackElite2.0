@@ -112,12 +112,6 @@ const AppStack = () => (
         headerRight: () => (
           <View style={{ flexDirection: "row" }}>
             <TouchableOpacity
-              onPress={() => navigation.navigate("Notification")}
-              style={{ marginRight: 15 }}
-            >
-              <Ionicons name="notifications-outline" size={26} color="white" />
-            </TouchableOpacity>
-            <TouchableOpacity
               onPress={() => navigation.navigate("MessagePage")}
               style={{ marginRight: 15 }}
             >
