@@ -13,8 +13,12 @@ import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../App";
 import BottomNav from "../component/bottomNav";
-import { EventItem, getEvents } from "../services/eventService";
-import Constants from "expo-constants";
+import {
+  EventItem,
+  getEvents,
+  getLikeCount,
+  getCommentCount,
+} from "../services/eventService";  import Constants from "expo-constants";
 import PostText from "../component/PostText";
 
 // ---------------------
@@ -41,7 +45,17 @@ export default function LandingPage() {
     async function fetchData() {
       try {
         const data = await getEvents();
-        setEvents(data);
+
+        // ✅ Attach like & comment counts
+        const enrichedEvents = await Promise.all(
+          data.map(async (event) => {
+            const likeCount = await getLikeCount(event.id);
+            const commentCount = await getCommentCount(event.id);
+            return { ...event, likeCount, commentCount };
+          })
+        );
+
+        setEvents(enrichedEvents);
       } catch (error) {
         console.error("Error fetching events:", error);
       }

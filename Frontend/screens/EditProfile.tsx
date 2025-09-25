@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
-  SafeAreaView,
   StatusBar,
   TextInput,
   Alert,
@@ -15,14 +14,19 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useNavigation } from "@react-navigation/native";
 import RoleBasedBottomNav from "../component/rolebasedNav";
 import { updateProfile, ProfileService } from "../services/ProfileService";
-import type { ProfileResponse, ProfileUpdateRequest } from "../services/ProfileService";
+import type {
+  ProfileResponse,
+  ProfileUpdateRequest,
+} from "../services/ProfileService";
 import Constants from "expo-constants";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl?.replace("/api", "");
 
 type RootStackParamList = {
   EditProfile: undefined;
-    ProfileSetup: undefined;
+  ProfileSetup: undefined;
 };
 
 type OrgProfileNavigationProp = NativeStackNavigationProp<
@@ -59,18 +63,17 @@ const EditProfile: React.FC = () => {
   }, []);
 
   const handleSave = async () => {
-   const payload: ProfileUpdateRequest = {
-  firstName: firstName.trim() || null,
-  lastName: lastName.trim() || null,
-  username: username.trim() || null,
-  description: bio.trim() || "", // allow empty string
-  profileImageUrl: profileImageUrl
-    ? profileImageUrl.startsWith("http")
-      ? profileImageUrl
-      : `${API_URL}${profileImageUrl}`
-    : null,
-};
-
+    const payload: ProfileUpdateRequest = {
+      firstName: firstName.trim() || null,
+      lastName: lastName.trim() || null,
+      username: username.trim() || null,
+      description: bio.trim() || "", // allow empty string
+      profileImageUrl: profileImageUrl
+        ? profileImageUrl.startsWith("http")
+          ? profileImageUrl
+          : `${API_URL}${profileImageUrl}`
+        : null,
+    };
 
     console.log("Updating profile with:", payload);
 
@@ -102,7 +105,12 @@ const EditProfile: React.FC = () => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor="#FF5722" barStyle="light-content" />
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <KeyboardAwareScrollView
+        style={styles.content}
+        showsVerticalScrollIndicator={false}
+        enableOnAndroid={true}
+        extraScrollHeight={20} // pushes fields above keyboard
+      >
         <View style={styles.profilePictureSection}>
           <View style={styles.profileImageContainer}>
             <Image
@@ -118,16 +126,27 @@ const EditProfile: React.FC = () => {
               style={styles.profileImage}
             />
           </View>
-         <TouchableOpacity onPress={() => navigation.navigate("ProfileSetup")}>
-  <Text style={styles.changePictureText}>Change profile picture</Text>
-</TouchableOpacity>
-
+          <TouchableOpacity onPress={() => navigation.navigate("ProfileSetup")}>
+            <Text style={styles.changePictureText}>Change profile picture</Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.formSection}>
-          <InputField label="First Name" value={firstName} onChange={setFirstName} />
-          <InputField label="Last Name" value={lastName} onChange={setLastName} />
-          <InputField label="Username" value={username} onChange={setUsername} />
+          <InputField
+            label="First Name"
+            value={firstName}
+            onChange={setFirstName}
+          />
+          <InputField
+            label="Last Name"
+            value={lastName}
+            onChange={setLastName}
+          />
+          <InputField
+            label="Username"
+            value={username}
+            onChange={setUsername}
+          />
           <InputField label="Bio" value={bio} onChange={setBio} />
         </View>
 
@@ -136,7 +155,7 @@ const EditProfile: React.FC = () => {
             <Text style={styles.saveButtonText}>Save</Text>
           </TouchableOpacity>
         </View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
 
       <RoleBasedBottomNav navigation={navigation} />
     </SafeAreaView>
@@ -212,6 +231,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 10,
     borderRadius: 6,
+    marginBottom: 150, // lift above bottom nav
   },
   saveButtonText: { color: "#FFFFFF", fontSize: 14, fontWeight: "500" },
 });

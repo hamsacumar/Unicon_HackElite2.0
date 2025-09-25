@@ -251,13 +251,36 @@ public async Task<IActionResult> IsBookmarked(string id)
 [HttpGet("bookmarks")]
 public async Task<IActionResult> GetUserBookmarks()
 {
+    // Get logged-in user's ID from JWT
     var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
     if (string.IsNullOrEmpty(userId))
+    {
         return Unauthorized(new { success = false, message = "User not logged in." });
+    }
 
-    var bookmarks = await _postService.GetBookmarksByUserAsync(userId);
-    return Ok(new { success = true, bookmarks });
+    try
+    {
+        // Call the service to get bookmarks
+        var bookmarks = await _postService.GetBookmarksByUserAsync(userId);
+
+        return Ok(new
+        {
+            success = true,
+            bookmarks
+        });
+    }
+    catch (FormatException fex)
+    {
+        _logger.LogError(fex, $"Failed to fetch bookmarks: invalid ID format for user {userId}");
+        return BadRequest(new { success = false, message = "Invalid user ID format." });
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, $"Failed to fetch bookmarks for user {userId}");
+        return StatusCode(500, new { success = false, message = "Unable to fetch bookmarks.", error = ex.Message });
+    }
 }
+
 
 
 // -------------------- GET COMMENTS --------------------
