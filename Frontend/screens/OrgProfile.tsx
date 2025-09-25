@@ -10,6 +10,7 @@ import {
   Image,
   SafeAreaView,
   StatusBar,
+   RefreshControl, 
 } from 'react-native';
 import Constants from "expo-constants";
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -44,10 +45,13 @@ const OrgProfile: React.FC = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [postCount, setPostCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false); // ✅ state for refresh
 
 
 const onShareProfile = async () => {
-    try {
+  try {
+            if (!refreshing) setLoading(true); // only show big loader on first load
+
       const result = await Share.share({
         message: `Check out ${profile?.username}'s profile: https://yourapp.com/user/${profile?.username}`,
       });
@@ -81,6 +85,8 @@ const onShareProfile = async () => {
         console.error("Error fetching profile or posts:", error);
       } finally {
         setLoading(false);
+              setRefreshing(false); // ✅ stop refresh spinner
+
       }
     };
 
@@ -173,7 +179,32 @@ const onShareProfile = async () => {
       </View>
 
       {/* Scrollable Posts Section */}
-      <ScrollView style={styles.postsContainer} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.postsContainer} showsVerticalScrollIndicator={false}
+        refreshControl={
+    <RefreshControl
+      refreshing={refreshing}
+      onRefresh={() => {
+        setRefreshing(true);
+        // re-run the same logic as in useEffect
+        (async () => {
+          try {
+            const profileData = await ProfileService.getProfile();
+            const postsData = await ProfileService.getPosts();
+            setProfile(profileData);
+            setPosts(postsData);
+
+            const count = await ProfileService.getPostCount();
+            setPostCount(count);
+          } catch (error) {
+            console.error("Error refreshing profile or posts:", error);
+          } finally {
+            setRefreshing(false); // stop spinner
+          }
+        })();
+      }}
+    />
+  }
+>
         {posts.map((post) => (
           <TouchableOpacity
             key={post.id}

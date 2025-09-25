@@ -15,7 +15,6 @@ import {
   getCommentCount,
   toggleBookmark,
 isBookmarked as fetchIsBookmarked,} from "../services/eventService";
-import BottomNav from "../component/bottomNav";
 import { useNavigation } from "@react-navigation/native";
 import { RootStackParamList } from "../App";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -213,8 +212,7 @@ fetchIsBookmarked(postId),          ]);
 </TouchableOpacity>
       </View>
 
-      {/* For guests, show bottom nav */}
-      {!isAuthenticated && <BottomNav />}
+     
     </View>
   );
 };

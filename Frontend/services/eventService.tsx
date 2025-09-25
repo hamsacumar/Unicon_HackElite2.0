@@ -165,3 +165,35 @@ export async function deletePost(postId: string): Promise<boolean> {
     return false;
   }
 }
+
+// get saved post 
+export async function getBookmarks(): Promise<EventItem[]> {
+  console.log("[getBookmarks] Start fetching bookmarks");
+
+  try {
+    const token = await getToken();
+    console.log("[getBookmarks] Retrieved token:", token);
+
+    if (!token) {
+      console.warn("[getBookmarks] No token found, user not authenticated");
+      throw new Error("Not authenticated");
+    }
+
+    // 👇 fix: type it as object with bookmarks
+    const res = await api.get<{ bookmarks: EventItem[]; success: boolean }>(
+  `/Posts/bookmarks`,   // ✅ uppercase "P"
+  { headers: { Authorization: `Bearer ${token}` } }
+);
+
+
+    console.log("[getBookmarks] Response data:", res.data);
+    console.log(`[getBookmarks] Fetched ${res.data.bookmarks.length} bookmarks`);
+
+    return res.data.bookmarks || []; // ✅ always return an array
+  } catch (error) {
+    console.error("[getBookmarks] Error fetching bookmarks:", error);
+    return [];
+  } finally {
+    console.log("[getBookmarks] Finished fetching bookmarks");
+  }
+}
