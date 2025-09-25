@@ -83,7 +83,8 @@ const PostActions: React.FC<Props> = ({
         if (isAuthenticated && userId) {
           const [liked, bookmarkedRes] = await Promise.all([
             checkIfLiked(postId, userId),
-fetchIsBookmarked(postId),          ]);
+            fetchIsBookmarked(postId),
+          ]);
           setIsLiked(liked);
           setIsBookmarked(!!bookmarkedRes);
           onLikeUpdate?.(likeRes, liked);
@@ -221,6 +222,7 @@ fetchIsBookmarked(postId),          ]);
           color="#333"
         />
       </View>
+
     </View>
   );
 };
