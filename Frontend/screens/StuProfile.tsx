@@ -38,9 +38,8 @@ const StuProfile: React.FC = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [activeTab, setActiveTab] = useState<
-    "posts" | "bookmarks" | "settings"
-  >("posts");
+  // ✅ default tab = bookmarks
+  const [activeTab, setActiveTab] = useState<"posts" | "bookmarks" | "settings">("bookmarks");
   const [bookmarks, setBookmarks] = useState<EventItem[]>([]);
 
   const onShareProfile = async () => {
@@ -274,46 +273,15 @@ const StuProfile: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#FFFFFF" },
-  profileSection: {
-    backgroundColor: "#FFFFFF",
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E0E0E0",
-  },
-  profileHeader: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    marginBottom: 12,
-  },
-  profileBorder: {
-    width: 86,
-    height: 86,
-    borderRadius: 43,
-    borderWidth: 3,
-    borderColor: "#FF5722",
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 20,
-  },
-  profileImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    overflow: "hidden",
-    backgroundColor: "#FF5722",
-  },
+  profileSection: { backgroundColor: "#FFFFFF", paddingHorizontal: 16, paddingTop: 16, borderBottomWidth: 1, borderBottomColor: "#E0E0E0" },
+  profileHeader: { flexDirection: "row", alignItems: "center", marginBottom: 12 }, // ✅ center align
+  profileBorder: { width: 86, height: 86, borderRadius: 43, borderWidth: 3, borderColor: "#FF5722", justifyContent: "center", alignItems: "center" },
+  profileImage: { width: 80, height: 80, borderRadius: 40, overflow: "hidden", backgroundColor: "#FF5722" },
   image: { width: "100%", height: "100%", resizeMode: "cover" },
-  profileInfo: { flex: 1, marginLeft: 30 },
-  profileName: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#000000",
-    marginTop: 5,
-    marginBottom: 8,
-  },
-  statsContainer: { flexDirection: "row", gap: 40 },
-  statItem: { alignItems: "center" },
+  profileInfo: { flex: 1, marginLeft: 20, justifyContent: "center" }, // ✅ aligned with image
+  profileName: { fontSize: 20, fontWeight: "bold", color: "#000000" },
+  statsContainer: { flexDirection: "row", marginTop: 6 },
+  statItem: { alignItems: "center", marginRight: 20 },
   statNumber: { fontSize: 18, fontWeight: "bold", color: "#000000" },
   statLabel: { fontSize: 12, color: "#666666" },
   trustText: { fontSize: 14, color: "#666666", marginTop: 4, marginBottom: 16, paddingLeft: 4 }, // ✅ under name & stats
