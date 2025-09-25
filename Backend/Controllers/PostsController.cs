@@ -19,11 +19,13 @@ namespace Backend.Controllers
     {
         private readonly IPostService _postService;
         private readonly ILogger<PostsController> _logger;
+        private readonly INotificationService _notificationService;
 
-        public PostsController(IPostService postService, ILogger<PostsController> logger)
+        public PostsController(IPostService postService, ILogger<PostsController> logger, INotificationService notificationService)
         {
             _postService = postService;
             _logger = logger;
+            _notificationService = notificationService;
         }
 
         // -------------------- GET ALL POSTS --------------------
@@ -122,6 +124,24 @@ namespace Backend.Controllers
 
             await _postService.AddLikeAsync(id, userId);
 
+            // Send like notification to post owner (if not self-like)
+            try
+            {
+                var post = await _postService.GetByIdAsync(id);
+                if (post != null)
+                {
+                    var postOwnerId = post.UserId;
+                    if (!string.IsNullOrEmpty(postOwnerId) && postOwnerId != userId)
+                    {
+                        await _notificationService.SendLikeNotificationAsync(postOwnerId, userId, id, post.Title);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to send like notification for post {PostId}", id);
+            }
+
             var likeCount = await _postService.GetLikeCountAsync(id);
             return Ok(new { success = true, likeCount });
         }
@@ -167,6 +187,24 @@ public async Task<IActionResult> CommentPost(string id, [FromBody] CommentModel 
 
     // Add comment via service
     var savedComment = await _postService.AddCommentAsync(comment);
+
+    // Send comment notification to post owner (if not self-comment)
+    try
+    {
+        var post = await _postService.GetByIdAsync(id);
+        if (post != null)
+        {
+            var postOwnerId = post.UserId;
+            if (!string.IsNullOrEmpty(postOwnerId) && postOwnerId != userId)
+            {
+                await _notificationService.SendCommentNotificationAsync(postOwnerId, userId, id, post.Title, savedComment.Text ?? string.Empty);
+            }
+        }
+    }
+    catch (Exception ex)
+    {
+        _logger.LogWarning(ex, "Failed to send comment notification for post {PostId}", id);
+    }
 
     var commentWithUser = new
     {

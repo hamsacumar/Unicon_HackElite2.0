@@ -73,6 +73,21 @@ namespace Backend.Services
         Task SubscribeToPostAsync(string userId, string postId, string title, string organizerId, string? category = null);
 
         /// <summary>
+        /// Configure notifications for future posts from an organizer that match a specific title (no postId required)
+        /// </summary>
+        Task SubscribeToTitleAsync(string userId, string title, string organizerId, string? category = null);
+
+        /// <summary>
+        /// Disable title-based notifications configured for an organizer/title pair
+        /// </summary>
+        Task<bool> UnsubscribeTitleAsync(string userId, string title, string organizerId);
+
+        /// <summary>
+        /// Check if the user is subscribed (active) to a title-based configuration for an organizer/title
+        /// </summary>
+        Task<bool> IsTitleSubscribedAsync(string userId, string organizerId, string title);
+
+        /// <summary>
         /// Get all subscriptions for an organizer (and optionally filtered by category)
         /// </summary>
         Task<IEnumerable<Subscription>> GetSubscriptionsAsync(string organizerId, string? category = null);
@@ -91,6 +106,11 @@ namespace Backend.Services
         /// <param name="subscriptionId">ID of the subscription to remove</param>
         /// <returns>True if the subscription was found and removed</returns>
         Task<bool> UnsubscribeAsync(string subscriptionId);
+
+        /// <summary>
+        /// Disable all active subscriptions for the given user
+        /// </summary>
+        Task UnsubscribeAllForUserAsync(string userId);
 
         #endregion
 

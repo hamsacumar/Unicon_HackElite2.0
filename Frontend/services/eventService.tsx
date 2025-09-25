@@ -1,4 +1,3 @@
-
 import Constants from "expo-constants";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -6,12 +5,43 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 // ---------------------------
 // Types
 // ---------------------------
-export interface User { id: string; username: string; imageUrl?: string; }
-export interface Comment { id: string; postId: string; userId: string; username: string; userImage?: string; text: string; createdAt: Date | string; }
-export interface EventItem { id: string; title: string; description: string; category: string; imageUrl?: string; userId: string; username: string; userImage?: string; likeCount?: number; commentCount?: number; isLiked?: boolean; date?: string; }
-export interface LikeResponse { success: boolean; likeCount: number; }
-export interface CommentResponse { success: boolean; comment: Comment; }
-export  interface BookmarkResponse {
+export interface User {
+  id: string;
+  username: string;
+  imageUrl?: string;
+}
+export interface Comment {
+  id: string;
+  postId: string;
+  userId: string;
+  username: string;
+  userImage?: string;
+  text: string;
+  createdAt: Date | string;
+}
+export interface EventItem {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  imageUrl?: string;
+  userId: string;
+  username: string;
+  userImage?: string;
+  likeCount?: number;
+  commentCount?: number;
+  isLiked?: boolean;
+  date?: string;
+}
+export interface LikeResponse {
+  success: boolean;
+  likeCount: number;
+}
+export interface CommentResponse {
+  success: boolean;
+  comment: Comment;
+}
+export interface BookmarkResponse {
   success: boolean;
   isBookmarked: boolean;
 }
@@ -32,13 +62,21 @@ async function getToken(): Promise<string | null> {
 // Read-only APIs (for all users)
 // ---------------------------
 export async function getEvents(): Promise<EventItem[]> {
-  try { const res = await api.get<EventItem[]>("/Posts"); return res.data; } 
-  catch { return []; }
+  try {
+    const res = await api.get<EventItem[]>("/Posts");
+    return res.data;
+  } catch {
+    return [];
+  }
 }
 
 export async function getEventById(postId: string): Promise<EventItem | null> {
-  try { const res = await api.get<EventItem>(`/Posts/${postId}`); return res.data; } 
-  catch { return null; }
+  try {
+    const res = await api.get<EventItem>(`/Posts/${postId}`);
+    return res.data;
+  } catch {
+    return null;
+  }
 }
 
 export async function getComments(postId: string): Promise<Comment[]> {
@@ -54,16 +92,31 @@ export async function getComments(postId: string): Promise<Comment[]> {
 }
 
 export async function getCommentCount(postId: string): Promise<number> {
-  try { const res = await api.get<{ count: number }>(`/Posts/${postId}/comments/count`); return res.data.count; } 
-  catch { return 0; }
+  try {
+    const res = await api.get<{ count: number }>(
+      `/Posts/${postId}/comments/count`
+    );
+    return res.data.count;
+  } catch {
+    return 0;
+  }
 }
 
 export async function getLikeCount(postId: string): Promise<number> {
-  try { const res = await api.get<{ likeCount: number }>(`/Posts/${postId}/likeCount`); return res.data.likeCount; } 
-  catch { return 0; }
+  try {
+    const res = await api.get<{ likeCount: number }>(
+      `/Posts/${postId}/likeCount`
+    );
+    return res.data.likeCount;
+  } catch {
+    return 0;
+  }
 }
 
-export async function checkIfLiked(postId: string, userId: string): Promise<boolean> {
+export async function checkIfLiked(
+  postId: string,
+  userId: string
+): Promise<boolean> {
   try {
     const token = await getToken();
     if (!token) return false;
@@ -77,7 +130,6 @@ export async function checkIfLiked(postId: string, userId: string): Promise<bool
     return false;
   }
 }
-
 
 // ---------------------------
 // Write APIs (token required)
@@ -105,20 +157,27 @@ export async function addComment(postId: string, data: { text: string }) {
   }
 }
 
-
 export async function likePost(postId: string) {
   try {
-    const token = await getToken(); if (!token) throw new Error("Not authenticated");
-    const res = await api.post(`/Posts/${postId}/like`, {}, { headers: { Authorization: `Bearer ${token}` } });
+    const token = await getToken();
+    if (!token) throw new Error("Not authenticated");
+    const res = await api.post(
+      `/Posts/${postId}/like`,
+      {},
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
     return res.data;
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
-
 
 // ---------------------------
 // Bookmarks
 // ---------------------------
-export async function toggleBookmark(postId: string): Promise<BookmarkResponse | null> {
+export async function toggleBookmark(
+  postId: string
+): Promise<BookmarkResponse | null> {
   try {
     const token = await getToken();
     if (!token) throw new Error("Not authenticated");
@@ -166,7 +225,7 @@ export async function deletePost(postId: string): Promise<boolean> {
   }
 }
 
-// get saved post 
+// get saved post
 export async function getBookmarks(): Promise<EventItem[]> {
   console.log("[getBookmarks] Start fetching bookmarks");
 
@@ -181,13 +240,14 @@ export async function getBookmarks(): Promise<EventItem[]> {
 
     // 👇 fix: type it as object with bookmarks
     const res = await api.get<{ bookmarks: EventItem[]; success: boolean }>(
-  `/Posts/bookmarks`,   // ✅ uppercase "P"
-  { headers: { Authorization: `Bearer ${token}` } }
-);
-
+      `/Posts/bookmarks`, // ✅ uppercase "P"
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
 
     console.log("[getBookmarks] Response data:", res.data);
-    console.log(`[getBookmarks] Fetched ${res.data.bookmarks.length} bookmarks`);
+    console.log(
+      `[getBookmarks] Fetched ${res.data.bookmarks.length} bookmarks`
+    );
 
     return res.data.bookmarks || []; // ✅ always return an array
   } catch (error) {

@@ -11,7 +11,11 @@ import {
   Platform,
   Alert,
 } from "react-native";
-import { getConversation, sendMessage, getCurrentUserId } from "../services/api/api";
+import {
+  getConversation,
+  sendMessage,
+  getCurrentUserId,
+} from "../services/api/api";
 
 interface Message {
   id: string;
@@ -36,20 +40,20 @@ const Conversation: React.FC<Props> = ({ otherUserId, otherUsername }) => {
 
   const flatListRef = useRef<FlatList>(null);
 
-// Fetch current user's ID on mount
-useEffect(() => {
-  const fetchCurrentUserId = async () => {
-    try {
-      const userId = await getCurrentUserId();
-      setCurrentUserId(userId);
-    } catch (err: any) {
-      console.error("Error fetching user:", err);
-      Alert.alert("Error", err.message || "Failed to get user info.");
-    }
-  };
+  // Fetch current user's ID on mount
+  useEffect(() => {
+    const fetchCurrentUserId = async () => {
+      try {
+        const userId = await getCurrentUserId();
+        setCurrentUserId(userId);
+      } catch (err: any) {
+        console.error("Error fetching user:", err);
+        Alert.alert("Error", err.message || "Failed to get user info.");
+      }
+    };
 
-  fetchCurrentUserId();
-}, []);
+    fetchCurrentUserId();
+  }, []);
 
   // Fetch conversation messages
   const fetchConversationMessages = async () => {
@@ -98,9 +102,17 @@ useEffect(() => {
     const isMine = item.senderId === currentUserId;
     return (
       <View
-        style={[styles.messageContainer, isMine ? styles.myMessage : styles.theirMessage]}
+        style={[
+          styles.messageContainer,
+          isMine ? styles.myMessage : styles.theirMessage,
+        ]}
       >
-        <Text style={[styles.messageText, isMine ? { color: "#fff" } : { color: "#000" }]}>
+        <Text
+          style={[
+            styles.messageText,
+            isMine ? { color: "#fff" } : { color: "#000" },
+          ]}
+        >
           {item.text}
         </Text>
         <Text style={styles.timestamp}>
@@ -138,7 +150,9 @@ useEffect(() => {
           renderItem={renderItem}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.flatListContainer}
-          onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+          onContentSizeChange={() =>
+            flatListRef.current?.scrollToEnd({ animated: true })
+          }
           onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
         />
       )}
@@ -161,7 +175,9 @@ useEffect(() => {
 
 // Use the existing api instance for fetching the current user
 const fetchCurrentUser = async () => {
-  const res = await import("../services/api").then((mod) => mod.api.get("/account/me"));
+  const res = await import("../services/api").then((mod) =>
+    mod.api.get("/account/me")
+  );
   return { id: res.data.Id };
 };
 
@@ -169,11 +185,21 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#f5f5f5" },
   flatListContainer: { padding: 16, paddingBottom: 80 },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  messageContainer: { maxWidth: "80%", marginBottom: 12, padding: 10, borderRadius: 12 },
+  messageContainer: {
+    maxWidth: "80%",
+    marginBottom: 12,
+    padding: 10,
+    borderRadius: 12,
+  },
   myMessage: { backgroundColor: "green", alignSelf: "flex-end" },
   theirMessage: { backgroundColor: "#E5E5EA", alignSelf: "flex-start" },
   messageText: { fontSize: 16 },
-  timestamp: { fontSize: 10, color: "#888", marginTop: 2, alignSelf: "flex-end" },
+  timestamp: {
+    fontSize: 10,
+    color: "#888",
+    marginTop: 2,
+    alignSelf: "flex-end",
+  },
   inputContainer: {
     flexDirection: "row",
     padding: 10,

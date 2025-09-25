@@ -1,5 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, ScrollView, ActivityIndicator, StyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  ScrollView,
+  ActivityIndicator,
+  StyleSheet,
+} from "react-native";
 import { fetchAbout } from "../services/settings";
 
 const AboutScreen: React.FC = () => {
@@ -8,11 +14,12 @@ const AboutScreen: React.FC = () => {
 
   useEffect(() => {
     fetchAbout()
-      .then(text => setContent(text))
+      .then((text) => setContent(text))
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <ActivityIndicator size="large" style={{ marginTop: 50 }} />;
+  if (loading)
+    return <ActivityIndicator size="large" style={{ marginTop: 50 }} />;
 
   return (
     <ScrollView style={styles.container}>

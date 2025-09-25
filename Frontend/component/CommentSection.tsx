@@ -67,54 +67,53 @@ export default function CommentSection({
   };
 
   const handleAddComment = async () => {
-  if (!userId) {
-    Alert.alert("Login Required", "Please login to add a comment");
-    return;
-  }
-  if (!text.trim() || isSubmitting) return;
-
-  const tempComment: Comment = {
-    id: `temp-${Date.now()}`,
-    postId,
-    userId,
-    username: "You",
-    text,
-    createdAt: new Date().toISOString(),
-  };
-
-  // Optimistic update
-  setComments((prev) => [tempComment, ...prev]);
-  setCommentCount((prevCount) => {
-    const newCount = prevCount + 1;
-    // call parent callback here safely
-    onCommentAdd?.(newCount);
-    return newCount;
-  });
-
-  setText("");
-
-  try {
-    setIsSubmitting(true);
-    const res = await addComment(postId, { text: tempComment.text });
-    if (res?.success && res.comment) {
-      setComments((prev) => [
-        res.comment,
-        ...prev.filter((c) => c.id !== tempComment.id),
-      ]);
+    if (!userId) {
+      Alert.alert("Login Required", "Please login to add a comment");
+      return;
     }
-  } catch (error) {
-    console.error("Error adding comment:", error);
-    setComments((prev) => prev.filter((c) => c.id !== tempComment.id));
+    if (!text.trim() || isSubmitting) return;
+
+    const tempComment: Comment = {
+      id: `temp-${Date.now()}`,
+      postId,
+      userId,
+      username: "You",
+      text,
+      createdAt: new Date().toISOString(),
+    };
+
+    // Optimistic update
+    setComments((prev) => [tempComment, ...prev]);
     setCommentCount((prevCount) => {
-      const newCount = prevCount - 1;
+      const newCount = prevCount + 1;
+      // call parent callback here safely
       onCommentAdd?.(newCount);
       return newCount;
     });
-  } finally {
-    setIsSubmitting(false);
-  }
-};
 
+    setText("");
+
+    try {
+      setIsSubmitting(true);
+      const res = await addComment(postId, { text: tempComment.text });
+      if (res?.success && res.comment) {
+        setComments((prev) => [
+          res.comment,
+          ...prev.filter((c) => c.id !== tempComment.id),
+        ]);
+      }
+    } catch (error) {
+      console.error("Error adding comment:", error);
+      setComments((prev) => prev.filter((c) => c.id !== tempComment.id));
+      setCommentCount((prevCount) => {
+        const newCount = prevCount - 1;
+        onCommentAdd?.(newCount);
+        return newCount;
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   if (!visible) return null;
 
@@ -154,7 +153,10 @@ export default function CommentSection({
                     }}
                     style={styles.avatar}
                     onError={(e) => {
-                      console.log("Error loading profile image:", e.nativeEvent.error);
+                      console.log(
+                        "Error loading profile image:",
+                        e.nativeEvent.error
+                      );
                     }}
                   />
                 ) : (

@@ -4,7 +4,7 @@ import React from "react";
 import { TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { NavigationContainer } from "@react-navigation/native";
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import {
   createNativeStackNavigator,
   NativeStackNavigationProp,
@@ -35,7 +35,7 @@ import ProfileSetup from "./screens/ProfileSetup";
 import OrgProfile from "./screens/OrgProfile";
 import PostDetail from "./screens/PostDetail";
 import { EventItem } from "./services/eventService";
-import SplashScreen from "./screens/SplashScreen"; 
+import SplashScreen from "./screens/SplashScreen";
 import OrgPostDetail from "./screens/OrgPostDetail";
 // Context
 import { AuthProvider } from "./utils/AuthContext";
@@ -55,7 +55,12 @@ export type RootStackParamList = {
   InputPage: undefined;
   InboxScreen: { currentUserId: string };
   EventDetail: { eventId: string };
-  Chat: { currentUserId: string; otherUserId: string; currentUsername: string; otherUsername: string };
+  Chat: {
+    currentUserId: string;
+    otherUserId: string;
+    currentUsername: string;
+    otherUsername: string;
+  };
   Notification: undefined;
   ViewProfile: { username: string };
   EditProfile: undefined;
@@ -77,15 +82,11 @@ export type RootStackParamList = {
   Help: undefined;
   Terms: undefined;
   About: undefined;
-
-
-
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const AppStack = () => (
-
   <Stack.Navigator
     initialRouteName="SplashScreen" // intial start screen is SplashScreen
     screenOptions={{
@@ -94,7 +95,6 @@ const AppStack = () => (
       headerTitleStyle: { fontWeight: "bold" },
     }}
   >
-
     <Stack.Screen
       name="SplashScreen"
       component={SplashScreen}
@@ -110,12 +110,16 @@ const AppStack = () => (
       }) => ({
         title: "EventTrix",
         headerRight: () => (
-          <View style={{ flexDirection: 'row' }}>
+          <View style={{ flexDirection: "row" }}>
             <TouchableOpacity
               onPress={() => navigation.navigate("MessagePage")}
               style={{ marginRight: 15 }}
             >
-              <Ionicons name="chatbubble-ellipses-outline" size={26} color="white" />
+              <Ionicons
+                name="chatbubble-ellipses-outline"
+                size={26}
+                color="white"
+              />
             </TouchableOpacity>
           </View>
         ),
@@ -138,9 +142,7 @@ const AppStack = () => (
           <TouchableOpacity
             onPress={() => navigation.goBack()}
             style={{ marginLeft: 15 }}
-          >
-            
-          </TouchableOpacity>
+          ></TouchableOpacity>
         ),
       })}
     />
@@ -184,7 +186,7 @@ const AppStack = () => (
       options={{ title: "Filter" }}
       initialParams={{ userId: "" }} // This will be populated with the actual userId when navigating
     />
-     
+
     <Stack.Screen
       name="InputPage"
       component={InputPage}
@@ -205,7 +207,7 @@ const AppStack = () => (
       component={PostDetail}
       options={{ title: "Post Details" }}
     />
-   
+
     <Stack.Screen name="Test" component={Test} />
     <Stack.Screen
       name="Login"
@@ -266,23 +268,22 @@ const AppStack = () => (
       options={{ title: "Message" }}
     />
 
-<Stack.Screen
-  name="Help"
-  component={HelpScreen}
-  options={{ title: "Help & Support" }}
-/>
-<Stack.Screen
-  name="Terms"
-  component={TermsScreen}
-  options={{ title: "Terms & Policies" }}
-/>
-<Stack.Screen
-  name="About"
-  component={AboutScreen}
-  options={{ title: "About" }}
-/>
-    
-    
+    <Stack.Screen
+      name="Help"
+      component={HelpScreen}
+      options={{ title: "Help & Support" }}
+    />
+    <Stack.Screen
+      name="Terms"
+      component={TermsScreen}
+      options={{ title: "Terms & Policies" }}
+    />
+    <Stack.Screen
+      name="About"
+      component={AboutScreen}
+      options={{ title: "About" }}
+    />
+
     <Stack.Screen
       name="LandingPostDetail"
       component={LandingPostDetail}

@@ -38,8 +38,9 @@ const StuProfile: React.FC = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // ✅ default tab = bookmarks
-  const [activeTab, setActiveTab] = useState<"posts" | "bookmarks" | "settings">("bookmarks");
+  const [activeTab, setActiveTab] = useState<
+    "posts" | "bookmarks" | "settings"
+  >("posts");
   const [bookmarks, setBookmarks] = useState<EventItem[]>([]);
 
   const onShareProfile = async () => {
@@ -98,12 +99,16 @@ const StuProfile: React.FC = () => {
                     ? profile.profileImageUrl.startsWith("http")
                       ? profile.profileImageUrl
                       : `${API_URL}${profile.profileImageUrl.startsWith("/") ? "" : "/"}${profile.profileImageUrl}`
-                    : Image.resolveAssetSource(require("../assets/icon.png")).uri,
+                    : Image.resolveAssetSource(require("../assets/icon.png"))
+                        .uri,
                 }}
                 style={styles.image}
                 resizeMode="cover"
                 onError={(e) =>
-                  console.log("Error loading profile image:", e.nativeEvent.error)
+                  console.log(
+                    "Error loading profile image:",
+                    e.nativeEvent.error
+                  )
                 }
               />
             </View>
@@ -182,7 +187,9 @@ const StuProfile: React.FC = () => {
               >
                 <View style={styles.postContent}>
                   <View style={styles.postTextContainer}>
-                    <Text style={styles.postTitle}>{post.title || "Workshops"}</Text>
+                    <Text style={styles.postTitle}>
+                      {post.title || "Workshops"}
+                    </Text>
                     <Text style={styles.postDescription} numberOfLines={4}>
                       {post.description}
                     </Text>
@@ -199,8 +206,15 @@ const StuProfile: React.FC = () => {
                         resizeMode="cover"
                       />
                     ) : (
-                      <View style={[styles.postImage, { justifyContent: "center", alignItems: "center" }]}>
-                        <Text style={styles.postImagePlaceholder}>No Image</Text>
+                      <View
+                        style={[
+                          styles.postImage,
+                          { justifyContent: "center", alignItems: "center" },
+                        ]}
+                      >
+                        <Text style={styles.postImagePlaceholder}>
+                          No Image
+                        </Text>
                       </View>
                     )}
                   </View>
@@ -234,8 +248,15 @@ const StuProfile: React.FC = () => {
                         resizeMode="cover"
                       />
                     ) : (
-                      <View style={[styles.postImage, { justifyContent: "center", alignItems: "center" }]}>
-                        <Text style={styles.postImagePlaceholder}>No Image</Text>
+                      <View
+                        style={[
+                          styles.postImage,
+                          { justifyContent: "center", alignItems: "center" },
+                        ]}
+                      >
+                        <Text style={styles.postImagePlaceholder}>
+                          No Image
+                        </Text>
                       </View>
                     )}
                   </View>
@@ -253,33 +274,107 @@ const StuProfile: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#FFFFFF" },
-  profileSection: { backgroundColor: "#FFFFFF", paddingHorizontal: 16, paddingTop: 16, borderBottomWidth: 1, borderBottomColor: "#E0E0E0" },
-  profileHeader: { flexDirection: "row", alignItems: "center", marginBottom: 12 }, // ✅ center align
-  profileBorder: { width: 86, height: 86, borderRadius: 43, borderWidth: 3, borderColor: "#FF5722", justifyContent: "center", alignItems: "center" },
-  profileImage: { width: 80, height: 80, borderRadius: 40, overflow: "hidden", backgroundColor: "#FF5722" },
+  profileSection: {
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E0E0E0",
+  },
+  profileHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginBottom: 12,
+  },
+  profileBorder: {
+    width: 86,
+    height: 86,
+    borderRadius: 43,
+    borderWidth: 3,
+    borderColor: "#FF5722",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 20,
+  },
+  profileImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    overflow: "hidden",
+    backgroundColor: "#FF5722",
+  },
   image: { width: "100%", height: "100%", resizeMode: "cover" },
-  profileInfo: { flex: 1, marginLeft: 20, justifyContent: "center" }, // ✅ aligned with image
-  profileName: { fontSize: 20, fontWeight: "bold", color: "#000000" },
-  statsContainer: { flexDirection: "row", marginTop: 6 },
-  statItem: { alignItems: "center", marginRight: 20 },
+  profileInfo: { flex: 1, marginLeft: 30 },
+  profileName: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#000000",
+    marginTop: 5,
+    marginBottom: 8,
+  },
+  statsContainer: { flexDirection: "row", gap: 40 },
+  statItem: { alignItems: "center" },
   statNumber: { fontSize: 18, fontWeight: "bold", color: "#000000" },
   statLabel: { fontSize: 12, color: "#666666" },
   trustText: { fontSize: 14, color: "#666666", marginTop: 4, marginBottom: 16, paddingLeft: 4 }, // ✅ under name & stats
   buttonContainer: { flexDirection: "row", marginBottom: 16 },
-  editButton: { flex: 1, backgroundColor: "#FF5722", paddingVertical: 12, borderRadius: 6, marginRight: 8, alignItems: "center" },
-  shareButton: { flex: 1, backgroundColor: "#FF5722", paddingVertical: 12, borderRadius: 6, marginLeft: 8, alignItems: "center" },
+  editButton: {
+    flex: 1,
+    backgroundColor: "#FF5722",
+    paddingVertical: 12,
+    borderRadius: 6,
+    marginRight: 8,
+    alignItems: "center",
+  },
+  shareButton: {
+    flex: 1,
+    backgroundColor: "#FF5722",
+    paddingVertical: 12,
+    borderRadius: 6,
+    marginLeft: 8,
+    alignItems: "center",
+  },
   buttonText: { color: "#FFFFFF", fontSize: 14, fontWeight: "500" },
-  tabContainer: { flexDirection: "row", justifyContent: "center", gap: 40, marginBottom: 16 },
+  tabContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 40,
+    marginBottom: 16,
+  },
   tab: { paddingHorizontal: 24, paddingVertical: 8, marginHorizontal: 4 },
   activeTab: { borderBottomWidth: 2, borderBottomColor: "#FF5722" },
   postsContainer: { flex: 1, paddingHorizontal: 16 },
-  postCard: { backgroundColor: "#FFFFFF", marginVertical: 8, padding: 12, borderRadius: 8, borderWidth: 1, borderColor: "#E0E0E0" },
+  postCard: {
+    backgroundColor: "#FFFFFF",
+    marginVertical: 8,
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+  },
   postContent: { flexDirection: "row" },
   postTextContainer: { flex: 1, paddingRight: 12 },
-  postTitle: { fontSize: 14, fontWeight: "bold", color: "#000000", marginBottom: 4 },
+  postTitle: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#000000",
+    marginBottom: 4,
+  },
   postDescription: { fontSize: 12, color: "#666666", lineHeight: 16 },
-  postImageContainer: { width: 120, height: 120, borderRadius: 10, overflow: "hidden" },
-  postImage: { width: "100%", height: "100%", backgroundColor: "#2E7D32", borderRadius: 8, justifyContent: "center", alignItems: "center" },
+  postImageContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 10,
+    overflow: "hidden",
+  },
+  postImage: {
+    width: "100%",
+    height: "100%",
+    backgroundColor: "#2E7D32",
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   postImagePlaceholder: { color: "#FFFFFF", fontSize: 12, fontWeight: "bold" },
 });
 

@@ -18,6 +18,8 @@ namespace Backend.Services
     {
         private readonly IMongoCollection<Notification> _notifications;
         private readonly IMongoCollection<Subscription> _subscriptions;
+        private readonly IMongoCollection<AppUser> _users;
+        private readonly IMongoCollection<EventModel> _events;
         private readonly ILogger<NotificationService> _logger;
 
         public NotificationService(
@@ -29,6 +31,8 @@ namespace Backend.Services
             var db = client.GetDatabase(settings.Value.DatabaseName);
             _notifications = db.GetCollection<Notification>("Notifications");
             _subscriptions = db.GetCollection<Subscription>("Subscriptions");
+            _users = db.GetCollection<AppUser>("Users");
+            _events = db.GetCollection<EventModel>("events");
 
             try
             {
@@ -58,6 +62,157 @@ namespace Backend.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error initializing notification service");
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Check if the user is subscribed (active) to a title-based configuration for an organizer/title
+        /// </summary>
+        public async Task<bool> IsTitleSubscribedAsync(string userId, string organizerId, string title)
+        {
+            if (string.IsNullOrEmpty(userId))
+                throw new ArgumentException("User ID cannot be null or empty", nameof(userId));
+            if (string.IsNullOrEmpty(organizerId))
+                throw new ArgumentException("Organizer ID cannot be null or empty", nameof(organizerId));
+            if (string.IsNullOrEmpty(title))
+                throw new ArgumentException("Title cannot be null or empty", nameof(title));
+
+            try
+            {
+                var normTitle = title.Trim();
+                var filter = Builders<Subscription>.Filter.And(
+                    Builders<Subscription>.Filter.Eq(s => s.UserId, userId),
+                    Builders<Subscription>.Filter.Eq(s => s.OrganizerId, organizerId),
+                    Builders<Subscription>.Filter.Eq(s => s.Title, normTitle),
+                    Builders<Subscription>.Filter.Eq(s => s.IsActive, true)
+                );
+                var count = await _subscriptions.CountDocumentsAsync(filter);
+                return count > 0;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error checking title subscription for user {UserId}", userId);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Disable title-based notifications configured for an organizer/title pair
+        /// </summary>
+        public async Task<bool> UnsubscribeTitleAsync(string userId, string title, string organizerId)
+        {
+            if (string.IsNullOrEmpty(userId))
+                throw new ArgumentException("User ID cannot be null or empty", nameof(userId));
+            if (string.IsNullOrEmpty(title))
+                throw new ArgumentException("Title cannot be null or empty", nameof(title));
+            if (string.IsNullOrEmpty(organizerId))
+                throw new ArgumentException("Organizer ID cannot be null or empty", nameof(organizerId));
+
+            try
+            {
+                var normTitle = title.Trim();
+                var filter = Builders<Subscription>.Filter.And(
+                    Builders<Subscription>.Filter.Eq(s => s.UserId, userId),
+                    Builders<Subscription>.Filter.Eq(s => s.OrganizerId, organizerId),
+                    Builders<Subscription>.Filter.Eq(s => s.Title, normTitle)
+                );
+
+                var update = Builders<Subscription>.Update
+                    .Set(s => s.IsActive, false)
+                    .Set(s => s.UpdatedAt, DateTime.UtcNow);
+
+                var result = await _subscriptions.UpdateOneAsync(filter, update);
+                _logger.LogInformation("Title unsubscribe for user {UserId}, organizer {OrganizerId}, title '{Title}'. Matched: {Matched}", userId, organizerId, title, result.MatchedCount);
+                return result.MatchedCount > 0;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error unsubscribing title-based notifications for user {UserId}", userId);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Configure notifications for future posts from an organizer that match a specific title.
+        /// This does not subscribe to the organizer generally and does not require a specific postId.
+        /// </summary>
+        public async Task SubscribeToTitleAsync(string userId, string title, string organizerId, string? category = null)
+        {
+            if (string.IsNullOrEmpty(userId))
+                throw new ArgumentException("User ID cannot be null or empty", nameof(userId));
+            if (string.IsNullOrEmpty(title))
+                throw new ArgumentException("Title cannot be null or empty", nameof(title));
+            if (string.IsNullOrEmpty(organizerId))
+                throw new ArgumentException("Organizer ID cannot be null or empty", nameof(organizerId));
+
+            try
+            {
+                var normTitle = title.Trim();
+                // Check if a title-based subscription already exists (independent of PostId)
+                var existing = await _subscriptions.Find(s =>
+                    s.UserId == userId &&
+                    s.OrganizerId == organizerId &&
+                    s.Title == normTitle).FirstOrDefaultAsync();
+
+                if (existing != null)
+                {
+                    if (!existing.IsActive)
+                    {
+                        var update = Builders<Subscription>.Update
+                            .Set(s => s.IsActive, true)
+                            .Set(s => s.UpdatedAt, DateTime.UtcNow);
+                        await _subscriptions.UpdateOneAsync(s => s.Id == existing.Id, update);
+                    }
+                    return;
+                }
+
+                var subscription = new Subscription
+                {
+                    UserId = userId,
+                    OrganizerId = organizerId,
+                    // Use synthetic PostId to avoid uniqueness conflict on (UserId, OrganizerId, PostId)
+                    PostId = $"title:{normTitle}",
+                    Title = normTitle,
+                    Category = category,
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                await _subscriptions.InsertOneAsync(subscription);
+                _logger.LogInformation("User {UserId} configured title-based notifications '{Title}' for organizer {OrganizerId}", userId, title, organizerId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error configuring title-based notifications for user {UserId}", userId);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Disable all active subscriptions for the given user
+        /// </summary>
+        public async Task UnsubscribeAllForUserAsync(string userId)
+        {
+            if (string.IsNullOrEmpty(userId))
+                throw new ArgumentException("User ID cannot be null or empty", nameof(userId));
+
+            try
+            {
+                var filter = Builders<Subscription>.Filter.And(
+                    Builders<Subscription>.Filter.Eq(s => s.UserId, userId),
+                    Builders<Subscription>.Filter.Eq(s => s.IsActive, true)
+                );
+                var update = Builders<Subscription>.Update
+                    .Set(s => s.IsActive, false)
+                    .Set(s => s.UpdatedAt, DateTime.UtcNow);
+
+                var result = await _subscriptions.UpdateManyAsync(filter, update);
+                _logger.LogInformation("Unsubscribed {Count} subscriptions for user {UserId}", result.ModifiedCount, userId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error unsubscribing all subscriptions for user {UserId}", userId);
                 throw;
             }
         }
@@ -200,6 +355,74 @@ namespace Backend.Services
                     IsRead = false,
                     CreatedAt = DateTime.UtcNow
                 };
+
+                // Per requirements, do not set author fields for post-related notifications
+
+                // Enrich with post image if a post/event reference exists
+                if (!string.IsNullOrEmpty(referenceId))
+                {
+                    try
+                    {
+                        var relatedPost = await _events.Find(e => e.Id == referenceId).FirstOrDefaultAsync();
+                        if (relatedPost != null)
+                        {
+                            notification.PostImageUrl = relatedPost.ImageUrl;
+                        }
+                    }
+                    catch (Exception enrichEx)
+                    {
+                        _logger.LogWarning(enrichEx, "Failed to enrich notification with post image for reference {ReferenceId}", referenceId);
+                    }
+                }
+
+                // Enrich organizer info if provided
+                if (!string.IsNullOrEmpty(organizerId))
+                {
+                    try
+                    {
+                        var organizer = await _users.Find(u => u.Id == organizerId).FirstOrDefaultAsync();
+                        if (organizer != null)
+                        {
+                            notification.OrganizerName = string.IsNullOrWhiteSpace(organizer.Username)
+                                ? (string.Join(" ", new[] { organizer.FirstName, organizer.LastName }.Where(s => !string.IsNullOrWhiteSpace(s)))?.Trim())
+                                : organizer.Username;
+                            notification.OrganizerAvatarUrl = organizer.ProfileImageUrl;
+                        }
+                    }
+                    catch (Exception enrichEx)
+                    {
+                        _logger.LogWarning(enrichEx, "Failed to enrich notification with organizer info for organizer {OrganizerId}", organizerId);
+                    }
+                }
+
+                // Fallback: if organizer fields are still null but we have a reference post/event,
+                // derive organizer from the post owner (event.UserId)
+                if (string.IsNullOrEmpty(notification.OrganizerName) && !string.IsNullOrEmpty(referenceId))
+                {
+                    try
+                    {
+                        var related = await _events.Find(e => e.Id == referenceId).FirstOrDefaultAsync();
+                        if (related != null && !string.IsNullOrEmpty(related.UserId))
+                        {
+                            var organizer = await _users.Find(u => u.Id == related.UserId).FirstOrDefaultAsync();
+                            if (organizer != null)
+                            {
+                                notification.OrganizerId ??= related.UserId;
+                                notification.OrganizerName = string.IsNullOrWhiteSpace(organizer.Username)
+                                    ? (string.Join(" ", new[] { organizer.FirstName, organizer.LastName }.Where(s => !string.IsNullOrWhiteSpace(s)))?.Trim())
+                                    : organizer.Username;
+                                notification.OrganizerAvatarUrl = organizer.ProfileImageUrl;
+                            }
+                        }
+                    }
+                    catch (Exception enrichEx)
+                    {
+                        _logger.LogWarning(enrichEx, "Fallback organizer enrichment failed for reference {ReferenceId}", referenceId);
+                    }
+                }
+
+                // Provide a default action URL based on type
+                notification.ActionUrl = BuildActionUrl(notification.Type, notification.ReferenceId);
 
                 _logger.LogDebug("Attempting to insert notification into database");
                 await _notifications.InsertOneAsync(notification);
@@ -553,6 +776,10 @@ namespace Backend.Services
 
                 // De-duplicate subscribers
                 var uniqueUserIds = subs.Select(s => s.UserId).Distinct();
+
+                // Pre-fetch enrichment
+                var post = await _events.Find(e => e.Id == postId).FirstOrDefaultAsync();
+
                 foreach (var userId in uniqueUserIds)
                 {
                     var notif = new Notification
@@ -568,6 +795,42 @@ namespace Backend.Services
                         IsRead = false,
                         CreatedAt = DateTime.UtcNow
                     };
+
+                    // Author fields intentionally not set for post notifications
+                    if (post != null)
+                    {
+                        notif.PostImageUrl = post.ImageUrl;
+                    }
+
+                    // Organizer enrichment (prefer explicit organizerId, else fallback to post owner)
+                    try
+                    {
+                        AppUser? organizer = null;
+                        if (!string.IsNullOrEmpty(organizerId))
+                        {
+                            organizer = await _users.Find(u => u.Id == organizerId).FirstOrDefaultAsync();
+                        }
+                        if (organizer == null && post != null && !string.IsNullOrEmpty(post.UserId))
+                        {
+                            organizer = await _users.Find(u => u.Id == post.UserId).FirstOrDefaultAsync();
+                            if (!string.IsNullOrEmpty(post.UserId))
+                            {
+                                notif.OrganizerId ??= post.UserId;
+                            }
+                        }
+                        if (organizer != null)
+                        {
+                            notif.OrganizerName = string.IsNullOrWhiteSpace(organizer.Username)
+                                ? (string.Join(" ", new[] { organizer.FirstName, organizer.LastName }.Where(s => !string.IsNullOrWhiteSpace(s)))?.Trim())
+                                : organizer.Username;
+                            notif.OrganizerAvatarUrl = organizer.ProfileImageUrl;
+                        }
+                    }
+                    catch (Exception enrichEx)
+                    {
+                        _logger.LogWarning(enrichEx, "Failed to enrich new post notification with organizer info");
+                    }
+                    notif.ActionUrl = BuildActionUrl(notif.Type, notif.ReferenceId);
 
                     await _notifications.InsertOneAsync(notif);
                 }
@@ -600,6 +863,38 @@ namespace Backend.Services
                     CreatedAt = DateTime.UtcNow
                 };
 
+                // Do not set author fields for like notifications
+
+                // Enrich post image and organizer (from post owner)
+                try
+                {
+                    var post = await _events.Find(e => e.Id == postId).FirstOrDefaultAsync();
+                    if (post != null)
+                    {
+                        notification.PostImageUrl = post.ImageUrl;
+
+                        // Organizer is the post owner
+                        if (!string.IsNullOrEmpty(post.UserId))
+                        {
+                            var organizer = await _users.Find(u => u.Id == post.UserId).FirstOrDefaultAsync();
+                            if (organizer != null)
+                            {
+                                notification.OrganizerId = post.UserId;
+                                notification.OrganizerName = string.IsNullOrWhiteSpace(organizer.Username)
+                                    ? (string.Join(" ", new[] { organizer.FirstName, organizer.LastName }.Where(s => !string.IsNullOrWhiteSpace(s)))?.Trim())
+                                    : organizer.Username;
+                                notification.OrganizerAvatarUrl = organizer.ProfileImageUrl;
+                            }
+                        }
+                    }
+                }
+                catch (Exception enrichEx)
+                {
+                    _logger.LogWarning(enrichEx, "Failed to enrich like notification with post image");
+                }
+
+                notification.ActionUrl = BuildActionUrl(notification.Type, notification.ReferenceId);
+
                 await _notifications.InsertOneAsync(notification);
                 _logger.LogInformation("Sent like notification for post {PostId}", postId);
             }
@@ -630,6 +925,38 @@ namespace Backend.Services
                     CreatedAt = DateTime.UtcNow
                 };
 
+                // Do not set author fields for comment notifications
+
+                // Enrich post image and organizer (from post owner)
+                try
+                {
+                    var post = await _events.Find(e => e.Id == postId).FirstOrDefaultAsync();
+                    if (post != null)
+                    {
+                        notification.PostImageUrl = post.ImageUrl;
+
+                        // Organizer is the post owner
+                        if (!string.IsNullOrEmpty(post.UserId))
+                        {
+                            var organizer = await _users.Find(u => u.Id == post.UserId).FirstOrDefaultAsync();
+                            if (organizer != null)
+                            {
+                                notification.OrganizerId = post.UserId;
+                                notification.OrganizerName = string.IsNullOrWhiteSpace(organizer.Username)
+                                    ? (string.Join(" ", new[] { organizer.FirstName, organizer.LastName }.Where(s => !string.IsNullOrWhiteSpace(s)))?.Trim())
+                                    : organizer.Username;
+                                notification.OrganizerAvatarUrl = organizer.ProfileImageUrl;
+                            }
+                        }
+                    }
+                }
+                catch (Exception enrichEx)
+                {
+                    _logger.LogWarning(enrichEx, "Failed to enrich comment notification with post image");
+                }
+
+                notification.ActionUrl = BuildActionUrl(notification.Type, notification.ReferenceId);
+
                 await _notifications.InsertOneAsync(notification);
                 _logger.LogInformation("Sent comment notification for post {PostId}", postId);
             }
@@ -659,6 +986,26 @@ namespace Backend.Services
                     CreatedAt = DateTime.UtcNow
                 };
 
+                // Enrich sender (author)
+                try
+                {
+                    var author = await _users.Find(u => u.Id == senderId).FirstOrDefaultAsync();
+                    if (author != null)
+                    {
+                        notification.AuthorName = string.IsNullOrWhiteSpace(author.Username)
+                            ? (string.Join(" ", new[] { author.FirstName, author.LastName }.Where(s => !string.IsNullOrWhiteSpace(s)))?.Trim())
+                            : author.Username;
+                        notification.AuthorAvatarUrl = author.ProfileImageUrl;
+                    }
+                }
+                catch (Exception enrichEx)
+                {
+                    _logger.LogWarning(enrichEx, "Failed to enrich message notification author info");
+                }
+
+                // Messages typically have no post image; ensure ActionUrl directs to chat
+                notification.ActionUrl = BuildActionUrl(notification.Type, notification.ReferenceId);
+
                 await _notifications.InsertOneAsync(notification);
                 _logger.LogInformation("Sent message notification to user {UserId}", receiverId);
             }
@@ -682,6 +1029,20 @@ namespace Backend.Services
         public Task SendMessageNotificationAsync(string receiverId, string senderId, object? messageContent)
         {
             throw new NotImplementedException();
+        }
+
+        private static string? BuildActionUrl(string? type, string? referenceId)
+        {
+            if (string.IsNullOrEmpty(type)) return null;
+
+            return type switch
+            {
+                "post" => referenceId != null ? $"/posts/{referenceId}" : null,
+                "like" => referenceId != null ? $"/posts/{referenceId}?highlight=likes" : null,
+                "comment" => referenceId != null ? $"/posts/{referenceId}?highlight=comments" : null,
+                "message" => "/messages",
+                _ => referenceId != null ? $"/posts/{referenceId}" : null
+            };
         }
 
     }
