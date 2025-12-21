@@ -4,6 +4,7 @@ export default {
   expo: {
     name: "Frontend",
     slug: "Frontend",
+    plugins: ["expo-secure-store", "expo-web-browser"],
     version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/icon.png",
