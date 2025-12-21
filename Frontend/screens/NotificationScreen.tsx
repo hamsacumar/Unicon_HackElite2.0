@@ -602,6 +602,7 @@ const NotificationScreen: React.FC<{
                   ? "You have no unread notifications"
                   : "When you get notifications, they'll show up here"}
               </Text>
+              <RoleBasedBottomNav navigation={navigation}/>
             </View>
           }
         />

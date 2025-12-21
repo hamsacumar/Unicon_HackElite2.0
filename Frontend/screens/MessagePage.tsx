@@ -15,7 +15,6 @@ const MessagesPage: React.FC = () => {
   }, []);
 
   const handleMessageSent = useCallback(() => {
-    // Refresh inbox when a new message is sent
     // This will be passed down to SendMessageForm
   }, []);
 
